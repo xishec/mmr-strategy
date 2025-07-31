@@ -1,7 +1,7 @@
 {
   "name": "mmr-sig9-react",
   "version": "0.1.0",
-  "homepage": "https://xishec.github.io/mmr-sig9/gh-pages -d build",
+  "homepage": "https://xishec.github.io/mmr-sig9/",
   "private": true,
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
