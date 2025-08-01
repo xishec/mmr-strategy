@@ -20,28 +20,26 @@ const Lobby: React.FC<LobbyProps> = ({ setSimulation }) => {
       started: true,
       startingDate: date,
       initialMoney: initialMoney,
-      currentSnapshotIndex: 0,
       portfolioSnapshots: [],
-      variables: null,
+      rebalanceLogs: [],
+      variables: {
+        rebalanceDays: 90,
+        targetRate: 0.09,
+        CashDayRate: 0,
+        TargetRatio: 0.6,
+        SpikeRate: 0.18,
+        DropRate: -0.09,
+        DoubleDropRate: -0.18,
+      },
     };
     setSimulation(newSimulation);
   };
 
   return (
     <Container maxWidth="md">
-      <Box
-        display="grid"
-        alignItems="center"
-        justifyContent="center"
-        sx={{ height: "90vh" }}
-      >
+      <Box display="grid" alignItems="center" justifyContent="center" sx={{ height: "90vh" }}>
         <Box display="grid" gap={3}>
-          <Box
-            display="flex"
-            alignItems="end"
-            justifyContent="center"
-            sx={{ mb: 2 }}
-          >
+          <Box display="flex" alignItems="end" justifyContent="center" sx={{ mb: 2 }}>
             <Typography variant="h4" component="h4" sx={{ mr: 2 }}>
               Today is
             </Typography>
@@ -81,12 +79,7 @@ const Lobby: React.FC<LobbyProps> = ({ setSimulation }) => {
               $.
             </Typography>
           </Box>
-          <Box
-            display="grid"
-            alignItems="center"
-            justifyContent="center"
-            gridTemplateColumns="50%"
-          >
+          <Box display="grid" alignItems="center" justifyContent="center" gridTemplateColumns="50%">
             <Button
               variant="contained"
               color="primary"

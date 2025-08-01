@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
-import { MarketData, Simulation } from "./core/models";
+import { MarketData, PortfolioSnapshot, RebalanceLog, Simulation } from "./core/models";
 import Lobby from "./components/Lobby";
 import Board from "./components/Board";
 import { loadData } from "./core/functions";
@@ -24,8 +24,8 @@ function App() {
           started: parsedData.started,
           startingDate: parsedData.startingDate,
           initialMoney: parsedData.initialMoney,
-          currentSnapshotIndex: parsedData.currentSnapshotIndex,
           portfolioSnapshots: [],
+          rebalanceLogs: [],
           variables: parsedData.variables,
         };
         // console.log("Decoded simulation", simulation);
@@ -60,6 +60,7 @@ function App() {
 
     const url = new URL(window.location.href);
     simulation.portfolioSnapshots = [];
+    simulation.rebalanceLogs = [];
     const encodedSimulation = btoa(JSON.stringify(simulation));
     url.searchParams.set("simulation", encodedSimulation);
     window.history.replaceState({}, "", url.toString());

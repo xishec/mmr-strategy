@@ -1,4 +1,4 @@
-import { Investments, MarketData, PortfolioSnapshot, Simulation, Variables } from "./models";
+import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, Simulation } from "./models";
 
 export const loadData = async (
   setDataLoading: (loading: boolean) => void,
@@ -28,27 +28,34 @@ const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) =
   const firstValidDate = Object.keys(marketData.TQQQ).find((date) => date >= simulation.startingDate)!;
   simulation.startingDate = firstValidDate;
 
-  const portfolioSnapshot: PortfolioSnapshot = {
-    date: firstValidDate,
-    investments: investments,
-    cumulativeRateSinceRebalance: 0,
-    lastTarget: simulation.initialMoney,
-    nextTarget: simulation.initialMoney * 1.09,
-    peak: simulation.initialMoney,
-    pullback: 1,
-    nextRebalanceDate: addDaysToDate(firstValidDate, 90),
-  };
-  simulation.currentSnapshotIndex = 0;
   simulation.variables = {
     rebalanceDays: 90,
-    TQQQTargetRate: 0.09,
+    targetRate: 0.09,
     CashDayRate: 0,
     TargetRatio: 0.6,
     SpikeRate: 0.18,
     DropRate: -0.09,
     DoubleDropRate: -0.18,
   };
+
+  const portfolioSnapshot: PortfolioSnapshot = {
+    date: firstValidDate,
+    investments: investments,
+    cumulativeRateSinceRebalance: 0,
+    nextTarget: simulation.initialMoney * (1 + simulation.variables.targetRate),
+    peak: simulation.initialMoney,
+    pullback: 1,
+    lastRebalanceDate: firstValidDate,
+    nextRebalanceDate: addDaysToDate(firstValidDate, 90),
+  };
+
   simulation.portfolioSnapshots = [portfolioSnapshot];
+
+  const rebalanceLog: RebalanceLog = {
+    date: firstValidDate,
+    cumulativeRateSinceLastRebalance: 0,
+  };
+  simulation.rebalanceLogs = [rebalanceLog];
 
   console.log(
     "date",
@@ -56,7 +63,7 @@ const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) =
     "$$$",
     portfolioSnapshot.investments.Total.toFixed(3),
     "target",
-    portfolioSnapshot.lastTarget.toFixed(3),
+    portfolioSnapshot.nextTarget.toFixed(3),
     "TQQQMoney",
     portfolioSnapshot.investments.TQQQMoney.toFixed(3),
     "Rate",
@@ -80,11 +87,13 @@ export const startSimulation = (
       rebalance(portfolioSnapshot, simulation);
     }
   }
+  rebalance(simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1], simulation);
+
   setSimulation(simulation);
 };
 
 const computePortfolioSnapshot = (simulation: Simulation, date: string, delta: number) => {
-  const lastInvestmentsSnapshot = simulation.portfolioSnapshots[simulation.currentSnapshotIndex];
+  const lastInvestmentsSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
   const newPortfolioSnapshot = { ...lastInvestmentsSnapshot };
 
   const newTQQQMoney = lastInvestmentsSnapshot.investments.TQQQMoney * (delta / 100 + 1);
@@ -104,7 +113,6 @@ const computePortfolioSnapshot = (simulation: Simulation, date: string, delta: n
   newPortfolioSnapshot.cumulativeRateSinceRebalance =
     (1 + newPortfolioSnapshot.cumulativeRateSinceRebalance) * (1 + delta / 100) - 1;
   simulation.portfolioSnapshots.push(newPortfolioSnapshot);
-  simulation.currentSnapshotIndex += 1;
 
   return newPortfolioSnapshot;
 };
@@ -113,16 +121,18 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
   const variables = simulation.variables!;
   const investments = portfolioSnapshot.investments;
 
-  // Double DROP
-  const lastLastRate = simulation.portfolioSnapshots[simulation.currentSnapshotIndex - 2].cumulativeRateSinceRebalance;
-  console.log("lastLastRate", lastLastRate);
-  if (lastLastRate < variables.DropRate) {
+  // Double DROP - get the second-to-last snapshot
+  const lastRebalanceRate =
+    simulation.rebalanceLogs[simulation.rebalanceLogs.length - 1].cumulativeRateSinceLastRebalance;
+  if (lastRebalanceRate < variables.DropRate) {
     console.log("double drop");
+    portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
   }
 
   // DROP
   else if (portfolioSnapshot.cumulativeRateSinceRebalance < variables.DropRate) {
     console.log("drop");
+    portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
   }
 
   // SPIKE
@@ -130,15 +140,20 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
     console.log("spike");
     investments.TQQQMoney = investments.Total * variables.TargetRatio;
     investments.Cash = investments.Total * (1 - variables.TargetRatio);
-    portfolioSnapshot.nextTarget = investments.Total;
+
+    portfolioSnapshot.nextTarget = investments.Total * (1 + simulation.variables.targetRate);
+    portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
   }
 
   // Excess
-  else if (investments.Total > portfolioSnapshot.nextTarget) {
-    console.log("excess");
+  else if (investments.Total >= portfolioSnapshot.nextTarget) {
+    console.log("excess or zero");
     const excess = investments.Total - portfolioSnapshot.nextTarget;
     investments.TQQQMoney -= excess;
     investments.Cash += excess;
+
+    portfolioSnapshot.nextTarget *= 1 + simulation.variables.targetRate;
+    portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
   }
 
   // Shortfall
@@ -147,26 +162,31 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
     const shortfall = portfolioSnapshot.nextTarget - investments.Total;
     investments.TQQQMoney += shortfall;
     investments.Cash -= shortfall;
-  } else {
-    console.log("no action");
-  }
 
-  portfolioSnapshot.lastTarget = portfolioSnapshot.nextTarget;
-  portfolioSnapshot.nextTarget = portfolioSnapshot.lastTarget * 1.09;
-  portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
+    portfolioSnapshot.nextTarget *= 1 + simulation.variables.targetRate;
+    portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
+  } else {
+    console.log("bug");
+  }
 
   console.log(
     "date",
     portfolioSnapshot.date,
     "$$$",
     portfolioSnapshot.investments.Total.toFixed(3),
-    "target",
-    portfolioSnapshot.lastTarget.toFixed(3),
+    "nextTarget",
+    portfolioSnapshot.nextTarget.toFixed(3),
     "TQQQMoney",
     portfolioSnapshot.investments.TQQQMoney.toFixed(3),
     "Rate",
     (portfolioSnapshot.cumulativeRateSinceRebalance * 100).toFixed(3)
   );
+
+  const rebalanceLog: RebalanceLog = {
+    date: portfolioSnapshot.date,
+    cumulativeRateSinceLastRebalance: portfolioSnapshot.cumulativeRateSinceRebalance,
+  };
+  simulation.rebalanceLogs.push(rebalanceLog);
 
   portfolioSnapshot.cumulativeRateSinceRebalance = 0;
 
