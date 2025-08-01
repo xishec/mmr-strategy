@@ -14,6 +14,7 @@ export interface Variables {
   TargetRatio: number;
   SpikeRate: number;
   DropRate: number;
+  DoubleDropRate: number;
 }
 
 export interface PortfolioSnapshot {
