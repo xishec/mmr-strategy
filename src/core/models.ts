@@ -12,7 +12,7 @@ export interface Variables {}
 export interface PortfolioSnapshot {
   date: string;
   investments: Investments;
-  target: number;
+  currentTarget: number;
   peak: number;
   pullback: number;
   rebalance: Rebalance | null;
@@ -28,6 +28,7 @@ export interface Rebalance {
   shouldSkip: boolean;
   shouldRestart: boolean;
   nextTarget: number;
+  newInvestments: Investments;
 }
 
 export interface MarketData {

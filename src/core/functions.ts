@@ -47,50 +47,65 @@ export const startSimulation = (
   setSimulation: (simulation: Simulation) => void,
   marketData: MarketData
 ) => {
-  if (!simulation.started || simulation.portfolioSnapshots.length > 0) return;
-
   setupInitialPortfolio(simulation);
-  console.log(simulation);
 
   for (const [date, delta] of Object.entries(marketData.TQQQ)) {
     if (date < simulation.startingDate) continue;
 
-    const lastInvestmentsSnapshot =
-      simulation.portfolioSnapshots[simulation.currentSnapshotIndex];
-
-    const newTQQQMoney =
-      lastInvestmentsSnapshot.investments.TQQQMoney * (1 + delta / 100);
-    const newCash = lastInvestmentsSnapshot.investments.Cash;
-    const newTotal = newTQQQMoney + newCash;
-
-    const investments: Investments = {
-      Total: newTotal,
-      TQQQMoney: newTQQQMoney,
-      Cash: newCash,
-      Ratio: newTQQQMoney / (newTQQQMoney + newCash),
-    };
-    const portfolioSnapshot: PortfolioSnapshot = {
-      date: date,
-      investments: investments,
-      target: lastInvestmentsSnapshot.target * 1.09,
-      peak: Math.max(lastInvestmentsSnapshot.peak, newTotal),
-      pullback: 1,
-      rebalance: null,
-    };
-    simulation.portfolioSnapshots.push(portfolioSnapshot);
-    simulation.currentSnapshotIndex += 1;
+    computePortfolio(simulation, date, delta);
+    rebalance(simulation);
   }
 
   setSimulation(simulation);
 };
 
-// export const rebalance = (iteration: Iteration) => {
-//   iteration.adjustments = {
-//     shouldSkip: false,
-//     shouldRestart: false,
-//     nextPortfolio: {
-//       TQQQMoney: iteration.portfolio.TQQQMoney,
-//       Cash: iteration.portfolio.Cash,
-//     },
-//   };
-// };
+const computePortfolio = (
+  simulation: Simulation,
+  date: string,
+  delta: number
+) => {
+  const lastInvestmentsSnapshot =
+    simulation.portfolioSnapshots[simulation.currentSnapshotIndex];
+
+  const newTQQQMoney =
+    lastInvestmentsSnapshot.investments.TQQQMoney * (1 + delta / 100);
+  const newCash = lastInvestmentsSnapshot.investments.Cash;
+  const newTotal = newTQQQMoney + newCash;
+
+  const investments: Investments = {
+    Total: newTotal,
+    TQQQMoney: newTQQQMoney,
+    Cash: newCash,
+    Ratio: newTQQQMoney / (newTQQQMoney + newCash),
+  };
+  const portfolioSnapshot: PortfolioSnapshot = {
+    date: date,
+    investments: investments,
+    currentTarget: lastInvestmentsSnapshot.currentTarget,
+    peak: Math.max(lastInvestmentsSnapshot.peak, newTotal),
+    pullback: 1,
+    rebalance: null,
+  };
+  simulation.portfolioSnapshots.push(portfolioSnapshot);
+  simulation.currentSnapshotIndex += 1;
+
+  return portfolioSnapshot;
+};
+
+const rebalance = (simulation: Simulation) => {
+  const lastPortfolioSnapshot =
+    simulation.portfolioSnapshots[simulation.currentSnapshotIndex - 1];
+  const currentPortfolioSnapshot =
+    simulation.portfolioSnapshots[simulation.currentSnapshotIndex];
+  lastPortfolioSnapshot.rebalance = {
+    shouldSkip: false,
+    shouldRestart: false,
+    nextTarget: currentPortfolioSnapshot.currentTarget * 1.09,
+    newInvestments: {
+      Total: currentPortfolioSnapshot.investments.Total,
+      TQQQMoney: currentPortfolioSnapshot.investments.TQQQMoney,
+      Cash: currentPortfolioSnapshot.investments.Cash,
+      Ratio: currentPortfolioSnapshot.investments.Ratio,
+    },
+  };
+};
