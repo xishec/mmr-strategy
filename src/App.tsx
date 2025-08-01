@@ -28,7 +28,7 @@ function App() {
           portfolioSnapshots: [],
           variables: parsedData.variables,
         };
-        console.log("Decoded simulation", simulation);
+        // console.log("Decoded simulation", simulation);
         return simulation;
       } catch (error) {
         console.error("Failed to parse simulation from URL:", error);
@@ -48,11 +48,11 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (marketData) {
-      console.log("Market data loaded:", marketData);
-    } else {
-      console.log("Market data is still loading...");
-    }
+    // if (marketData) {
+    //   console.log("Market data loaded:", marketData);
+    // } else {
+    //   console.log("Market data is still loading...");
+    // }
   }, [marketData]);
 
   useEffect(() => {
@@ -68,13 +68,7 @@ function App() {
   const componentsManager = () => {
     if (simulation && simulation.started) {
       if (marketData && !dataLoading) {
-        return (
-          <Board
-            simulation={simulation}
-            setSimulation={setSimulation}
-            marketData={marketData}
-          />
-        );
+        return <Board simulation={simulation} setSimulation={setSimulation} marketData={marketData} />;
       } else {
         return <></>;
       }

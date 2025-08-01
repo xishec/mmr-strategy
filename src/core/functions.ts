@@ -1,4 +1,4 @@
-import { Investments, MarketData, PortfolioSnapshot, Simulation } from "./models";
+import { Investments, MarketData, PortfolioSnapshot, Simulation, Variables } from "./models";
 
 export const loadData = async (
   setDataLoading: (loading: boolean) => void,
@@ -24,6 +24,7 @@ const setupInitialPortfolio = (simulation: Simulation) => {
     Cash: simulation.initialMoney * 0.4,
     Ratio: 0.6,
   };
+  const startingDate = simulation.startingDate;
   const portfolioSnapshot: PortfolioSnapshot = {
     date: simulation.startingDate,
     investments: investments,
@@ -39,8 +40,23 @@ const setupInitialPortfolio = (simulation: Simulation) => {
     TQQQTargetRate: 0.09,
     CASHTargetRate: (0.04 / 12) * 3,
     TargetRatio: 0.6,
+    SpikeRate: 0.18,
+    DropRate: -0.09,
   };
   simulation.portfolioSnapshots = [portfolioSnapshot];
+
+  console.log(
+    "$$$",
+    portfolioSnapshot.investments.Total.toFixed(1),
+    "date",
+    portfolioSnapshot.date,
+    "currentTarget",
+    portfolioSnapshot.currentTarget.toFixed(1),
+    "nextTarget",
+    portfolioSnapshot.nextTarget.toFixed(1),
+    "Ratio",
+    portfolioSnapshot.investments.Ratio.toFixed(1)
+  );
 };
 
 export const startSimulation = (
@@ -56,7 +72,7 @@ export const startSimulation = (
     const portfolioSnapshot = computePortfolioSnapshot(simulation, date, delta);
 
     if (date >= portfolioSnapshot.nextRebalanceDate) {
-      rebalance(portfolioSnapshot, simulation.variables!.rebalancePeriodMonths);
+      rebalance(portfolioSnapshot, simulation);
     }
   }
   setSimulation(simulation);
@@ -86,23 +102,54 @@ const computePortfolioSnapshot = (simulation: Simulation, date: string, delta: n
   return newPortfolioSnapshot;
 };
 
-const rebalance = (portfolioSnapshot: PortfolioSnapshot, rebalancePeriodMonths: number) => {
-  console.log("Rebalancing portfolio...", portfolioSnapshot);
+const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation) => {
+  const variables = simulation.variables!;
+  const investments = portfolioSnapshot.investments;
+  console.log(
+    "$$$",
+    portfolioSnapshot.investments.Total.toFixed(1),
+    "date",
+    portfolioSnapshot.date,
+    "currentTarget",
+    portfolioSnapshot.currentTarget.toFixed(1),
+    "nextTarget",
+    portfolioSnapshot.nextTarget.toFixed(1),
+    "Ratio",
+    portfolioSnapshot.investments.Ratio.toFixed(1)
+  );
 
   portfolioSnapshot.currentTarget = portfolioSnapshot.nextTarget;
   portfolioSnapshot.nextTarget = portfolioSnapshot.currentTarget * 1.09;
+  portfolioSnapshot.nextRebalanceDate = addMonthToDate(portfolioSnapshot.date, variables.rebalancePeriodMonths);
 
-  if (portfolioSnapshot.investments.Total > portfolioSnapshot.currentTarget) {
-    const excess = portfolioSnapshot.investments.Total - portfolioSnapshot.currentTarget;
-    portfolioSnapshot.investments.TQQQMoney -= excess;
-    portfolioSnapshot.investments.Cash += excess;
-  } else {
-    const shortfall = portfolioSnapshot.currentTarget - portfolioSnapshot.investments.Total;
-    portfolioSnapshot.investments.TQQQMoney += shortfall;
-    portfolioSnapshot.investments.Cash -= shortfall;
+  // Double DROP
+  if (false) {
+    return;
   }
 
-  portfolioSnapshot.nextRebalanceDate = addMonthToDate(portfolioSnapshot.date, rebalancePeriodMonths);
+  // DROP
+  if (investments.Total < portfolioSnapshot.currentTarget * (1 + variables.DropRate)) {
+    console.log("Drop detected, rebalancing...", investments);
+    return;
+  }
+
+  // SPIKE
+  if (investments.Total > portfolioSnapshot.currentTarget * (1 + variables.SpikeRate)) {
+    console.log("Spike detected, rebalancing...");
+    investments.TQQQMoney = investments.Total * variables.TargetRatio;
+    investments.Cash = investments.Total * (1 - variables.TargetRatio);
+    return;
+  }
+
+  if (investments.Total > portfolioSnapshot.currentTarget) {
+    const excess = investments.Total - portfolioSnapshot.currentTarget;
+    investments.TQQQMoney -= excess;
+    investments.Cash += excess;
+  } else {
+    const shortfall = portfolioSnapshot.currentTarget - investments.Total;
+    investments.TQQQMoney += shortfall;
+    investments.Cash -= shortfall;
+  }
 };
 
 const addMonthToDate = (date: string, months: number): string => {

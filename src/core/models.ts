@@ -12,6 +12,8 @@ export interface Variables {
   TQQQTargetRate: number;
   CASHTargetRate: number;
   TargetRatio: number;
+  SpikeRate: number;
+  DropRate: number;
 }
 
 export interface PortfolioSnapshot {
