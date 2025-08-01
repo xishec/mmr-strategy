@@ -147,10 +147,13 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
 
   // Excess
   else if (investments.Total >= portfolioSnapshot.nextTarget) {
-    console.log("excess or zero");
+    if (investments.Total === portfolioSnapshot.nextTarget) console.log("zero");
+    else console.log("excess");
     const excess = investments.Total - portfolioSnapshot.nextTarget;
-    investments.TQQQMoney -= excess;
-    investments.Cash += excess;
+    const actualExcess = Math.min(excess, investments.TQQQMoney);
+
+    investments.TQQQMoney -= actualExcess;
+    investments.Cash += actualExcess;
 
     portfolioSnapshot.nextTarget *= 1 + simulation.variables.targetRate;
     portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
@@ -160,8 +163,10 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
   else if (investments.Total < portfolioSnapshot.nextTarget) {
     console.log("shortfall");
     const shortfall = portfolioSnapshot.nextTarget - investments.Total;
-    investments.TQQQMoney += shortfall;
-    investments.Cash -= shortfall;
+    const actualShortfall = Math.min(shortfall, investments.Cash);
+
+    investments.TQQQMoney += actualShortfall;
+    investments.Cash -= actualShortfall;
 
     portfolioSnapshot.nextTarget *= 1 + simulation.variables.targetRate;
     portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
