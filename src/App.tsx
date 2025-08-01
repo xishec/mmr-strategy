@@ -15,7 +15,7 @@ import { Simulation } from "./models/models";
 const theme = createTheme();
 
 function App() {
-  const [simulation, setSimulation] = useState<Simulation | null>(null);
+  const [simulation, setSimulation] = useState<Simulation | null>();
   const [startingDate, setStartingDate] = useState<Date>(() => {
     const date = new Date();
     date.setFullYear(date.getFullYear() - 5);
@@ -24,8 +24,13 @@ function App() {
   const [initialMoney, setInitialMoney] = useState<number>(100);
 
   const handleStart = () => {
-    // Handle start logic here
-    console.log("Starting simulation with:", { startingDate, initialMoney });
+    const newSimulation: Simulation = {
+      started: true,
+      startingDate: startingDate,
+      initialMoney: initialMoney,
+    };
+    setSimulation(newSimulation);
+    console.log("Starting simulation", newSimulation);
   };
 
   return (
@@ -36,9 +41,9 @@ function App() {
           display="grid"
           alignItems="center"
           justifyContent="center"
-          sx={{ height: "100vh" }}
+          sx={{ height: "90vh" }}
         >
-          <Box display="grid" gap={2}>
+          <Box display="grid" gap={4}>
             <Box
               display="flex"
               alignItems="end"
@@ -84,15 +89,23 @@ function App() {
                 $.
               </Typography>
             </Box>
-            <Box display="grid" alignItems="center" justifyContent="center">
+            <Box
+              display="grid"
+              alignItems="center"
+              justifyContent="center"
+              gridTemplateColumns="50%"
+            >
               <Button
                 variant="contained"
                 color="primary"
                 size="large"
                 onClick={handleStart}
-                sx={{ mr: 2 }}
+                className="start-button"
+                disableElevation
               >
-                Start
+                <Box fontSize="1.5rem" fontWeight="medium">
+                  Start
+                </Box>
               </Button>
             </Box>
           </Box>
