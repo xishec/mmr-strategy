@@ -1,76 +1,80 @@
-import React from "react";
-import logo from "./logo.svg";
+import React, { useState } from "react";
 import "./App.css";
 import {
   ThemeProvider,
   createTheme,
   CssBaseline,
-  AppBar,
-  Toolbar,
   Typography,
   Container,
   Button,
   Box,
+  TextField,
 } from "@mui/material";
-import { Home } from "@mui/icons-material";
+import { Simulation } from "./models/models";
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: "#9e9e9e",
-    },
-    secondary: {
-      main: "#616161",
-    },
-  },
-});
+const theme = createTheme();
 
 function App() {
+  const [simulation, setSimulation] = useState<Simulation | null>(null);
+  const [startingDate, setStartingDate] = useState<Date>(() => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - 5);
+    return date;
+  });
+  const [initialMoney, setInitialMoney] = useState<number>(100);
+
+  const handleStart = () => {
+    // Handle start logic here
+    console.log("Starting simulation with:", { startingDate, initialMoney });
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppBar position="static" color="secondary">
-        <Toolbar>
-          <Home sx={{ mr: 2 }} />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            MMR SIG9 App
-          </Typography>
-        </Toolbar>
-      </AppBar>
       <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Box textAlign="center">
-          <img
-            src={logo}
-            className="App-logo"
-            alt="logo"
-            style={{ height: "200px" }}
+        <Box
+          display="flex"
+          alignItems="end"
+          justifyContent="center"
+          sx={{ mb: 2 }}
+        >
+          <Typography variant="h4" component="h4" sx={{ mr: 2 }}>
+            Today is
+          </Typography>
+
+          <TextField
+            variant="standard"
+            type="date"
+            size="medium"
+            value={startingDate.toISOString().split("T")[0]}
+            onChange={(e) => setStartingDate(new Date(e.target.value))}
+            sx={{ mb: 0.5 }}
           />
-          <Typography variant="h4" component="h1" gutterBottom>
-            Welcome to React with Material-UI
+
+          <Typography variant="h4" component="h4" sx={{ mr: 2 }}>
+            , and I have
           </Typography>
-          <Typography variant="body1" color="text.secondary" paragraph>
-            Edit <code>src/App.tsx</code> and save to reload.
+
+          <TextField
+            variant="standard"
+            type="number"
+            value={initialMoney}
+            onChange={(e) => setInitialMoney(Number(e.target.value))}
+            sx={{ mb: 0.5 }}
+          />
+
+          <Typography variant="h4" component="h4" sx={{ mr: 2 }}>
+            $
           </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{ mr: 2 }}
-          >
-            Learn React
-          </Button>
-          <Button
-            variant="outlined"
-            color="secondary"
-            href="https://mui.com"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn MUI
-          </Button>
         </Box>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleStart}
+          sx={{ mr: 2 }}
+        >
+          Start Simulation
+        </Button>
       </Container>
     </ThemeProvider>
   );
