@@ -21,11 +21,7 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
-      - name: Configure git credentials
-        run: |
-          git config --global user.email "xiiicheen@gmail.com"
-          git config --global user.name "Xi Chen's GitHub Actions"
-          git remote set-url origin https://x-access-token:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/${{ github.repository }}
-
       - name: Deploy to GitHub Pages
+        env:
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: yarn deploy
