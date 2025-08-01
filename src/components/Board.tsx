@@ -11,7 +11,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation }) => {
   const handleStopSimulation = () => {
     setSimulation({
       ...simulation,
-      started: false
+      started: false,
     });
   };
 
@@ -21,16 +21,16 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation }) => {
         <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
           Simulation Board
         </Typography>
-        
-        <Button 
-          variant="outlined" 
-          color="secondary" 
+
+        <Button
+          variant="outlined"
+          color="secondary"
           onClick={handleStopSimulation}
           sx={{ mb: 2 }}
         >
           Stop Simulation
         </Button>
-        
+
         {/* Board content goes here */}
       </Box>
     </Container>
