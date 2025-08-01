@@ -3,6 +3,7 @@ import "./App.css";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
 import { Simulation } from "./models/models";
 import Lobby from "./components/Lobby";
+import Board from "./components/Board";
 
 const theme = createTheme();
 
@@ -16,12 +17,12 @@ function App() {
         // Decode from base64 first, then parse JSON
         const decodedString = atob(simulationParam);
         const parsedData = JSON.parse(decodedString);
-        
+
         // Create a proper Simulation object
         const simulation: Simulation = {
           started: parsedData.started,
           startingDate: new Date(parsedData.startingDate),
-          initialMoney: parsedData.initialMoney
+          initialMoney: parsedData.initialMoney,
         };
         console.log("Decoded simulation", simulation);
         return simulation;
@@ -45,7 +46,11 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Lobby setSimulation={setSimulation} />
+      {simulation && simulation.started ? (
+        <Board simulation={simulation} setSimulation={setSimulation} />
+      ) : (
+        <Lobby setSimulation={setSimulation} />
+      )}
     </ThemeProvider>
   );
 }
