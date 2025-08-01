@@ -1,9 +1,4 @@
-import {
-  Investments,
-  MarketData,
-  PortfolioSnapshot,
-  Simulation,
-} from "./models";
+import { Investments, MarketData, PortfolioSnapshot, Simulation } from "./models";
 
 export const loadData = async (
   setDataLoading: (loading: boolean) => void,
@@ -59,28 +54,21 @@ export const startSimulation = (
     if (date < simulation.startingDate) continue;
 
     const portfolioSnapshot = computePortfolioSnapshot(simulation, date, delta);
+
     if (date >= portfolioSnapshot.nextRebalanceDate) {
-      rebalance(simulation);
+      rebalance(portfolioSnapshot, simulation.variables!.rebalancePeriodMonths);
     }
   }
-
   setSimulation(simulation);
 };
 
-const computePortfolioSnapshot = (
-  simulation: Simulation,
-  date: string,
-  delta: number
-) => {
-  const lastInvestmentsSnapshot =
-    simulation.portfolioSnapshots[simulation.currentSnapshotIndex];
+const computePortfolioSnapshot = (simulation: Simulation, date: string, delta: number) => {
+  const lastInvestmentsSnapshot = simulation.portfolioSnapshots[simulation.currentSnapshotIndex];
   const newPortfolioSnapshot = { ...lastInvestmentsSnapshot };
 
-  const newTQQQMoney =
-    lastInvestmentsSnapshot.investments.TQQQMoney * (1 + delta / 100);
+  const newTQQQMoney = lastInvestmentsSnapshot.investments.TQQQMoney * (1 + delta / 100);
   const newCash = lastInvestmentsSnapshot.investments.Cash;
   const newTotal = newTQQQMoney + newCash;
-
   const investments: Investments = {
     Total: newTotal,
     TQQQMoney: newTQQQMoney,
@@ -92,26 +80,29 @@ const computePortfolioSnapshot = (
   newPortfolioSnapshot.investments = investments;
   newPortfolioSnapshot.peak = Math.max(lastInvestmentsSnapshot.peak, newTotal);
   newPortfolioSnapshot.pullback = 1;
-
   simulation.portfolioSnapshots.push(newPortfolioSnapshot);
   simulation.currentSnapshotIndex += 1;
 
   return newPortfolioSnapshot;
 };
 
-const rebalance = (simulation: Simulation) => {
-  const lastPortfolioSnapshot =
-    simulation.portfolioSnapshots[simulation.currentSnapshotIndex - 1];
-  const currentPortfolioSnapshot =
-    simulation.portfolioSnapshots[simulation.currentSnapshotIndex];
-  console.log("Rebalancing portfolio...", currentPortfolioSnapshot);
+const rebalance = (portfolioSnapshot: PortfolioSnapshot, rebalancePeriodMonths: number) => {
+  console.log("Rebalancing portfolio...", portfolioSnapshot);
 
-  currentPortfolioSnapshot.currentTarget = lastPortfolioSnapshot.nextTarget;
-  currentPortfolioSnapshot.nextTarget = lastPortfolioSnapshot.nextTarget * 1.09;
-  currentPortfolioSnapshot.nextRebalanceDate = addMonthToDate(
-    currentPortfolioSnapshot.date,
-    simulation.variables!.rebalancePeriodMonths
-  );
+  portfolioSnapshot.currentTarget = portfolioSnapshot.nextTarget;
+  portfolioSnapshot.nextTarget = portfolioSnapshot.currentTarget * 1.09;
+
+  if (portfolioSnapshot.investments.Total > portfolioSnapshot.currentTarget) {
+    const excess = portfolioSnapshot.investments.Total - portfolioSnapshot.currentTarget;
+    portfolioSnapshot.investments.TQQQMoney -= excess;
+    portfolioSnapshot.investments.Cash += excess;
+  } else {
+    const shortfall = portfolioSnapshot.currentTarget - portfolioSnapshot.investments.Total;
+    portfolioSnapshot.investments.TQQQMoney += shortfall;
+    portfolioSnapshot.investments.Cash -= shortfall;
+  }
+
+  portfolioSnapshot.nextRebalanceDate = addMonthToDate(portfolioSnapshot.date, rebalancePeriodMonths);
 };
 
 const addMonthToDate = (date: string, months: number): string => {
