@@ -22,8 +22,11 @@ function App() {
         // Create a proper Simulation object
         const simulation: Simulation = {
           started: parsedData.started,
-          startingDate: new Date(parsedData.startingDate),
+          startingDate: parsedData.startingDate,
           initialMoney: parsedData.initialMoney,
+          currentSnapshotIndex: parsedData.currentSnapshotIndex,
+          portfolioSnapshots: [],
+          variables: parsedData.variables,
         };
         console.log("Decoded simulation", simulation);
         return simulation;
@@ -53,21 +56,37 @@ function App() {
   }, [marketData]);
 
   useEffect(() => {
+    if (!simulation) return;
+
     const url = new URL(window.location.href);
-    // Encode JSON string to base64 before setting URL parameter
+    simulation.portfolioSnapshots = [];
     const encodedSimulation = btoa(JSON.stringify(simulation));
     url.searchParams.set("simulation", encodedSimulation);
     window.history.replaceState({}, "", url.toString());
   }, [simulation]);
 
+  const componentsManager = () => {
+    if (simulation && simulation.started) {
+      if (marketData && !dataLoading) {
+        return (
+          <Board
+            simulation={simulation}
+            setSimulation={setSimulation}
+            marketData={marketData}
+          />
+        );
+      } else {
+        return <></>;
+      }
+    } else {
+      return <Lobby setSimulation={setSimulation} />;
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      {simulation && simulation.started ? (
-        <Board simulation={simulation} setSimulation={setSimulation} />
-      ) : (
-        <Lobby setSimulation={setSimulation} />
-      )}
+      {componentsManager()}
     </ThemeProvider>
   );
 }

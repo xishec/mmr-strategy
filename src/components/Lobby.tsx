@@ -15,10 +15,14 @@ const Lobby: React.FC<LobbyProps> = ({ setSimulation }) => {
   const [initialMoney, setInitialMoney] = useState<number>(100);
 
   const handleStart = () => {
+    const date = startingDate.toISOString().split("T")[0];
     const newSimulation: Simulation = {
       started: true,
-      startingDate: startingDate,
+      startingDate: date,
       initialMoney: initialMoney,
+      currentSnapshotIndex: 0,
+      portfolioSnapshots: [],
+      variables: {},
     };
     setSimulation(newSimulation);
   };

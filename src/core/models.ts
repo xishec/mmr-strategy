@@ -1,34 +1,33 @@
 export interface Simulation {
   started: boolean;
-  startingDate: Date;
+  startingDate: string;
   initialMoney: number;
-  currentIterationNumber?: number;
-  iterations?: Iteration[];
-  variables?: Variables;
+  currentSnapshotIndex: number;
+  portfolioSnapshots: PortfolioSnapshot[];
+  variables: Variables;
 }
 
 export interface Variables {}
 
-export interface Iteration {
-  date: Date;
-  delta: number;
-  portfolio: Portfolio;
-  currentTarget: number;
+export interface PortfolioSnapshot {
+  date: string;
+  investments: Investments;
+  target: number;
   peak: number;
   pullback: number;
-  comment: string;
-  adjustments?: Adjustments;
+  rebalance: Rebalance | null;
 }
-
-export interface Portfolio {
+export interface Investments {
+  Total: number;
   TQQQMoney: number;
   Cash: number;
+  Ratio: number;
 }
 
-export interface Adjustments {
+export interface Rebalance {
   shouldSkip: boolean;
   shouldRestart: boolean;
-  nextPortfolio: Portfolio;
+  nextTarget: number;
 }
 
 export interface MarketData {
