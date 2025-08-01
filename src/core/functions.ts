@@ -88,7 +88,7 @@ export const startSimulation = (
     }
   }
   rebalance(simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1], simulation);
-
+  console.log("Final $", simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.Total);
   setSimulation(simulation);
 };
 

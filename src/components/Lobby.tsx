@@ -8,9 +8,7 @@ interface LobbyProps {
 
 const Lobby: React.FC<LobbyProps> = ({ setSimulation }) => {
   const [startingDate, setStartingDate] = useState<Date>(() => {
-    const date = new Date();
-    date.setFullYear(date.getFullYear() - 5);
-    return date;
+    return new Date("2000-01-01");
   });
   const [initialMoney, setInitialMoney] = useState<number>(100);
 
