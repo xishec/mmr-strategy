@@ -1,4 +1,4 @@
-import { Iteration, Simulation } from "./models";
+import { Iteration, MarketData, Simulation } from "./models";
 
 export const initializeSimulation = (
   simulation: Simulation,
@@ -35,4 +35,21 @@ export const computeNextIteration = (iteration: Iteration) => {
       Cash: iteration.portfolio.Cash,
     },
   };
+};
+
+export const loadData = async (
+  setDataLoading: (loading: boolean) => void,
+  setMarketData: (data: MarketData | null) => void
+) => {
+  try {
+    setDataLoading(true);
+    setMarketData({
+      QQQ: (await import("../data/QQQ.json")).default,
+      TQQQ: (await import("../data/TQQQ.json")).default,
+    });
+  } catch (error) {
+    console.error("Error loading data:", error);
+  } finally {
+    setDataLoading(false);
+  }
 };

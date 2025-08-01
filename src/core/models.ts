@@ -30,3 +30,8 @@ export interface Adjustments {
   shouldRestart: boolean;
   nextPortfolio: Portfolio;
 }
+
+export interface MarketData {
+  QQQ: Record<string, number>;
+  TQQQ: Record<string, number>;
+}

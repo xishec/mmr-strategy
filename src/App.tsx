@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
-import { Simulation } from "./core/models";
+import { MarketData, Simulation } from "./core/models";
 import Lobby from "./components/Lobby";
 import Board from "./components/Board";
+import { loadData } from "./core/functions";
 
 const theme = createTheme();
 
@@ -34,6 +35,22 @@ function App() {
 
     return null;
   });
+
+  // State for market data
+  const [marketData, setMarketData] = useState<MarketData | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  useEffect(() => {
+    loadData(setDataLoading, setMarketData);
+  }, []);
+
+  useEffect(() => {
+    if (marketData) {
+      console.log("Market data loaded:", marketData);
+    } else {
+      console.log("Market data is still loading...");
+    }
+  }, [marketData]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
