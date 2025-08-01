@@ -4,18 +4,25 @@ export interface Simulation {
   initialMoney: number;
   currentSnapshotIndex: number;
   portfolioSnapshots: PortfolioSnapshot[];
-  variables: Variables;
+  variables: Variables | null;
 }
 
-export interface Variables {}
+export interface Variables {
+  rebalancePeriodMonths: number;
+  TQQQTargetRate: number;
+  CASHTargetRate: number;
+  TargetRatio: number;
+}
 
 export interface PortfolioSnapshot {
   date: string;
   investments: Investments;
   currentTarget: number;
+  nextTarget: number;
   peak: number;
   pullback: number;
-  rebalance: Rebalance | null;
+  nextRebalanceDate: string;
+  // rebalance: Rebalance | null;
 }
 export interface Investments {
   Total: number;
@@ -24,12 +31,10 @@ export interface Investments {
   Ratio: number;
 }
 
-export interface Rebalance {
-  shouldSkip: boolean;
-  shouldRestart: boolean;
-  nextTarget: number;
-  newInvestments: Investments;
-}
+// export interface Rebalance {
+//   shouldSkip: boolean;
+//   shouldRestart: boolean;
+// }
 
 export interface MarketData {
   QQQ: Record<string, number>;

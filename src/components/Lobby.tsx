@@ -22,7 +22,7 @@ const Lobby: React.FC<LobbyProps> = ({ setSimulation }) => {
       initialMoney: initialMoney,
       currentSnapshotIndex: 0,
       portfolioSnapshots: [],
-      variables: {},
+      variables: null,
     };
     setSimulation(newSimulation);
   };
