@@ -1,13 +1,7 @@
-name: Deploy to GitHub Pages
-
-on:
-  push:
-    branches: [main]  # or your default branch
-  workflow_dispatch:
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: github-pages  # Enables access to environment secrets (optional)
 
     steps:
       - name: Checkout code
@@ -22,7 +16,11 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
-      - name: Build & Deploy
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub provides this automatically
+      - name: Configure git credentials
+        run: |
+          git config --global user.email "xiiicheen@gmail.com"
+          git config --global user.name "Xi Chen's GitHub Actions"
+          git remote set-url origin https://x-access-token:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/${{ github.repository }}
+      
+      - name: Deploy to GitHub Pages
         run: yarn deploy
