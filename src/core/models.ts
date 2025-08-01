@@ -2,8 +2,8 @@ export interface Simulation {
   started: boolean;
   startingDate: Date;
   initialMoney: number;
-  iterations?: Iteration[];
   currentIterationNumber?: number;
+  iterations?: Iteration[];
   variables?: Variables;
 }
 
@@ -17,12 +17,12 @@ export interface Iteration {
   peak: number;
   pullback: number;
   comment: string;
-  adjustments: Adjustments | null;
+  adjustments?: Adjustments;
 }
 
 export interface Portfolio {
   TQQQMoney: number;
-  SQQQMoney: number;
+  Cash: number;
 }
 
 export interface Adjustments {

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Typography, Container, Button, Box, TextField } from "@mui/material";
-import { Simulation } from "../models/models";
+import { Simulation } from "../core/models";
 
 interface LobbyProps {
   setSimulation: (simulation: Simulation) => void;

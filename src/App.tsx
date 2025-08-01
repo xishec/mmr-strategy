@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
-import { Simulation } from "./models/models";
+import { Simulation } from "./core/models";
 import Lobby from "./components/Lobby";
 import Board from "./components/Board";
 
