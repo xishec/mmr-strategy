@@ -31,50 +31,72 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Container maxWidth="md" sx={{ mt: 4 }}>
+      <Container maxWidth="md">
         <Box
-          display="flex"
-          alignItems="end"
+          display="grid"
+          alignItems="center"
           justifyContent="center"
-          sx={{ mb: 2 }}
+          sx={{ height: "100vh" }}
         >
-          <Typography variant="h4" component="h4" sx={{ mr: 2 }}>
-            Today is
-          </Typography>
+          <Box display="grid" gap={2}>
+            <Box
+              display="flex"
+              alignItems="end"
+              justifyContent="center"
+              sx={{ mb: 2 }}
+            >
+              <Typography variant="h4" component="h4" sx={{ mr: 2 }}>
+                Today is
+              </Typography>
 
-          <TextField
-            variant="standard"
-            type="date"
-            size="medium"
-            value={startingDate.toISOString().split("T")[0]}
-            onChange={(e) => setStartingDate(new Date(e.target.value))}
-            sx={{ mb: 0.5 }}
-          />
+              <TextField
+                variant="standard"
+                type="date"
+                size="medium"
+                value={startingDate.toISOString().split("T")[0]}
+                onChange={(e) => setStartingDate(new Date(e.target.value))}
+                sx={{ mr: 1, width: "12rem" }}
+                slotProps={{
+                  input: {
+                    style: { fontSize: "1.5rem" },
+                  },
+                }}
+              />
 
-          <Typography variant="h4" component="h4" sx={{ mr: 2 }}>
-            , and I have
-          </Typography>
+              <Typography variant="h4" component="h4" sx={{ mr: 2 }}>
+                , and I have
+              </Typography>
 
-          <TextField
-            variant="standard"
-            type="number"
-            value={initialMoney}
-            onChange={(e) => setInitialMoney(Number(e.target.value))}
-            sx={{ mb: 0.5 }}
-          />
+              <TextField
+                variant="standard"
+                type="number"
+                value={initialMoney}
+                onChange={(e) => setInitialMoney(Number(e.target.value))}
+                sx={{ mr: 1, width: "10rem" }}
+                slotProps={{
+                  input: {
+                    style: { fontSize: "1.5rem" },
+                  },
+                }}
+              />
 
-          <Typography variant="h4" component="h4" sx={{ mr: 2 }}>
-            $
-          </Typography>
+              <Typography variant="h4" component="h4" sx={{ mr: 2 }}>
+                $.
+              </Typography>
+            </Box>
+            <Box display="grid" alignItems="center" justifyContent="center">
+              <Button
+                variant="contained"
+                color="primary"
+                size="large"
+                onClick={handleStart}
+                sx={{ mr: 2 }}
+              >
+                Start
+              </Button>
+            </Box>
+          </Box>
         </Box>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleStart}
-          sx={{ mr: 2 }}
-        >
-          Start Simulation
-        </Button>
       </Container>
     </ThemeProvider>
   );
