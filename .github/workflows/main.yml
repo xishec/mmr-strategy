@@ -2,13 +2,12 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main] # or your default branch
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: github-pages # Enables access to environment secrets (optional)
 
     steps:
       - name: Checkout code
@@ -18,7 +17,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "yarn"
 
       - name: Install dependencies
         run: yarn install
