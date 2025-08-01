@@ -121,8 +121,21 @@ def simulate_TQQQ():
     with open(TQQQ_path, 'w') as f:
         json.dump(sorted_TQQQ_data, f)
 
+    # Also write to CSV format
+    import csv
+    csv_path = os.path.join(output_dir, "TQQQ.csv")
+    with open(csv_path, 'w', newline='') as csvfile:
+        csv_writer = csv.writer(csvfile)
+        # Write header row
+        csv_writer.writerow(['Date', 'Percentage_Change'])
+        # Write data rows
+        for date, pct_change in sorted(sorted_TQQQ_data.items()):
+            csv_writer.writerow([date, pct_change])
+
+    print(f"TQQQ data also saved to {csv_path}")
+
 
 if __name__ == "__main__":
-    download_stock("QQQ")
-    download_stock("TQQQ")
+    # download_stock("QQQ")
+    # download_stock("TQQQ")
     simulate_TQQQ()

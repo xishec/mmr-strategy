@@ -8,9 +8,9 @@ export interface Simulation {
 }
 
 export interface Variables {
-  rebalancePeriodMonths: number;
+  rebalanceDays: number;
   TQQQTargetRate: number;
-  CASHTargetRate: number;
+  CashDayRate: number;
   TargetRatio: number;
   SpikeRate: number;
   DropRate: number;
@@ -19,7 +19,8 @@ export interface Variables {
 export interface PortfolioSnapshot {
   date: string;
   investments: Investments;
-  currentTarget: number;
+  cumulativeRateSinceRebalance: number;
+  lastTarget: number;
   nextTarget: number;
   peak: number;
   pullback: number;
