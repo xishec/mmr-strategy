@@ -231,46 +231,6 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               Portfolio Performance Comparison
             </Typography>
 
-            {/* Legend */}
-            <Box sx={{ display: "flex", gap: 3, mb: 2, flexWrap: "wrap" }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 16, height: 3, backgroundColor: "#FBBC04" }}></Box>
-                <Typography variant="body2">Sig9 Total</Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 16,
-                    height: 3,
-                    backgroundColor: "#FBBC04",
-                    borderTop: "1px dashed #FBBC04",
-                    borderBottom: "1px dashed #FBBC04",
-                  }}
-                ></Box>
-                <Typography variant="body2">Sig9 Target</Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 16, height: 3, backgroundColor: "#4285F4" }}></Box>
-                <Typography variant="body2">Mock Total QQQ</Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 16, height: 3, backgroundColor: "#EA4335" }}></Box>
-                <Typography variant="body2">Mock Total TQQQ</Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#E37400" }}></Box>
-                <Typography variant="body2">Rebalance</Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#34A853" }}></Box>
-                <Typography variant="body2">Reset</Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#EA4335" }}></Box>
-                <Typography variant="body2">Skip</Typography>
-              </Box>
-            </Box>
-
             {selectedDate && (
               <Alert severity="info" sx={{ mb: 2 }}>
                 Selected Date: {selectedDate}
@@ -292,6 +252,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               selectedDate={selectedDate}
               onCrosshairMove={handleCrosshairMove}
               onCrosshairLeave={handleCrosshairLeave}
+              chartType="price"
             />
           </Box>
         )}
@@ -302,46 +263,6 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
             <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
               Portfolio Performance Comparison (Log Scale)
             </Typography>
-
-            {/* Legend */}
-            <Box sx={{ display: "flex", gap: 3, mb: 2, flexWrap: "wrap" }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 16, height: 3, backgroundColor: "#FBBC04" }}></Box>
-                <Typography variant="body2">Sig9 Total</Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 16,
-                    height: 3,
-                    backgroundColor: "#FBBC04",
-                    borderTop: "1px dashed #FBBC04",
-                    borderBottom: "1px dashed #FBBC04",
-                  }}
-                ></Box>
-                <Typography variant="body2">Sig9 Target</Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 16, height: 3, backgroundColor: "#4285F4" }}></Box>
-                <Typography variant="body2">Mock Total QQQ</Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 16, height: 3, backgroundColor: "#EA4335" }}></Box>
-                <Typography variant="body2">Mock Total TQQQ</Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#E37400" }}></Box>
-                <Typography variant="body2">Rebalance</Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#34A853" }}></Box>
-                <Typography variant="body2">Reset</Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#EA4335" }}></Box>
-                <Typography variant="body2">Skip</Typography>
-              </Box>
-            </Box>
 
             {selectedDate && (
               <Alert severity="info" sx={{ mb: 2 }}>
@@ -359,6 +280,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               selectedDate={selectedDate}
               onCrosshairMove={handleCrosshairMove}
               onCrosshairLeave={handleCrosshairLeave}
+              chartType="price"
             />
           </Box>
         )}
@@ -370,14 +292,6 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               TQQQ Ratio
             </Typography>
 
-            {/* Legend */}
-            <Box sx={{ display: "flex", gap: 3, mb: 2, flexWrap: "wrap" }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 16, height: 3, backgroundColor: "#2962FF" }}></Box>
-                <Typography variant="body2">TQQQ Ratio</Typography>
-              </Box>
-            </Box>
-
             <Chart
               multiSeriesData={ratioChart}
               onPointClick={handlePointClick}
@@ -387,6 +301,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               selectedDate={selectedDate}
               onCrosshairMove={handleCrosshairMove}
               onCrosshairLeave={handleCrosshairLeave}
+              chartType="ratio"
             />
           </Box>
         )}
@@ -398,14 +313,6 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               Portfolio Pullback
             </Typography>
 
-            {/* Legend */}
-            <Box sx={{ display: "flex", gap: 3, mb: 2, flexWrap: "wrap" }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 16, height: 3, backgroundColor: "#EA4335" }}></Box>
-                <Typography variant="body2">Pullback</Typography>
-              </Box>
-            </Box>
-
             <Chart
               multiSeriesData={pullbackChart}
               onPointClick={handlePointClick}
@@ -415,6 +322,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               selectedDate={selectedDate}
               onCrosshairMove={handleCrosshairMove}
               onCrosshairLeave={handleCrosshairLeave}
+              chartType="pullback"
             />
           </Box>
         )}

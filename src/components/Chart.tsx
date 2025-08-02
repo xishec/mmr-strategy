@@ -13,6 +13,7 @@ interface ChartProps {
   selectedDate: string | null;
   onCrosshairMove?: (date: string | null) => void;
   onCrosshairLeave?: () => void;
+  chartType?: 'price' | 'ratio' | 'pullback';
 }
 
 const Chart: React.FC<ChartProps> = ({
@@ -26,10 +27,52 @@ const Chart: React.FC<ChartProps> = ({
   selectedDate,
   onCrosshairMove,
   onCrosshairLeave,
+  chartType = 'price',
 }: ChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const chartInstanceRef = useRef<any>(null);
+
+  // Legend data configuration
+  const getLegendData = (chartType: string, seriesData: { [key: string]: any[] }) => {
+    const legendItems: Array<{
+      label: string;
+      color: string;
+      type: 'line' | 'circle';
+      dashed?: boolean;
+    }> = [];
+
+    if (chartType === 'price') {
+      if (seriesData.Sig9Total) {
+        legendItems.push({ label: 'Sig9 Total', color: '#FBBC04', type: 'line' });
+      }
+      if (seriesData.Sig9Target) {
+        legendItems.push({ label: 'Sig9 Target', color: '#FBBC04', type: 'line', dashed: true });
+      }
+      if (seriesData.MockTotalQQQ) {
+        legendItems.push({ label: 'Mock Total QQQ', color: '#4285F4', type: 'line' });
+      }
+      if (seriesData.MockTotalTQQQ) {
+        legendItems.push({ label: 'Mock Total TQQQ', color: '#EA4335', type: 'line' });
+      }
+      // Add rebalance markers for price chart
+      if (rebalanceLogs && rebalanceLogs.length > 0) {
+        legendItems.push({ label: 'Rebalance', color: '#E37400', type: 'circle' });
+        legendItems.push({ label: 'Reset', color: '#34A853', type: 'circle' });
+        legendItems.push({ label: 'Skip', color: '#EA4335', type: 'circle' });
+      }
+    } else if (chartType === 'ratio') {
+      if (seriesData.Ratio) {
+        legendItems.push({ label: 'TQQQ Ratio', color: '#FBBC04', type: 'line' });
+      }
+    } else if (chartType === 'pullback') {
+      if (seriesData.pullback) {
+        legendItems.push({ label: 'Pullback', color: '#EA4335', type: 'line' });
+      }
+    }
+
+    return legendItems;
+  };
 
   const createD3Chart = useCallback(() => {
     if (!chartContainerRef.current || !svgRef.current) return null;
@@ -41,7 +84,7 @@ const Chart: React.FC<ChartProps> = ({
     svg.selectAll("*").remove();
 
     // Set up dimensions
-    const margin = { top: 20, right: 60, bottom: 40, left: 60 };
+    const margin = { top: 60, right: 60, bottom: 40, left: 60 }; // Increased top margin for legend
     const width = container.clientWidth - margin.left - margin.right;
     const height = 400 - margin.top - margin.bottom;
 
@@ -274,6 +317,55 @@ const Chart: React.FC<ChartProps> = ({
 
     g.append("g").attr("class", "y-axis").call(d3.axisLeft(yScale));
 
+    // Add legend
+    const legendData = getLegendData(chartType, seriesData);
+    if (legendData.length > 0) {
+      const legend = svg.append("g")
+        .attr("class", "legend")
+        .attr("transform", `translate(${margin.left}, 10)`);
+
+      const legendItemWidth = 140;
+      const legendItems = legend.selectAll(".legend-item")
+        .data(legendData)
+        .enter()
+        .append("g")
+        .attr("class", "legend-item")
+        .attr("transform", (d, i) => `translate(${i * legendItemWidth}, 0)`);
+
+      // Add legend symbols
+      legendItems.each(function(d: any) {
+        const item = d3.select(this);
+        
+        if (d.type === 'line') {
+          // Line legend
+          item.append("line")
+            .attr("x1", 0)
+            .attr("y1", 8)
+            .attr("x2", 16)
+            .attr("y2", 8)
+            .attr("stroke", d.color)
+            .attr("stroke-width", 2)
+            .attr("stroke-dasharray", d.dashed ? "3,3" : "none");
+        } else {
+          // Circle legend
+          item.append("circle")
+            .attr("cx", 8)
+            .attr("cy", 8)
+            .attr("r", 4)
+            .attr("fill", d.color);
+        }
+        
+        // Add legend text
+        item.append("text")
+          .attr("x", 20)
+          .attr("y", 8)
+          .attr("dy", "0.35em")
+          .style("font-size", "12px")
+          .style("font-family", "Arial, sans-serif")
+          .text(d.label);
+      });
+    }
+
     // Create chart-like object for compatibility
     const chartLikeObject = {
       svg: svgRef.current,
@@ -307,7 +399,17 @@ const Chart: React.FC<ChartProps> = ({
     };
 
     return { chart: chartLikeObject, mainSeries };
-  }, [useLogScale, onPointClick, chartData, multiSeriesData, rebalanceLogs, onCrosshairMove, onCrosshairLeave]);
+  }, [
+    useLogScale,
+    onPointClick,
+    chartData,
+    multiSeriesData,
+    rebalanceLogs,
+    onCrosshairMove,
+    onCrosshairLeave,
+    chartType,
+    getLegendData,
+  ]);
 
   // Effect to handle selectedDate changes
   useEffect(() => {
@@ -342,7 +444,7 @@ const Chart: React.FC<ChartProps> = ({
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [chartData, multiSeriesData, useLogScale, syncId, onChartReady, rebalanceLogs, createD3Chart]);
+  }, [chartData, multiSeriesData, useLogScale, syncId, onChartReady, rebalanceLogs, createD3Chart, chartType]);
 
   return (
     <div
