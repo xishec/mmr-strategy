@@ -70,20 +70,27 @@ export const startSimulation = (
   setSimulation: (simulation: Simulation) => void,
   marketData: MarketData
 ) => {
-  setupInitialPortfolio(simulation, marketData);
+  // Create a deep copy of the simulation to avoid mutations
+  const simulationCopy: Simulation = {
+    ...simulation,
+    portfolioSnapshots: [],
+    rebalanceLogs: [],
+  };
+  
+  setupInitialPortfolio(simulationCopy, marketData);
 
   for (const [date, TQQQDelta] of Object.entries(marketData.TQQQ)) {
     const QQQDelta = marketData.QQQ[date];
-    if (date <= simulation.startingDate) continue;
+    if (date <= simulationCopy.startingDate) continue;
 
-    const portfolioSnapshot = computePortfolioSnapshot(simulation, date, TQQQDelta, QQQDelta);
+    const portfolioSnapshot = computePortfolioSnapshot(simulationCopy, date, TQQQDelta, QQQDelta);
 
     if (date >= portfolioSnapshot.nextRebalanceDate) {
-      rebalance(portfolioSnapshot, simulation);
+      rebalance(portfolioSnapshot, simulationCopy);
     }
   }
-  rebalance(simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1], simulation);
-  setSimulation(simulation);
+  rebalance(simulationCopy.portfolioSnapshots[simulationCopy.portfolioSnapshots.length - 1], simulationCopy);
+  setSimulation(simulationCopy);
 };
 
 const computePortfolioSnapshot = (simulation: Simulation, date: string, TQQQDelta: number, QQQDelta: number) => {

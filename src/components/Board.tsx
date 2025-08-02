@@ -88,10 +88,24 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
     syncCrosshairToAll(null);
   }, [syncCrosshairToAll]);
 
+  // Track when simulation needs to be run
+  const lastSimulationParams = useRef<string>('');
+
   useEffect(() => {
-    startSimulation(simulation, setSimulation, marketData);
-    const last = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
-    console.log("newSimulation", last.investments.Total, simulation.variables);
+    if (marketData && simulation.started) {
+      // Create a key from the simulation parameters that affect the calculation
+      const currentParams = JSON.stringify({
+        startingDate: simulation.startingDate,
+        initialMoney: simulation.initialMoney,
+        variables: simulation.variables
+      });
+      
+      // Only run simulation if parameters have changed
+      if (currentParams !== lastSimulationParams.current) {
+        lastSimulationParams.current = currentParams;
+        startSimulation(simulation, setSimulation, marketData);
+      }
+    }
   }, [marketData, simulation, setSimulation]);
 
   useEffect(() => {
