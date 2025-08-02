@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Button, Container, Box, Typography, TextField, Alert } from "@mui/material";
 import { startSimulation } from "../core/functions";
 import { MarketData, Simulation, MultiSeriesChartData } from "../core/models";
@@ -23,11 +23,6 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
   const [metadataChart, setMetadataChart] = useState<MultiSeriesChartData>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-
-  // Chart synchronization state
-  const chartInstancesRef = useRef<{
-    [key: string]: { chart: any; mainSeries: any };
-  }>({});
 
   const handleStopSimulation = () => {
     setSimulation({
@@ -70,94 +65,13 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
   const handlePointClick = useCallback((date: string, value: number) => {
     const closestRebalanceDate = findClosestRebalanceDate(date);
     setSelectedDate(closestRebalanceDate);
-  }, []);
-
-  // Chart synchronization functions
-  const getCrosshairDataPoint = useCallback((series: any, param: any) => {
-    if (!param.time) {
-      return null;
-    }
-    const dataPoint = param.seriesData.get(series);
-
-    const closestRebalanceDate = findClosestRebalanceDate(dataPoint.time);
-    setSelectedDate(closestRebalanceDate);
-    return dataPoint || null;
-  }, []);
-
-  const syncCrosshair = useCallback((chart: any, series: any, dataPoint: any) => {
-    if (dataPoint) {
-      chart.setCrosshairPosition(dataPoint.value, dataPoint.time, series);
-      return;
-    }
-    chart.clearCrosshairPosition();
-  }, []);
-
-  const handleChartReady = useCallback(
-    (chartId: string, chart: any, mainSeries: any) => {
-      chartInstancesRef.current[chartId] = { chart, mainSeries };
-
-      // Set up synchronization once all three charts are ready
-      if (Object.keys(chartInstancesRef.current).length === 3) {
-        const chartIds = Object.keys(chartInstancesRef.current);
-        const charts = chartIds.map((id) => chartInstancesRef.current[id]);
-
-        // Clear any existing subscriptions to avoid duplicates
-        charts.forEach((chartInstance) => {
-          try {
-            chartInstance.chart.timeScale().unsubscribeVisibleLogicalRangeChange();
-            chartInstance.chart.unsubscribeCrosshairMove();
-          } catch (e) {
-            // Ignore errors if no subscriptions exist
-          }
-        });
-
-        // Sync time scale between all charts
-        charts.forEach((chartInstance, index) => {
-          chartInstance.chart.timeScale().subscribeVisibleLogicalRangeChange((timeRange: any) => {
-            charts.forEach((otherChartInstance, otherIndex) => {
-              if (index !== otherIndex) {
-                try {
-                  otherChartInstance.chart.timeScale().setVisibleLogicalRange(timeRange);
-                } catch (e) {
-                  // Ignore errors if chart is not ready
-                }
-              }
-            });
-          });
-        });
-
-        // Sync crosshair between all charts
-        charts.forEach((chartInstance, index) => {
-          chartInstance.chart.subscribeCrosshairMove((param: any) => {
-            const dataPoint = getCrosshairDataPoint(chartInstance.mainSeries, param);
-            charts.forEach((otherChartInstance, otherIndex) => {
-              if (index !== otherIndex) {
-                try {
-                  syncCrosshair(otherChartInstance.chart, otherChartInstance.mainSeries, dataPoint);
-                } catch (e) {
-                  // Ignore errors if chart is not ready
-                }
-              }
-            });
-          });
-        });
-
-        console.log("All three charts synchronized successfully");
-      }
-    },
-    [getCrosshairDataPoint, syncCrosshair]
-  );
+  }, [findClosestRebalanceDate]);
 
   useEffect(() => {
     if (simulation.portfolioSnapshots.length === 0) {
       startSimulation(simulation, setSimulation, marketData);
     }
   }, [marketData, simulation, setSimulation]);
-
-  // Clear chart instances when simulation changes to ensure fresh synchronization
-  useEffect(() => {
-    chartInstancesRef.current = {};
-  }, [simulation]);
 
   useEffect(() => {
     setPriceChart({
@@ -333,7 +247,6 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               multiSeriesData={priceChart}
               onPointClick={handlePointClick}
               syncId="chart1"
-              onChartReady={handleChartReady}
               rebalanceLogs={simulation.rebalanceLogs}
               selectedDate={selectedDate}
             />
@@ -386,7 +299,6 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               onPointClick={handlePointClick}
               useLogScale
               syncId="chart2"
-              onChartReady={handleChartReady}
               rebalanceLogs={simulation.rebalanceLogs}
               selectedDate={selectedDate}
             />
@@ -416,7 +328,6 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               multiSeriesData={metadataChart}
               onPointClick={handlePointClick}
               syncId="chart3"
-              onChartReady={handleChartReady}
               selectedDate={selectedDate}
             />
           </Box>
