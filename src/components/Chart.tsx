@@ -113,9 +113,19 @@ const Chart: React.FC<ChartProps> = ({
       .range([0, width]);
 
     const valueExtent = d3.extent(allData, (d) => d.value) as [number, number];
+
+    // Set y-scale domain based on chart type
+    let yDomain = valueExtent;
+    if (chartType === "ratio") {
+      yDomain = [0, 1]; // Fixed domain for ratio chart
+    }
+    if (chartType === "pullback") {
+      yDomain = [-1, 0]; // Fixed domain for pullback chart
+    }
+
     const yScale = useLogScale
       ? d3.scaleLog().domain(valueExtent).range([height, 0])
-      : d3.scaleLinear().domain(valueExtent).range([height, 0]);
+      : d3.scaleLinear().domain(yDomain).range([height, 0]);
 
     // Create line generator
     const line = d3
@@ -267,9 +277,9 @@ const Chart: React.FC<ChartProps> = ({
       if (typeof value !== "number") return String(value);
 
       if (chartType === "ratio") {
-        return value.toFixed(2);
+        return (value * 100).toFixed(2) + "%";
       } else if (chartType === "pullback") {
-        return (value * 100).toFixed(1) + "%";
+        return (value * 100).toFixed(2) + "%";
       }
 
       return value.toFixed(2);
@@ -476,10 +486,7 @@ const Chart: React.FC<ChartProps> = ({
       });
 
       // Add date display to legend (positioned at the end of the chart)
-      const dateDisplay = legend
-        .append("g")
-        .attr("class", "legend-date")
-        .attr("transform", `translate(${width}, 0)`);
+      const dateDisplay = legend.append("g").attr("class", "legend-date").attr("transform", `translate(${width}, 0)`);
 
       // Add "Date" label (aligned with other legend labels)
       dateDisplay
@@ -493,7 +500,7 @@ const Chart: React.FC<ChartProps> = ({
         .style("font-family", "Arial, sans-serif")
         .style("font-weight", "normal")
         .style("fill", "black")
-        .text("Date");
+        .text("Rebalance date");
 
       // Add date value (below the label)
       dateDisplay

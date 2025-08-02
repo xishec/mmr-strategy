@@ -46,7 +46,7 @@ const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) =
     cumulativeRateSinceRebalance: 0,
     nextTarget: simulation.initialMoney * (1 + simulation.variables.targetRate),
     peak: simulation.initialMoney,
-    pullback: 1,
+    pullback: 0,
     lastRebalanceDate: firstValidDate,
     nextRebalanceDate: addDaysToDate(firstValidDate, 90),
   };
@@ -115,7 +115,7 @@ const computePortfolioSnapshot = (simulation: Simulation, date: string, TQQQDelt
   newPortfolioSnapshot.date = date;
   newPortfolioSnapshot.investments = investments;
   newPortfolioSnapshot.peak = Math.max(lastInvestmentsSnapshot.peak, newTotal);
-  newPortfolioSnapshot.pullback = 1 + (newTotal - newPortfolioSnapshot.peak) / newPortfolioSnapshot.peak;
+  newPortfolioSnapshot.pullback = -(newPortfolioSnapshot.peak - newTotal) / newPortfolioSnapshot.peak;
   newPortfolioSnapshot.cumulativeRateSinceRebalance =
     (1 + newPortfolioSnapshot.cumulativeRateSinceRebalance) * (1 + TQQQDelta / 100) - 1;
   simulation.portfolioSnapshots.push(newPortfolioSnapshot);
