@@ -466,6 +466,17 @@ const Chart: React.FC<ChartProps> = ({
       });
     }
 
+    const updateLegendWithValuesWithLastRebalance = () => {
+      if (rebalanceLogs) {
+        const lastRebalanceDate = rebalanceLogs[rebalanceLogs.length - 1].date;
+        updateLegendWithValues(lastRebalanceDate);
+      } else {
+        updateLegendWithValues(null);
+      }
+    };
+
+    updateLegendWithValuesWithLastRebalance();
+
     // Create chart-like object for compatibility
     const chartLikeObject = {
       svg: svgRef.current,
@@ -483,8 +494,7 @@ const Chart: React.FC<ChartProps> = ({
       },
       clearCrosshairPosition: () => {
         crosshair.style("display", "none");
-        // Clear legend values
-        updateLegendWithValues(null);
+        updateLegendWithValuesWithLastRebalance();
       },
       timeScale: () => ({
         subscribeVisibleLogicalRangeChange: (callback: any) => {
