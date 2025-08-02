@@ -47,7 +47,7 @@ const Chart: React.FC<ChartProps> = ({
         legendItems.push({ label: "Sig9 Total", color: "#FBBC04", type: "line" });
       }
       if (seriesData.Sig9Target) {
-        legendItems.push({ label: "Sig9 Target", color: "#FBBC04", type: "line", dashed: true });
+        legendItems.push({ label: "Sig9 Target", color: "#202124", type: "line", dashed: true });
       }
       if (seriesData.MockTotalQQQ) {
         legendItems.push({ label: "Mock Total QQQ", color: "#4285F4", type: "line" });
@@ -325,6 +325,16 @@ const Chart: React.FC<ChartProps> = ({
           }
         }
       });
+
+      // Update date display in legend
+      const dateDisplay = legend.select(".legend-date .date-text");
+      if (!dateDisplay.empty()) {
+        if (selectedDate) {
+          dateDisplay.text(selectedDate);
+        } else {
+          dateDisplay.text("");
+        }
+      }
     };
 
     // Add invisible overlay for mouse events
@@ -464,6 +474,40 @@ const Chart: React.FC<ChartProps> = ({
           .style("font-family", "Arial, sans-serif")
           .text(d.label);
       });
+
+      // Add date display to legend (positioned at the end of the chart)
+      const dateDisplay = legend
+        .append("g")
+        .attr("class", "legend-date")
+        .attr("transform", `translate(${width}, 0)`);
+
+      // Add "Date" label (aligned with other legend labels)
+      dateDisplay
+        .append("text")
+        .attr("class", "date-label")
+        .attr("x", 0)
+        .attr("y", 8)
+        .attr("dy", "0.35em")
+        .attr("text-anchor", "end")
+        .style("font-size", "12px")
+        .style("font-family", "Arial, sans-serif")
+        .style("font-weight", "normal")
+        .style("fill", "black")
+        .text("Date");
+
+      // Add date value (below the label)
+      dateDisplay
+        .append("text")
+        .attr("class", "date-text")
+        .attr("x", 0)
+        .attr("y", 25)
+        .attr("dy", "0.35em")
+        .attr("text-anchor", "end")
+        .style("font-size", "11px")
+        .style("font-family", "Arial, sans-serif")
+        .style("font-weight", "bold")
+        .style("fill", "black")
+        .text("");
     }
 
     const updateLegendWithValuesWithLastRebalance = () => {
