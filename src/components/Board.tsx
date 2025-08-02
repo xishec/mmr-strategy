@@ -235,6 +235,18 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
                 <Box sx={{ width: 16, height: 3, backgroundColor: "#EA4335" }}></Box>
                 <Typography variant="body2">Mock Total TQQQ</Typography>
               </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#E37400" }}></Box>
+                <Typography variant="body2">Rebalance</Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#34A853" }}></Box>
+                <Typography variant="body2">Reset</Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#EA4335" }}></Box>
+                <Typography variant="body2">Skip</Typography>
+              </Box>
             </Box>
 
             {selectedDate && (
@@ -285,6 +297,18 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Box sx={{ width: 16, height: 3, backgroundColor: "#EA4335" }}></Box>
                 <Typography variant="body2">Mock Total TQQQ</Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#E37400" }}></Box>
+                <Typography variant="body2">Rebalance</Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#34A853" }}></Box>
+                <Typography variant="body2">Reset</Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#EA4335" }}></Box>
+                <Typography variant="body2">Skip</Typography>
               </Box>
             </Box>
 

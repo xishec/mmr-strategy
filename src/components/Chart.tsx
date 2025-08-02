@@ -139,26 +139,39 @@ const Chart: React.FC<ChartProps> = ({
       }
     });
 
-    // Add rebalance markers
+    // Add rebalance log series as points
     if (rebalanceLogs && rebalanceLogs.length > 0) {
-      rebalanceLogs.forEach(log => {
-        const logDate = parseTime(log.date);
-        if (!logDate) return;
+      const rebalanceData = rebalanceLogs.map(log => ({
+        ...log,
+        parsedTime: parseTime(log.date)
+      })).filter(d => d.parsedTime !== null);
 
-        const x = xScale(logDate);
-        const markerColors = {
-          [RebalanceType.Rebalance]: "#E37400",
-          [RebalanceType.Reset]: "#34A853",
-          [RebalanceType.Skip]: "#EA4335"
-        };
+      const markerColors = {
+        [RebalanceType.Rebalance]: "#E37400",
+        [RebalanceType.Reset]: "#34A853",
+        [RebalanceType.Skip]: "#EA4335"
+      };
 
-        g.append("circle")
-          .attr("cx", x)
-          .attr("cy", height / 2)
-          .attr("r", 3)
-          .attr("fill", markerColors[log.rebalanceType] || "#E37400")
-          .attr("class", "rebalance-marker");
-      });
+      // Add rebalance points
+      g.selectAll(".rebalance-point")
+        .data(rebalanceData)
+        .enter()
+        .append("circle")
+        .attr("class", "rebalance-point")
+        .attr("cx", d => xScale(d.parsedTime!))
+        .attr("cy", d => yScale(d.total))
+        .attr("r", 4)
+        .attr("fill", d => markerColors[d.rebalanceType] || "#E37400")
+        .attr("stroke", "white")
+        .attr("stroke-width", 1)
+        .style("cursor", "pointer")
+        .on("mouseover", function(event, d) {
+          // Add tooltip or highlight effect
+          d3.select(this).attr("r", 6);
+        })
+        .on("mouseout", function(event, d) {
+          d3.select(this).attr("r", 4);
+        });
     }
 
     // Add crosshair
