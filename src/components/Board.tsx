@@ -13,14 +13,14 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     return new Date("2000-01-01");
   });
   const [initialMoney, setInitialMoney] = useState<number>(100);
-  const [rebalanceDays, setRebalanceDays] = useState<number>(90);
+  const [rebalanceDays, setRebalanceDays] = useState<number>(92);
   const [targetRate, setTargetRate] = useState<number>(0.09);
   const [cashDayRate, setCashDayRate] = useState<number>(0);
   const [targetRatio, setTargetRatio] = useState<number>(0.6);
   const [spikeRate, setSpikeRate] = useState<number>(0.18);
   const [dropRate, setDropRate] = useState<number>(-0.09);
   const [doubleDropRate, setDoubleDropRate] = useState<number>(-0.09);
-  const [isLogScale, setIsLogScale] = useState<boolean>(false);
+  const [isLogScale, setIsLogScale] = useState<boolean>(true);
 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
   const [ratioChart, setRatioChart] = useState<MultiSeriesChartData>({});

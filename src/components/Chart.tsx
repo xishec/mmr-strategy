@@ -178,30 +178,6 @@ const Chart: React.FC<ChartProps> = ({
       .y1((d) => yScale(d.value))
       .curve(d3.curveLinear);
 
-    // Add grid lines
-    const xAxis = d3.axisBottom(xScale).tickSize(-chartHeight);
-
-    // Configure y-axis grid with same tick settings as the actual axis
-    const yAxis = isLogScale
-      ? d3.axisLeft(yScale).tickSize(-width).ticks(5, "~g")
-      : d3.axisLeft(yScale).tickSize(-width);
-
-    g.append("g")
-      .attr("class", "grid")
-      .attr("transform", `translate(0,${chartHeight})`)
-      .call(xAxis)
-      .selectAll("line")
-      .attr("stroke", "#e1e1e1")
-      .attr("stroke-width", 1);
-
-    // Remove grid text labels to avoid duplication with axis labels
-    g.selectAll(".grid text").remove();
-
-    g.append("g").attr("class", "grid").call(yAxis).selectAll("line").attr("stroke", "#e1e1e1").attr("stroke-width", 1);
-
-    // Remove grid text labels for y-axis too
-    g.selectAll(".grid text").remove();
-
     // Add center line at y=0 for combined chart
     if (chartType === "ratio-pullback") {
       g.append("line")
@@ -288,7 +264,7 @@ const Chart: React.FC<ChartProps> = ({
       } else if (isCombinedChart && (seriesName === "Ratio" || seriesName === "pullback")) {
         // Draw area for combined chart (centered at y=0)
         const areaGenerator = seriesName === "Ratio" ? combinedRatioArea : combinedPullbackArea;
-        
+
         g.append("path")
           .datum(processedData)
           .attr("class", `area series-${seriesName}`)
@@ -499,15 +475,16 @@ const Chart: React.FC<ChartProps> = ({
       .attr("class", "x-axis")
       .attr("transform", `translate(0,${chartHeight})`)
       .call(
-        d3.axisBottom(xScale).tickFormat((domainValue) => {
-          return d3.timeFormat("%Y-%m-%d")(domainValue as Date);
-        })
+        d3
+          .axisBottom(xScale)
+          .ticks(5)
+          .tickFormat((domainValue) => {
+            return d3.timeFormat("%Y-%m-%d")(domainValue as Date);
+          })
       );
 
     // Configure y-axis with custom formatting for log scale
-    const yAxisConfig = isLogScale
-      ? d3.axisLeft(yScale).ticks(5, "~g") // Use D3's log scale tick generation with clean formatting
-      : d3.axisLeft(yScale);
+    const yAxisConfig = isLogScale ? d3.axisLeft(yScale).ticks(4, "~g") : d3.axisLeft(yScale);
 
     g.append("g").attr("class", "y-axis").call(yAxisConfig);
 
