@@ -10,9 +10,10 @@ interface ChartProps {
   syncId?: string;
   onChartReady?: (chartId: string, chart: any, mainSeries: any) => void;
   rebalanceLogs?: RebalanceLog[];
+  selectedDate: string | null;
 }
 
-function Chart({
+const Chart: React.FC<ChartProps> = ({
   chartData,
   multiSeriesData,
   onPointClick,
@@ -20,7 +21,8 @@ function Chart({
   syncId,
   onChartReady,
   rebalanceLogs,
-}: ChartProps) {
+  selectedDate,
+}: ChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -105,14 +107,16 @@ function Chart({
 
       // Add rebalance markers if provided
       if (rebalanceLogs && rebalanceLogs.length > 0 && mainSeries) {
+        console.log(selectedDate);
         const markers = rebalanceLogs.map((rebalanceLog) => {
+          const isSelected = selectedDate === rebalanceLog.date;
           if (rebalanceLog.rebalanceType === RebalanceType.Rebalance) {
             return {
               time: rebalanceLog.date,
               position: "inBar" as const,
               color: "#E37400",
               shape: "circle" as const,
-              size: 1,
+              size: isSelected ? 5 : 1,
             };
           } else if (rebalanceLog.rebalanceType === RebalanceType.Reset) {
             return {
@@ -120,7 +124,7 @@ function Chart({
               position: "inBar" as const,
               color: "#34A853",
               shape: "circle" as const,
-              size: 1,
+              size: isSelected ? 5 : 1,
             };
           } else if (rebalanceLog.rebalanceType === RebalanceType.Skip) {
             return {
@@ -128,7 +132,7 @@ function Chart({
               position: "inBar" as const,
               color: "#EA4335",
               shape: "circle" as const,
-              size: 1,
+              size: isSelected ? 5 : 1,
             };
           }
           return {
@@ -186,6 +190,6 @@ function Chart({
       }}
     />
   );
-}
+};
 
 export default Chart;

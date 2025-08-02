@@ -36,6 +36,10 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
     });
   };
 
+  useEffect(() => {
+    console.log(selectedDate);
+  }, [selectedDate]);
+
   const handleUpdateVariables = () => {
     const updatedSimulation = {
       ...simulation,
@@ -74,6 +78,9 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
       return null;
     }
     const dataPoint = param.seriesData.get(series);
+
+    const closestRebalanceDate = findClosestRebalanceDate(dataPoint.time);
+    setSelectedDate(closestRebalanceDate);
     return dataPoint || null;
   }, []);
 
@@ -328,6 +335,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               syncId="chart1"
               onChartReady={handleChartReady}
               rebalanceLogs={simulation.rebalanceLogs}
+              selectedDate={selectedDate}
             />
           </Box>
         )}
@@ -380,6 +388,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               syncId="chart2"
               onChartReady={handleChartReady}
               rebalanceLogs={simulation.rebalanceLogs}
+              selectedDate={selectedDate}
             />
           </Box>
         )}
@@ -408,6 +417,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               onPointClick={handlePointClick}
               syncId="chart3"
               onChartReady={handleChartReady}
+              selectedDate={selectedDate}
             />
           </Box>
         )}
