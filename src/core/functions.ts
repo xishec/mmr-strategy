@@ -20,9 +20,11 @@ export const loadData = async (
 const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) => {
   const investments: Investments = {
     Total: simulation.initialMoney,
-    TQQQMoney: simulation.initialMoney * 0.6,
+    TQQQ: simulation.initialMoney * 0.6,
     Cash: simulation.initialMoney * 0.4,
     Ratio: 0.6,
+    MockTotalQQQ: simulation.initialMoney,
+    MockTotalTQQQ: simulation.initialMoney,
   };
 
   const firstValidDate = Object.keys(marketData.TQQQ).find((date) => date >= simulation.startingDate)!;
@@ -64,8 +66,8 @@ const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) =
   //   portfolioSnapshot.investments.Total.toFixed(3),
   //   "target",
   //   portfolioSnapshot.nextTarget.toFixed(3),
-  //   "TQQQMoney",
-  //   portfolioSnapshot.investments.TQQQMoney.toFixed(3),
+  //   "TQQQ",
+  //   portfolioSnapshot.investments.TQQQ.toFixed(3),
   //   "Rate",
   //   (portfolioSnapshot.cumulativeRateSinceRebalance * 100).toFixed(3)
   // );
@@ -78,10 +80,11 @@ export const startSimulation = (
 ) => {
   setupInitialPortfolio(simulation, marketData);
 
-  for (const [date, delta] of Object.entries(marketData.TQQQ)) {
+  for (const [date, TQQQDelta] of Object.entries(marketData.TQQQ)) {
+    const QQQDelta = marketData.QQQ[date];
     if (date <= simulation.startingDate) continue;
 
-    const portfolioSnapshot = computePortfolioSnapshot(simulation, date, delta);
+    const portfolioSnapshot = computePortfolioSnapshot(simulation, date, TQQQDelta, QQQDelta);
 
     if (date >= portfolioSnapshot.nextRebalanceDate) {
       rebalance(portfolioSnapshot, simulation);
@@ -91,18 +94,20 @@ export const startSimulation = (
   setSimulation(simulation);
 };
 
-const computePortfolioSnapshot = (simulation: Simulation, date: string, delta: number) => {
+const computePortfolioSnapshot = (simulation: Simulation, date: string, TQQQDelta: number, QQQDelta: number) => {
   const lastInvestmentsSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
   const newPortfolioSnapshot = { ...lastInvestmentsSnapshot };
 
-  const newTQQQMoney = lastInvestmentsSnapshot.investments.TQQQMoney * (delta / 100 + 1);
+  const newTQQQ = lastInvestmentsSnapshot.investments.TQQQ * (TQQQDelta / 100 + 1);
   const newCash = lastInvestmentsSnapshot.investments.Cash * (1 + simulation.variables!.CashDayRate);
-  const newTotal = newTQQQMoney + newCash;
+  const newTotal = newTQQQ + newCash;
   const investments: Investments = {
     Total: newTotal,
-    TQQQMoney: newTQQQMoney,
+    TQQQ: newTQQQ,
     Cash: newCash,
-    Ratio: newTQQQMoney / (newTQQQMoney + newCash),
+    Ratio: newTQQQ / (newTQQQ + newCash),
+    MockTotalQQQ: lastInvestmentsSnapshot.investments.MockTotalQQQ * (QQQDelta / 100 + 1),
+    MockTotalTQQQ: lastInvestmentsSnapshot.investments.MockTotalTQQQ * (TQQQDelta / 100 + 1),
   };
 
   newPortfolioSnapshot.date = date;
@@ -110,7 +115,7 @@ const computePortfolioSnapshot = (simulation: Simulation, date: string, delta: n
   newPortfolioSnapshot.peak = Math.max(lastInvestmentsSnapshot.peak, newTotal);
   newPortfolioSnapshot.pullback = 1;
   newPortfolioSnapshot.cumulativeRateSinceRebalance =
-    (1 + newPortfolioSnapshot.cumulativeRateSinceRebalance) * (1 + delta / 100) - 1;
+    (1 + newPortfolioSnapshot.cumulativeRateSinceRebalance) * (1 + TQQQDelta / 100) - 1;
   simulation.portfolioSnapshots.push(newPortfolioSnapshot);
 
   return newPortfolioSnapshot;
@@ -137,7 +142,7 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
   // SPIKE
   else if (portfolioSnapshot.cumulativeRateSinceRebalance > variables.SpikeRate) {
     // console.log("spike");
-    investments.TQQQMoney = investments.Total * variables.TargetRatio;
+    investments.TQQQ = investments.Total * variables.TargetRatio;
     investments.Cash = investments.Total * (1 - variables.TargetRatio);
 
     portfolioSnapshot.nextTarget = investments.Total * (1 + simulation.variables.targetRate);
@@ -149,9 +154,9 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
     // if (investments.Total === portfolioSnapshot.nextTarget) console.log("zero");
     // else console.log("excess");
     const excess = investments.Total - portfolioSnapshot.nextTarget;
-    const actualExcess = Math.min(excess, investments.TQQQMoney);
+    const actualExcess = Math.min(excess, investments.TQQQ);
 
-    investments.TQQQMoney -= actualExcess;
+    investments.TQQQ -= actualExcess;
     investments.Cash += actualExcess;
 
     portfolioSnapshot.nextTarget *= 1 + simulation.variables.targetRate;
@@ -164,7 +169,7 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
     const shortfall = portfolioSnapshot.nextTarget - investments.Total;
     const actualShortfall = Math.min(shortfall, investments.Cash);
 
-    investments.TQQQMoney += actualShortfall;
+    investments.TQQQ += actualShortfall;
     investments.Cash -= actualShortfall;
 
     portfolioSnapshot.nextTarget *= 1 + simulation.variables.targetRate;
@@ -180,8 +185,8 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
   //   portfolioSnapshot.investments.Total.toFixed(3),
   //   "nextTarget",
   //   portfolioSnapshot.nextTarget.toFixed(3),
-  //   "TQQQMoney",
-  //   portfolioSnapshot.investments.TQQQMoney.toFixed(3),
+  //   "TQQQ",
+  //   portfolioSnapshot.investments.TQQQ.toFixed(3),
   //   "Rate",
   //   (portfolioSnapshot.cumulativeRateSinceRebalance * 100).toFixed(3)
   // );

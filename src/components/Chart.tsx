@@ -1,17 +1,24 @@
 import React, { useEffect, useRef } from "react";
 import { createChart, ColorType, LineSeries } from "lightweight-charts";
-import { ChartData } from "../core/models";
+import { ChartData, MultiSeriesChartData } from "../core/models";
 
 interface ChartProps {
-  chartData: ChartData;
+  chartData?: ChartData;
+  multiSeriesData?: MultiSeriesChartData;
   onPointClick?: (date: string, value: number) => void;
+  useLogScale?: boolean;
 }
 
-function Chart({ chartData, onPointClick }: ChartProps) {
+function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false }: ChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!chartContainerRef.current || !chartData.length) return;
+    if (!chartContainerRef.current) return;
+
+    // Determine if we have data to display
+    const hasData = (chartData && chartData.length > 0) || (multiSeriesData && Object.keys(multiSeriesData).length > 0);
+
+    if (!hasData) return;
 
     // Create chart
     const chart = createChart(chartContainerRef.current, {
@@ -27,6 +34,7 @@ function Chart({ chartData, onPointClick }: ChartProps) {
       },
       rightPriceScale: {
         borderColor: "#cccccc",
+        mode: useLogScale ? 1 : 0, // 1 = logarithmic, 0 = normal
       },
       timeScale: {
         borderColor: "#cccccc",
@@ -35,25 +43,63 @@ function Chart({ chartData, onPointClick }: ChartProps) {
       },
     });
 
-    // Add line series for portfolio total
-    const lineSeries = chart.addSeries(LineSeries, {
-      color: "#2962FF",
-      lineWidth: 2,
-    });
+    const colors = {
+      Sig9Target: "#FBBC04",
+      Sig9Total: "#FBBC04",
+      MockTotalQQQ: "#4285F4",
+      MockTotalTQQQ: "#EA4335",
+    };
 
-    // Set data to the series
-    lineSeries.setData(chartData);
+    // Handle multi-series data
+    if (multiSeriesData) {
+      const seriesMap: { [key: string]: any } = {};
 
-    // Add click event handler
-    if (onPointClick) {
-      chart.subscribeClick((param) => {
-        if (param.time) {
-          const clickedPoint = chartData.find(point => point.time === param.time);
-          if (clickedPoint) {
-            onPointClick(clickedPoint.time, clickedPoint.value);
-          }
-        }
+      Object.entries(multiSeriesData).forEach(([seriesName, data]) => {
+        const lineSeries = chart.addSeries(LineSeries, {
+          color: colors[seriesName as keyof typeof colors] || "#2962FF",
+          lineWidth: 2,
+          title: seriesName,
+          lineStyle: seriesName === "Sig9Target" ? 1 : 0, // 1 = dashed, 0 = solid
+        });
+
+        lineSeries.setData(data);
+        seriesMap[seriesName] = { series: lineSeries, data };
       });
+
+      // Add click event handler for multi-series
+      if (onPointClick) {
+        chart.subscribeClick((param) => {
+          if (param.time) {
+            // Find the closest point from any series
+            const allData = Object.values(multiSeriesData).flat();
+            const clickedPoint = allData.find((point) => point.time === param.time);
+            if (clickedPoint) {
+              onPointClick(clickedPoint.time, clickedPoint.value);
+            }
+          }
+        });
+      }
+    }
+    // Handle single series data (backward compatibility)
+    else if (chartData) {
+      const lineSeries = chart.addSeries(LineSeries, {
+        color: "#2962FF",
+        lineWidth: 2,
+      });
+
+      lineSeries.setData(chartData);
+
+      // Add click event handler for single series
+      if (onPointClick) {
+        chart.subscribeClick((param) => {
+          if (param.time) {
+            const clickedPoint = chartData.find((point) => point.time === param.time);
+            if (clickedPoint) {
+              onPointClick(clickedPoint.time, clickedPoint.value);
+            }
+          }
+        });
+      }
     }
 
     // Fit content to the chart
@@ -72,7 +118,7 @@ function Chart({ chartData, onPointClick }: ChartProps) {
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, [chartData, onPointClick]);
+  }, [chartData, multiSeriesData, onPointClick, useLogScale]);
 
   return (
     <div

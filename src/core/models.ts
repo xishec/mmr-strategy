@@ -34,7 +34,9 @@ export interface RebalanceLog {
 }
 export interface Investments {
   Total: number;
-  TQQQMoney: number;
+  MockTotalQQQ: number;
+  MockTotalTQQQ: number;
+  TQQQ: number;
   Cash: number;
   Ratio: number;
 }
@@ -48,4 +50,7 @@ export interface ChartPoint {
   time: string;
   value: number;
 }
+
 export type ChartData = ChartPoint[];
+
+export type MultiSeriesChartData = Record<string, ChartData>;

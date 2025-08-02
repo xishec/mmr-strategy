@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Button, Container, Box, Typography, TextField, Alert } from "@mui/material";
 import { startSimulation } from "../core/functions";
-import { ChartData, MarketData, Simulation } from "../core/models";
+import { MarketData, Simulation, MultiSeriesChartData } from "../core/models";
 import Chart from "./Chart";
 
 interface BoardProps {
@@ -20,7 +20,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
   const [dropRate, setDropRate] = useState<number>(simulation.variables.DropRate);
   const [doubleDropRate, setDoubleDropRate] = useState<number>(simulation.variables.DoubleDropRate);
 
-  const [totalChart, setTotalChart] = useState<ChartData>([]);
+  const [multiSeriesChart, setMultiSeriesChart] = useState<MultiSeriesChartData>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedValue, setSelectedValue] = useState<number | null>(null);
 
@@ -59,16 +59,29 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
   }, [marketData, simulation, setSimulation]);
 
   useEffect(() => {
-    setTotalChart(
-      simulation.portfolioSnapshots.map((snapshot) => ({
+    // Create multi-series data
+    setMultiSeriesChart({
+      Sig9Total: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
         value: snapshot.investments.Total,
-      }))
-    );
+      })),
+      Sig9Target: simulation.portfolioSnapshots.map((snapshot) => ({
+        time: snapshot.date,
+        value: snapshot.nextTarget,
+      })),
+      MockTotalQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
+        time: snapshot.date,
+        value: snapshot.investments.MockTotalQQQ,
+      })),
+      MockTotalTQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
+        time: snapshot.date,
+        value: snapshot.investments.MockTotalTQQQ,
+      })),
+    });
   }, [simulation.portfolioSnapshots]);
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="xl">
       <Box sx={{ p: 4 }}>
         <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
           Simulation Board
@@ -169,8 +182,36 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
         {simulation.portfolioSnapshots.length > 0 && (
           <Box sx={{ mt: 4 }}>
             <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
-              Portfolio Performance
+              Portfolio Performance Comparison
             </Typography>
+
+            {/* Legend */}
+            <Box sx={{ display: "flex", gap: 3, mb: 2, flexWrap: "wrap" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 16, height: 3, backgroundColor: "#FBBC04" }}></Box>
+                <Typography variant="body2">Sig9 Total</Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box 
+                  sx={{ 
+                    width: 16, 
+                    height: 3, 
+                    backgroundColor: "#FBBC04",
+                    borderTop: "1px dashed #FBBC04",
+                    borderBottom: "1px dashed #FBBC04"
+                  }}
+                ></Box>
+                <Typography variant="body2">Sig9 Target</Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 16, height: 3, backgroundColor: "#4285F4" }}></Box>
+                <Typography variant="body2">Mock Total QQQ</Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 16, height: 3, backgroundColor: "#EA4335" }}></Box>
+                <Typography variant="body2">Mock Total TQQQ</Typography>
+              </Box>
+            </Box>
 
             {selectedDate && (
               <Alert severity="info" sx={{ mb: 2 }}>
@@ -178,7 +219,52 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               </Alert>
             )}
 
-            <Chart chartData={totalChart} onPointClick={handlePointClick} />
+            <Chart multiSeriesData={multiSeriesChart} onPointClick={handlePointClick} />
+          </Box>
+        )}
+
+        {/* Log Scale Chart Section */}
+        {simulation.portfolioSnapshots.length > 0 && (
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
+              Portfolio Performance Comparison (Log Scale)
+            </Typography>
+
+            {/* Legend */}
+            <Box sx={{ display: "flex", gap: 3, mb: 2, flexWrap: "wrap" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 16, height: 3, backgroundColor: "#FBBC04" }}></Box>
+                <Typography variant="body2">Sig9 Total</Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box 
+                  sx={{ 
+                    width: 16, 
+                    height: 3, 
+                    backgroundColor: "#FBBC04",
+                    borderTop: "1px dashed #FBBC04",
+                    borderBottom: "1px dashed #FBBC04"
+                  }}
+                ></Box>
+                <Typography variant="body2">Sig9 Target</Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 16, height: 3, backgroundColor: "#4285F4" }}></Box>
+                <Typography variant="body2">Mock Total QQQ</Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 16, height: 3, backgroundColor: "#EA4335" }}></Box>
+                <Typography variant="body2">Mock Total TQQQ</Typography>
+              </Box>
+            </Box>
+
+            {selectedDate && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Selected Date: {selectedDate} | Portfolio Value: ${selectedValue?.toLocaleString()}
+              </Alert>
+            )}
+
+            <Chart multiSeriesData={multiSeriesChart} onPointClick={handlePointClick} useLogScale />
           </Box>
         )}
       </Box>
