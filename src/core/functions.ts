@@ -124,7 +124,7 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
   // Double DROP - get the second-to-last snapshot
   const lastRebalanceRate =
     simulation.rebalanceLogs[simulation.rebalanceLogs.length - 1].cumulativeRateSinceLastRebalance;
-  if (lastRebalanceRate < variables.DropRate) {
+  if (lastRebalanceRate < variables.DoubleDropRate) {
     console.log("double drop");
     portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
   }
