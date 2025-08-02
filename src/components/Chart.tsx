@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import * as d3 from "d3";
-import { ChartData, MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core/models";
+import { ChartData, MultiSeriesChartData, RebalanceLog } from "../core/models";
 
 interface ChartProps {
   chartData?: ChartData;
@@ -11,6 +11,8 @@ interface ChartProps {
   onChartReady?: (chartId: string, chart: any, mainSeries: any) => void;
   rebalanceLogs?: RebalanceLog[];
   selectedDate: string | null;
+  onCrosshairMove?: (date: string | null) => void;
+  onCrosshairLeave?: () => void;
 }
 
 const Chart: React.FC<ChartProps> = ({
@@ -22,6 +24,8 @@ const Chart: React.FC<ChartProps> = ({
   onChartReady,
   rebalanceLogs,
   selectedDate,
+  onCrosshairMove,
+  onCrosshairLeave,
 }: ChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -32,7 +36,7 @@ const Chart: React.FC<ChartProps> = ({
 
     const container = chartContainerRef.current;
     const svg = d3.select(svgRef.current);
-    
+
     // Clear previous content
     svg.selectAll("*").remove();
 
@@ -42,8 +46,7 @@ const Chart: React.FC<ChartProps> = ({
     const height = 400 - margin.top - margin.bottom;
 
     // Create main group
-    const g = svg.append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Determine data to use
     let allData: any[] = [];
@@ -61,26 +64,28 @@ const Chart: React.FC<ChartProps> = ({
 
     // Parse dates and values
     const parseTime = d3.timeParse("%Y-%m-%d");
-    allData.forEach(d => {
-      if (typeof d.time === 'string') {
+    allData.forEach((d) => {
+      if (typeof d.time === "string") {
         d.parsedTime = parseTime(d.time);
       }
     });
 
     // Create scales
-    const xScale = d3.scaleTime()
-      .domain(d3.extent(allData, d => d.parsedTime) as [Date, Date])
+    const xScale = d3
+      .scaleTime()
+      .domain(d3.extent(allData, (d) => d.parsedTime) as [Date, Date])
       .range([0, width]);
 
-    const valueExtent = d3.extent(allData, d => d.value) as [number, number];
-    const yScale = useLogScale 
+    const valueExtent = d3.extent(allData, (d) => d.value) as [number, number];
+    const yScale = useLogScale
       ? d3.scaleLog().domain(valueExtent).range([height, 0])
       : d3.scaleLinear().domain(valueExtent).range([height, 0]);
 
     // Create line generator
-    const line = d3.line<any>()
-      .x(d => xScale(d.parsedTime))
-      .y(d => yScale(d.value))
+    const line = d3
+      .line<any>()
+      .x((d) => xScale(d.parsedTime))
+      .y((d) => yScale(d.value))
       .curve(d3.curveLinear);
 
     // Add grid lines
@@ -95,22 +100,17 @@ const Chart: React.FC<ChartProps> = ({
       .attr("stroke", "#e1e1e1")
       .attr("stroke-width", 1);
 
-    g.append("g")
-      .attr("class", "grid")
-      .call(yAxis)
-      .selectAll("line")
-      .attr("stroke", "#e1e1e1")
-      .attr("stroke-width", 1);
+    g.append("g").attr("class", "grid").call(yAxis).selectAll("line").attr("stroke", "#e1e1e1").attr("stroke-width", 1);
 
     // Color mapping
     const colors = {
-      Sig9Target: "#E37400",
+      Sig9Target: "#202124",
       Sig9Total: "#FBBC04",
-      MockTotalQQQ: "#D2E3FC",
-      MockTotalTQQQ: "#FAD2CF",
+      MockTotalQQQ: "#4285F4",
+      MockTotalTQQQ: "#EA4335",
       Ratio: "#FBBC04",
       pullback: "#EA4335",
-      default: "#2962FF"
+      default: "#2962FF",
     };
 
     // Draw lines for each series
@@ -120,12 +120,13 @@ const Chart: React.FC<ChartProps> = ({
       const isDashed = seriesName === "Sig9Target";
 
       // Prepare data with parsed time
-      const processedData = data.map(d => ({
+      const processedData = data.map((d) => ({
         ...d,
-        parsedTime: parseTime(d.time)
+        parsedTime: parseTime(d.time),
       }));
 
-      const path = g.append("path")
+      const path = g
+        .append("path")
         .datum(processedData)
         .attr("class", `line series-${seriesName}`)
         .attr("fill", "none")
@@ -139,47 +140,46 @@ const Chart: React.FC<ChartProps> = ({
       }
     });
 
-    // Add rebalance log series as points
-    if (rebalanceLogs && rebalanceLogs.length > 0) {
-      const rebalanceData = rebalanceLogs.map(log => ({
-        ...log,
-        parsedTime: parseTime(log.date)
-      })).filter(d => d.parsedTime !== null);
+    // // Add rebalance log series as points
+    // if (rebalanceLogs && rebalanceLogs.length > 0) {
+    //   const rebalanceData = rebalanceLogs.map(log => ({
+    //     ...log,
+    //     parsedTime: parseTime(log.date)
+    //   })).filter(d => d.parsedTime !== null);
 
-      const markerColors = {
-        [RebalanceType.Rebalance]: "#E37400",
-        [RebalanceType.Reset]: "#34A853",
-        [RebalanceType.Skip]: "#EA4335"
-      };
+    //   const markerColors = {
+    //     [RebalanceType.Rebalance]: "#E37400",
+    //     [RebalanceType.Reset]: "#34A853",
+    //     [RebalanceType.Skip]: "#EA4335"
+    //   };
 
-      // Add rebalance points
-      g.selectAll(".rebalance-point")
-        .data(rebalanceData)
-        .enter()
-        .append("circle")
-        .attr("class", "rebalance-point")
-        .attr("cx", d => xScale(d.parsedTime!))
-        .attr("cy", d => yScale(d.total))
-        .attr("r", 4)
-        .attr("fill", d => markerColors[d.rebalanceType] || "#E37400")
-        .attr("stroke", "white")
-        .attr("stroke-width", 1)
-        .style("cursor", "pointer")
-        .on("mouseover", function(event, d) {
-          // Add tooltip or highlight effect
-          d3.select(this).attr("r", 6);
-        })
-        .on("mouseout", function(event, d) {
-          d3.select(this).attr("r", 4);
-        });
-    }
+    //   // Add rebalance points
+    //   g.selectAll(".rebalance-point")
+    //     .data(rebalanceData)
+    //     .enter()
+    //     .append("circle")
+    //     .attr("class", "rebalance-point")
+    //     .attr("cx", d => xScale(d.parsedTime!))
+    //     .attr("cy", d => yScale(d.total))
+    //     .attr("r", 4)
+    //     .attr("fill", d => markerColors[d.rebalanceType] || "#E37400")
+    //     .attr("stroke", "white")
+    //     .attr("stroke-width", 1)
+    //     .style("cursor", "pointer")
+    //     .on("mouseover", function(event, d) {
+    //       // Add tooltip or highlight effect
+    //       d3.select(this).attr("r", 6);
+    //     })
+    //     .on("mouseout", function(event, d) {
+    //       d3.select(this).attr("r", 4);
+    //     });
+    // }
 
     // Add crosshair
-    const crosshair = g.append("g")
-      .attr("class", "crosshair")
-      .style("display", "none");
+    const crosshair = g.append("g").attr("class", "crosshair").style("display", "none");
 
-    const crosshairLine = crosshair.append("line")
+    const crosshairLine = crosshair
+      .append("line")
       .attr("y1", 0)
       .attr("y2", height)
       .attr("stroke", "#666")
@@ -187,7 +187,8 @@ const Chart: React.FC<ChartProps> = ({
       .attr("stroke-dasharray", "3,3");
 
     // Add invisible overlay for mouse events
-    const overlay = g.append("rect")
+    const overlay = g
+      .append("rect")
       .attr("class", "overlay")
       .attr("width", width)
       .attr("height", height)
@@ -199,42 +200,63 @@ const Chart: React.FC<ChartProps> = ({
       .on("mousemove", (event) => {
         const [mouseX] = d3.pointer(event);
         const date = xScale.invert(mouseX);
-        
-        crosshair.style("display", null);
-        crosshairLine.attr("x1", mouseX).attr("x2", mouseX);
 
-        // Find closest data point
-        if (mainSeries && onPointClick) {
-          const bisect = d3.bisector((d: any) => d.parsedTime).left;
-          const i = bisect(mainSeries.data, date, 1);
-          const d0 = mainSeries.data[i - 1];
-          const d1 = mainSeries.data[i];
-          
-          if (d0 && d1) {
-            const closestPoint = date.getTime() - d0.parsedTime.getTime() > 
-              d1.parsedTime.getTime() - date.getTime() ? d1 : d0;
-            // Update crosshair position to snap to closest point
-            const snapX = xScale(closestPoint.parsedTime);
+        crosshair.style("display", null);
+
+        // Snap to closest rebalance date if rebalanceLogs exist
+        if (rebalanceLogs && rebalanceLogs.length > 0) {
+          const rebalanceDates = rebalanceLogs.map((log) => parseTime(log.date)).filter((d) => d !== null) as Date[];
+
+          if (rebalanceDates.length > 0) {
+            // Find closest rebalance date
+            const closestRebalanceDate = rebalanceDates.reduce((closest, current) => {
+              return Math.abs(current.getTime() - date.getTime()) < Math.abs(closest.getTime() - date.getTime())
+                ? current
+                : closest;
+            });
+
+            // Snap crosshair to closest rebalance date
+            const snapX = xScale(closestRebalanceDate);
             crosshairLine.attr("x1", snapX).attr("x2", snapX);
+            
+            // Notify parent for synchronization
+            if (onCrosshairMove) {
+              onCrosshairMove(d3.timeFormat("%Y-%m-%d")(closestRebalanceDate));
+            }
+          } else {
+            // Fallback to mouse position if no rebalance dates
+            crosshairLine.attr("x1", mouseX).attr("x2", mouseX);
+            if (onCrosshairMove) {
+              onCrosshairMove(d3.timeFormat("%Y-%m-%d")(date));
+            }
+          }
+        } else {
+          // Fallback to mouse position if no rebalance logs
+          crosshairLine.attr("x1", mouseX).attr("x2", mouseX);
+          if (onCrosshairMove) {
+            onCrosshairMove(d3.timeFormat("%Y-%m-%d")(date));
           }
         }
       })
       .on("mouseout", () => {
         crosshair.style("display", "none");
+        if (onCrosshairLeave) {
+          onCrosshairLeave();
+        }
       })
       .on("click", (event) => {
         if (onPointClick && mainSeries) {
           const [mouseX] = d3.pointer(event);
           const date = xScale.invert(mouseX);
-          
+
           const bisect = d3.bisector((d: any) => d.parsedTime).left;
           const i = bisect(mainSeries.data, date, 1);
           const d0 = mainSeries.data[i - 1];
           const d1 = mainSeries.data[i];
-          
+
           if (d0 && d1) {
-            const closestPoint = date.getTime() - d0.parsedTime.getTime() > 
-              d1.parsedTime.getTime() - date.getTime() ? d1 : d0;
+            const closestPoint =
+              date.getTime() - d0.parsedTime.getTime() > d1.parsedTime.getTime() - date.getTime() ? d1 : d0;
             onPointClick(closestPoint.time, closestPoint.value);
           }
         }
@@ -244,13 +266,13 @@ const Chart: React.FC<ChartProps> = ({
     g.append("g")
       .attr("class", "x-axis")
       .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(xScale).tickFormat((domainValue) => {
-        return d3.timeFormat("%Y-%m-%d")(domainValue as Date);
-      }));
+      .call(
+        d3.axisBottom(xScale).tickFormat((domainValue) => {
+          return d3.timeFormat("%Y-%m-%d")(domainValue as Date);
+        })
+      );
 
-    g.append("g")
-      .attr("class", "y-axis")
-      .call(d3.axisLeft(yScale));
+    g.append("g").attr("class", "y-axis").call(d3.axisLeft(yScale));
 
     // Create chart-like object for compatibility
     const chartLikeObject = {
@@ -274,18 +296,18 @@ const Chart: React.FC<ChartProps> = ({
         },
         unsubscribeVisibleLogicalRangeChange: () => {
           // Mock implementation for compatibility
-        }
+        },
       }),
       subscribeCrosshairMove: (callback: any) => {
         // Mock implementation for compatibility
       },
       unsubscribeCrosshairMove: () => {
         // Mock implementation for compatibility
-      }
+      },
     };
 
     return { chart: chartLikeObject, mainSeries };
-  }, [useLogScale, onPointClick, chartData, multiSeriesData, rebalanceLogs]);
+  }, [useLogScale, onPointClick, chartData, multiSeriesData, rebalanceLogs, onCrosshairMove, onCrosshairLeave]);
 
   // Effect to handle selectedDate changes
   useEffect(() => {
@@ -333,12 +355,7 @@ const Chart: React.FC<ChartProps> = ({
         backgroundColor: "white",
       }}
     >
-      <svg
-        ref={svgRef}
-        width="100%"
-        height="100%"
-        style={{ display: "block" }}
-      />
+      <svg ref={svgRef} width="100%" height="100%" style={{ display: "block" }} />
     </div>
   );
 };

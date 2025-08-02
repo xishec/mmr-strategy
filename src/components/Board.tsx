@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Button, Container, Box, Typography, TextField, Alert } from "@mui/material";
 import { startSimulation } from "../core/functions";
 import { MarketData, Simulation, MultiSeriesChartData } from "../core/models";
@@ -21,8 +21,15 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
   const [doubleDropRate, setDoubleDropRate] = useState<number>(simulation.variables.DoubleDropRate);
 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
-  const [metadataChart, setMetadataChart] = useState<MultiSeriesChartData>({});
+  const [ratioChart, setRatioChart] = useState<MultiSeriesChartData>({});
+  const [pullbackChart, setPullbackChart] = useState<MultiSeriesChartData>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [crosshairDate, setCrosshairDate] = useState<string | null>(null);
+
+  // Chart synchronization state
+  const chartInstancesRef = useRef<{
+    [key: string]: { chart: any; mainSeries: any };
+  }>({});
 
   const handleStopSimulation = () => {
     setSimulation({
@@ -51,21 +58,34 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
     setSimulation(updatedSimulation);
   };
 
-  const findClosestRebalanceDate = (date: string) => {
-    const rebalanceDates = simulation.rebalanceLogs.map((rebalanceLog) => rebalanceLog.date);
-    const closestDate = rebalanceDates.reduce((prev, curr) => {
-      return Math.abs(new Date(curr).getTime() - new Date(date).getTime()) <
-        Math.abs(new Date(prev).getTime() - new Date(date).getTime())
-        ? curr
-        : prev;
-    });
-    return closestDate;
-  };
-
   const handlePointClick = useCallback((date: string, value: number) => {
-    const closestRebalanceDate = findClosestRebalanceDate(date);
-    setSelectedDate(closestRebalanceDate);
-  }, [findClosestRebalanceDate]);
+    setSelectedDate(date);
+  }, []);
+
+  // Chart synchronization functions
+  const handleChartReady = useCallback((chartId: string, chart: any, mainSeries: any) => {
+    chartInstancesRef.current[chartId] = { chart, mainSeries };
+  }, []);
+
+  const syncCrosshairToAll = useCallback((date: string | null) => {
+    Object.values(chartInstancesRef.current).forEach(({ chart }) => {
+      if (date) {
+        chart.setCrosshairPosition(0, date);
+      } else {
+        chart.clearCrosshairPosition();
+      }
+    });
+  }, []);
+
+  const handleCrosshairMove = useCallback((date: string | null) => {
+    setCrosshairDate(date);
+    syncCrosshairToAll(date);
+  }, [syncCrosshairToAll]);
+
+  const handleCrosshairLeave = useCallback(() => {
+    setCrosshairDate(null);
+    syncCrosshairToAll(null);
+  }, [syncCrosshairToAll]);
 
   useEffect(() => {
     if (simulation.portfolioSnapshots.length === 0) {
@@ -92,11 +112,13 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
         value: snapshot.investments.MockTotalTQQQ,
       })),
     });
-    setMetadataChart({
+    setRatioChart({
       Ratio: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
         value: snapshot.investments.Ratio,
       })),
+    });
+    setPullbackChart({
       pullback: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
         value: snapshot.pullback,
@@ -255,12 +277,21 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               </Alert>
             )}
 
+            {crosshairDate && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                Crosshair Date: {crosshairDate}
+              </Alert>
+            )}
+
             <Chart
               multiSeriesData={priceChart}
               onPointClick={handlePointClick}
               syncId="chart1"
+              onChartReady={handleChartReady}
               rebalanceLogs={simulation.rebalanceLogs}
               selectedDate={selectedDate}
+              onCrosshairMove={handleCrosshairMove}
+              onCrosshairLeave={handleCrosshairLeave}
             />
           </Box>
         )}
@@ -323,17 +354,20 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               onPointClick={handlePointClick}
               useLogScale
               syncId="chart2"
+              onChartReady={handleChartReady}
               rebalanceLogs={simulation.rebalanceLogs}
               selectedDate={selectedDate}
+              onCrosshairMove={handleCrosshairMove}
+              onCrosshairLeave={handleCrosshairLeave}
             />
           </Box>
         )}
 
-        {/* Metadata Chart Section */}
+        {/* Ratio Chart Section */}
         {simulation.portfolioSnapshots.length > 0 && (
           <Box sx={{ mt: 4 }}>
             <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
-              Portfolio Metadata
+              TQQQ Ratio
             </Typography>
 
             {/* Legend */}
@@ -342,17 +376,45 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
                 <Box sx={{ width: 16, height: 3, backgroundColor: "#2962FF" }}></Box>
                 <Typography variant="body2">TQQQ Ratio</Typography>
               </Box>
+            </Box>
+
+            <Chart
+              multiSeriesData={ratioChart}
+              onPointClick={handlePointClick}
+              syncId="chart3"
+              onChartReady={handleChartReady}
+              rebalanceLogs={simulation.rebalanceLogs}
+              selectedDate={selectedDate}
+              onCrosshairMove={handleCrosshairMove}
+              onCrosshairLeave={handleCrosshairLeave}
+            />
+          </Box>
+        )}
+
+        {/* Pullback Chart Section */}
+        {simulation.portfolioSnapshots.length > 0 && (
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
+              Portfolio Pullback
+            </Typography>
+
+            {/* Legend */}
+            <Box sx={{ display: "flex", gap: 3, mb: 2, flexWrap: "wrap" }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ width: 16, height: 3, backgroundColor: "#FF6D00" }}></Box>
+                <Box sx={{ width: 16, height: 3, backgroundColor: "#EA4335" }}></Box>
                 <Typography variant="body2">Pullback</Typography>
               </Box>
             </Box>
 
             <Chart
-              multiSeriesData={metadataChart}
+              multiSeriesData={pullbackChart}
               onPointClick={handlePointClick}
-              syncId="chart3"
+              syncId="chart4"
+              onChartReady={handleChartReady}
+              rebalanceLogs={simulation.rebalanceLogs}
               selectedDate={selectedDate}
+              onCrosshairMove={handleCrosshairMove}
+              onCrosshairLeave={handleCrosshairLeave}
             />
           </Box>
         )}
