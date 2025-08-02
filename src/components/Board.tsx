@@ -49,10 +49,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     [key: string]: { chart: any; mainSeries: any };
   }>({});
 
-  const handleStopSimulation = () => {
-    setSimulation(null);
-  };
-
   useEffect(() => {
     console.log(selectedDate);
   }, [selectedDate]);
@@ -201,12 +197,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   return (
     <Box width="100%" height="100vh" display="grid" gridTemplateColumns="1fr 4fr" gap={2} sx={{ p: 4 }}>
       <Box>
-        {simulation && (
-          <Button variant="outlined" color="secondary" onClick={handleStopSimulation} sx={{ mb: 4 }}>
-            Stop Simulation
-          </Button>
-        )}
-
         <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
           Simulation Setup
         </Typography>

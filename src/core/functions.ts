@@ -215,7 +215,8 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
 };
 
 const addDaysToDate = (date: string, days: number): string => {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
+  const [year, month, day] = date.split("-").map(Number);
+  const utcDate = new Date(Date.UTC(year, month - 1, day));
+  utcDate.setUTCDate(utcDate.getUTCDate() + days);
+  return utcDate.toISOString().split("T")[0];
 };
