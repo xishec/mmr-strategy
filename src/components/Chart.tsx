@@ -6,7 +6,6 @@ interface ChartProps {
   chartData?: ChartData;
   multiSeriesData?: MultiSeriesChartData;
   onPointClick?: (date: string, value: number) => void;
-  useLogScale?: boolean;
   syncId?: string;
   onChartReady?: (chartId: string, chart: any, mainSeries: any) => void;
   rebalanceLogs?: RebalanceLog[];
@@ -14,13 +13,13 @@ interface ChartProps {
   onCrosshairMove?: (date: string | null) => void;
   onCrosshairLeave?: () => void;
   chartType?: "price" | "ratio" | "pullback";
+  isLogScale?: boolean;
 }
 
 const Chart: React.FC<ChartProps> = ({
   chartData,
   multiSeriesData,
   onPointClick,
-  useLogScale = false,
   syncId,
   onChartReady,
   rebalanceLogs,
@@ -28,6 +27,7 @@ const Chart: React.FC<ChartProps> = ({
   onCrosshairMove,
   onCrosshairLeave,
   chartType = "price",
+  isLogScale = false,
 }: ChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -123,7 +123,7 @@ const Chart: React.FC<ChartProps> = ({
       yDomain = [-1, 0]; // Fixed domain for pullback chart
     }
 
-    const yScale = useLogScale
+    const yScale = isLogScale
       ? d3.scaleLog().domain(valueExtent).range([height, 0])
       : d3.scaleLinear().domain(yDomain).range([height, 0]);
 
@@ -154,7 +154,7 @@ const Chart: React.FC<ChartProps> = ({
     const xAxis = d3.axisBottom(xScale).tickSize(-height);
 
     // Configure y-axis grid with same tick settings as the actual axis
-    const yAxis = useLogScale
+    const yAxis = isLogScale
       ? d3.axisLeft(yScale).tickSize(-width).ticks(5, "~g")
       : d3.axisLeft(yScale).tickSize(-width);
 
@@ -317,7 +317,7 @@ const Chart: React.FC<ChartProps> = ({
           if (data) {
             const dataPoint = data.find((dp: any) => dp.time === selectedDate);
             if (dataPoint) {
-              const formattedValue = formatValue(dataPoint.value, chartType, useLogScale);
+              const formattedValue = formatValue(dataPoint.value, chartType, isLogScale);
 
               // Add value text to the legend item
               item
@@ -434,7 +434,7 @@ const Chart: React.FC<ChartProps> = ({
       );
 
     // Configure y-axis with custom formatting for log scale
-    const yAxisConfig = useLogScale
+    const yAxisConfig = isLogScale
       ? d3.axisLeft(yScale).ticks(5, "~g") // Use D3's log scale tick generation with clean formatting
       : d3.axisLeft(yScale);
 
@@ -565,7 +565,7 @@ const Chart: React.FC<ChartProps> = ({
 
     return { chart: chartLikeObject, mainSeries };
   }, [
-    useLogScale,
+    isLogScale,
     onPointClick,
     chartData,
     multiSeriesData,
@@ -611,7 +611,7 @@ const Chart: React.FC<ChartProps> = ({
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [chartData, multiSeriesData, useLogScale, syncId, onChartReady, rebalanceLogs, createD3Chart, chartType]);
+  }, [chartData, multiSeriesData, isLogScale, syncId, onChartReady, rebalanceLogs, createD3Chart, chartType]);
 
   return (
     <div

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { Button, Container, Box, Typography, TextField } from "@mui/material";
+import { Button, Box, Typography, TextField, FormControlLabel, Switch } from "@mui/material";
 import { startSimulation } from "../core/functions";
 import { MarketData, Simulation, MultiSeriesChartData } from "../core/models";
 import Chart from "./Chart";
@@ -19,6 +19,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
   const [spikeRate, setSpikeRate] = useState<number>(simulation.variables.SpikeRate);
   const [dropRate, setDropRate] = useState<number>(simulation.variables.DropRate);
   const [doubleDropRate, setDoubleDropRate] = useState<number>(simulation.variables.DoubleDropRate);
+  const [isLogScale, setIsLogScale] = useState<boolean>(false);
 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
   const [ratioChart, setRatioChart] = useState<MultiSeriesChartData>({});
@@ -127,12 +128,8 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
   }, [simulation.portfolioSnapshots]);
 
   return (
-    <Container maxWidth="xl">
+    <Box width="100%" height="100%" display="grid" gridTemplateColumns="1fr 4fr">
       <Box sx={{ p: 4 }}>
-        <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
-          Simulation Board
-        </Typography>
-
         <Button variant="outlined" color="secondary" onClick={handleStopSimulation} sx={{ mb: 4 }}>
           Stop Simulation
         </Button>
@@ -224,6 +221,14 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
           Update Variables & Restart Simulation
         </Button>
 
+        <FormControlLabel
+          control={<Switch checked={isLogScale} onChange={(e) => setIsLogScale(e.target.checked)} color="primary" />}
+          label="Log Scale"
+          sx={{ mt: 2 }}
+        />
+      </Box>
+
+      <Box>
         {/* Chart Section */}
         {simulation.portfolioSnapshots.length > 0 && (
           <Box sx={{ mt: 4 }}>
@@ -241,28 +246,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               onCrosshairMove={handleCrosshairMove}
               onCrosshairLeave={handleCrosshairLeave}
               chartType="price"
-            />
-          </Box>
-        )}
-
-        {/* Log Scale Chart Section */}
-        {simulation.portfolioSnapshots.length > 0 && (
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
-              Portfolio Performance Comparison (Log Scale)
-            </Typography>
-
-            <Chart
-              multiSeriesData={priceChart}
-              onPointClick={handlePointClick}
-              useLogScale
-              syncId="chart2"
-              onChartReady={handleChartReady}
-              rebalanceLogs={simulation.rebalanceLogs}
-              selectedDate={selectedDate}
-              onCrosshairMove={handleCrosshairMove}
-              onCrosshairLeave={handleCrosshairLeave}
-              chartType="price"
+              isLogScale={isLogScale}
             />
           </Box>
         )}
@@ -309,7 +293,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
           </Box>
         )}
       </Box>
-    </Container>
+    </Box>
   );
 };
 
