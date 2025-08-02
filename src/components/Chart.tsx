@@ -52,6 +52,15 @@ function Chart({
         timeVisible: true,
         secondsVisible: false,
       },
+      crosshair: {
+        mode: 2, // 0 = normal, 1 = magnet, 2 = hidden
+        // vertLine: {
+        //   visible: false, // Hide vertical line
+        // },
+        // horzLine: {
+        //   visible: false, // Hide horizontal line
+        // },
+      },
       localization: {
         timeFormatter: (date: string) => date,
       },

@@ -30,6 +30,7 @@ export interface PortfolioSnapshot {
 
 export interface RebalanceLog {
   date: string;
+  total: number;
   cumulativeRateSinceLastRebalance: number;
   rebalanceType: RebalanceType;
 }
