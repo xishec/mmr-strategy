@@ -301,9 +301,7 @@ const Chart: React.FC<ChartProps> = ({
           .attr("cx", (d) => xScale(d.parsedTime))
           .attr("cy", (d) => yScale(d.value))
           .attr("r", 3)
-          .attr("fill", seriesColor)
-          .attr("stroke", "white")
-          .attr("stroke-width", 1);
+          .attr("fill", seriesColor);
 
         if (!mainSeries || index === 0) {
           mainSeries = { data: processedData, element: pointsGroup };
