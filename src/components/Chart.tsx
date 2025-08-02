@@ -474,6 +474,12 @@ const Chart: React.FC<ChartProps> = ({
           onCrosshairLeave();
         }
       })
+      .on("mouseleave", () => {
+        crosshair.style("display", "none");
+        if (onCrosshairLeave) {
+          onCrosshairLeave();
+        }
+      })
       .on("click", (event) => {
         if (onPointClick && mainSeries) {
           const [mouseX] = d3.pointer(event);
@@ -671,6 +677,11 @@ const Chart: React.FC<ChartProps> = ({
       onChartReady(syncId, chartInstance.chart, chartInstance.mainSeries);
     }
 
+    // Sync crosshair position if selectedDate exists
+    if (selectedDate && chartInstance) {
+      chartInstance.chart.setCrosshairPosition(0, selectedDate);
+    }
+
     // Handle resize
     const handleResize = () => {
       createD3Chart();
@@ -681,7 +692,17 @@ const Chart: React.FC<ChartProps> = ({
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [chartData, multiSeriesData, isLogScale, syncId, onChartReady, rebalanceLogs, createD3Chart, chartType]);
+  }, [
+    chartData,
+    multiSeriesData,
+    isLogScale,
+    syncId,
+    onChartReady,
+    rebalanceLogs,
+    createD3Chart,
+    chartType,
+    selectedDate,
+  ]);
 
   return (
     <div
@@ -690,6 +711,15 @@ const Chart: React.FC<ChartProps> = ({
         width: "100%",
         height: height,
         backgroundColor: "white",
+      }}
+      onMouseLeave={() => {
+        if (onCrosshairLeave) {
+          onCrosshairLeave();
+        }
+        // Also hide crosshair on this chart instance
+        if (chartInstanceRef.current) {
+          chartInstanceRef.current.chart.clearCrosshairPosition();
+        }
       }}
     >
       <svg ref={svgRef} width="100%" height="100%" style={{ display: "block" }} />

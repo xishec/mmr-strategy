@@ -59,6 +59,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const chartInstancesRef = useRef<{
     [key: string]: { chart: any; mainSeries: any };
   }>({});
+  const crosshairTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleUpdateVariables = () => {
     if (!simulation) return;
@@ -113,10 +114,24 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     setSelectedDate(lastRebalanceLog[lastRebalanceLog.length - 1]?.date || null);
   }, [simulation]);
 
+  const clearAllCrosshairs = useCallback(() => {
+    Object.values(chartInstancesRef.current).forEach(({ chart }) => {
+      chart.clearCrosshairPosition();
+    });
+  }, []);
+
   const handleCrosshairLeave = useCallback(() => {
-    syncCrosshairToAll(null);
-    setSelectedDateToLastRebalance();
-  }, [syncCrosshairToAll, setSelectedDateToLastRebalance]);
+    // Clear any existing timeout
+    if (crosshairTimeoutRef.current) {
+      clearTimeout(crosshairTimeoutRef.current);
+    }
+    
+    // Add a small delay to ensure the crosshair is properly cleared
+    crosshairTimeoutRef.current = setTimeout(() => {
+      clearAllCrosshairs();
+      setSelectedDateToLastRebalance();
+    }, 50);
+  }, [clearAllCrosshairs, setSelectedDateToLastRebalance]);
 
   // Track when simulation needs to be run
   const lastSimulationParams = useRef<string>("");
@@ -180,7 +195,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         })),
       });
     }
-  }, [simulation]);
+  }, [simulation, setSelectedDateToLastRebalance]);
 
   // If no simulation exists, start one with default values
   useEffect(() => {
@@ -216,6 +231,15 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     doubleDropRate,
     setSimulation,
   ]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (crosshairTimeoutRef.current) {
+        clearTimeout(crosshairTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <Box width="100%" height="100vh" display="grid" gridTemplateColumns="1fr 4fr" gap={2} sx={{ p: 4 }}>
@@ -336,7 +360,9 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         />
       </Box>
 
-      <Box sx={{ height: "95vh", display: "grid", gridTemplateRows: "1fr 4fr 2fr", gap: 0 }}>
+      <Box sx={{ height: "95vh", display: "grid", gridTemplateRows: "1fr 4fr 2fr", gap: 0 }}
+        onMouseLeave={handleCrosshairLeave}
+      >
         <Box sx={{ p: 2, border: "1px solid #e0e0e0", borderRadius: 1 }}>
           <Typography variant="h6" component="h3" sx={{ mb: 2 }}>
             Rebalance Log Details
