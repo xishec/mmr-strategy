@@ -27,7 +27,7 @@ const Lobby: React.FC<LobbyProps> = ({ setSimulation }) => {
         TargetRatio: 0.6,
         SpikeRate: 0.18,
         DropRate: -0.09,
-        DoubleDropRate: -0.18,
+        DoubleDropRate: -0.09,
       },
     };
     setSimulation(newSimulation);

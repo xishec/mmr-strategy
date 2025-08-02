@@ -12,8 +12,9 @@ interface ChartProps {
   selectedDate: string | null;
   onCrosshairMove?: (date: string | null) => void;
   onCrosshairLeave?: () => void;
-  chartType?: "price" | "ratio" | "pullback";
+  chartType?: "price" | "ratio" | "pullback" | "ratio-pullback";
   isLogScale?: boolean;
+  height?: string | number;
 }
 
 const Chart: React.FC<ChartProps> = ({
@@ -28,6 +29,7 @@ const Chart: React.FC<ChartProps> = ({
   onCrosshairLeave,
   chartType = "price",
   isLogScale = false,
+  height = "400px",
 }: ChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -63,6 +65,13 @@ const Chart: React.FC<ChartProps> = ({
       if (seriesData.pullback) {
         legendItems.push({ label: "Portfolio Pullback", color: "#EA4335", type: "line" });
       }
+    } else if (chartType === "ratio-pullback") {
+      if (seriesData.Ratio) {
+        legendItems.push({ label: "TQQQ Ratio", color: "#4285F4", type: "line" });
+      }
+      if (seriesData.pullback) {
+        legendItems.push({ label: "Portfolio Pullback", color: "#EA4335", type: "line" });
+      }
     }
     return legendItems;
   }, []);
@@ -79,7 +88,8 @@ const Chart: React.FC<ChartProps> = ({
     // Set up dimensions
     const margin = { top: 60, right: 40, bottom: 40, left: 60 }; // Increased top margin for legend
     const width = container.clientWidth - margin.left - margin.right;
-    const height = 400 - margin.top - margin.bottom;
+    const containerHeight: number = container.clientHeight;
+    const chartHeight = containerHeight - margin.top - margin.bottom;
 
     // Create main group
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
@@ -122,10 +132,13 @@ const Chart: React.FC<ChartProps> = ({
     if (chartType === "pullback") {
       yDomain = [-1, 0]; // Fixed domain for pullback chart
     }
+    if (chartType === "ratio-pullback") {
+      yDomain = [-1, 1]; // Combined domain from -1 to 1 with 0 in center
+    }
 
     const yScale = isLogScale
-      ? d3.scaleLog().domain(valueExtent).range([height, 0])
-      : d3.scaleLinear().domain(yDomain).range([height, 0]);
+      ? d3.scaleLog().domain(valueExtent).range([chartHeight, 0])
+      : d3.scaleLinear().domain(yDomain).range([chartHeight, 0]);
 
     // Create line generator
     const line = d3
@@ -138,7 +151,7 @@ const Chart: React.FC<ChartProps> = ({
     const area = d3
       .area<any>()
       .x((d) => xScale(d.parsedTime))
-      .y0(height)
+      .y0(chartHeight)
       .y1((d) => yScale(d.value))
       .curve(d3.curveLinear);
 
@@ -150,8 +163,23 @@ const Chart: React.FC<ChartProps> = ({
       .y1((d) => yScale(d.value))
       .curve(d3.curveLinear);
 
+    // Create area generators for combined chart
+    const combinedRatioArea = d3
+      .area<any>()
+      .x((d) => xScale(d.parsedTime))
+      .y0(yScale(0)) // Start from center (y=0)
+      .y1((d) => yScale(d.value))
+      .curve(d3.curveLinear);
+
+    const combinedPullbackArea = d3
+      .area<any>()
+      .x((d) => xScale(d.parsedTime))
+      .y0(yScale(0)) // Start from center (y=0)
+      .y1((d) => yScale(d.value))
+      .curve(d3.curveLinear);
+
     // Add grid lines
-    const xAxis = d3.axisBottom(xScale).tickSize(-height);
+    const xAxis = d3.axisBottom(xScale).tickSize(-chartHeight);
 
     // Configure y-axis grid with same tick settings as the actual axis
     const yAxis = isLogScale
@@ -160,7 +188,7 @@ const Chart: React.FC<ChartProps> = ({
 
     g.append("g")
       .attr("class", "grid")
-      .attr("transform", `translate(0,${height})`)
+      .attr("transform", `translate(0,${chartHeight})`)
       .call(xAxis)
       .selectAll("line")
       .attr("stroke", "#e1e1e1")
@@ -174,13 +202,26 @@ const Chart: React.FC<ChartProps> = ({
     // Remove grid text labels for y-axis too
     g.selectAll(".grid text").remove();
 
+    // Add center line at y=0 for combined chart
+    if (chartType === "ratio-pullback") {
+      g.append("line")
+        .attr("class", "center-line")
+        .attr("x1", 0)
+        .attr("x2", width)
+        .attr("y1", yScale(0))
+        .attr("y2", yScale(0))
+        .attr("stroke", "#666")
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", "5,5");
+    }
+
     // Color mapping
     const colors = {
       Sig9Target: "#202124",
       Sig9Total: "#FBBC04",
       MockTotalQQQ: "#4285F4",
       MockTotalTQQQ: "#EA4335",
-      Ratio: "#FBBC04",
+      Ratio: chartType === "ratio-pullback" ? "#4285F4" : "#FBBC04",
       pullback: "#EA4335",
       default: "#2962FF",
     };
@@ -192,6 +233,7 @@ const Chart: React.FC<ChartProps> = ({
       const isDashed = seriesName === "Sig9Target";
       const isRatioChart = chartType === "ratio";
       const isPullbackChart = chartType === "pullback";
+      const isCombinedChart = chartType === "ratio-pullback";
 
       // Prepare data with parsed time
       const processedData = data.map((d) => ({
@@ -243,6 +285,30 @@ const Chart: React.FC<ChartProps> = ({
         if (!mainSeries || index === 0) {
           mainSeries = { data: processedData, element: linePath };
         }
+      } else if (isCombinedChart && (seriesName === "Ratio" || seriesName === "pullback")) {
+        // Draw area for combined chart (centered at y=0)
+        const areaGenerator = seriesName === "Ratio" ? combinedRatioArea : combinedPullbackArea;
+        
+        g.append("path")
+          .datum(processedData)
+          .attr("class", `area series-${seriesName}`)
+          .attr("fill", seriesColor)
+          .attr("fill-opacity", 0.3)
+          .attr("d", areaGenerator);
+
+        // Draw line on top of area
+        const linePath = g
+          .append("path")
+          .datum(processedData)
+          .attr("class", `line series-${seriesName}`)
+          .attr("fill", "none")
+          .attr("stroke", seriesColor)
+          .attr("stroke-width", 2)
+          .attr("d", line);
+
+        if (!mainSeries || index === 0) {
+          mainSeries = { data: processedData, element: linePath };
+        }
       } else {
         // Draw regular line
         const path = g
@@ -267,7 +333,7 @@ const Chart: React.FC<ChartProps> = ({
     const crosshairLine = crosshair
       .append("line")
       .attr("y1", 0)
-      .attr("y2", height)
+      .attr("y2", chartHeight)
       .attr("stroke", "#666")
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", "3,3");
@@ -279,6 +345,8 @@ const Chart: React.FC<ChartProps> = ({
       if (chartType === "ratio") {
         return (value * 100).toFixed(2) + "%";
       } else if (chartType === "pullback") {
+        return (value * 100).toFixed(2) + "%";
+      } else if (chartType === "ratio-pullback") {
         return (value * 100).toFixed(2) + "%";
       }
 
@@ -306,6 +374,9 @@ const Chart: React.FC<ChartProps> = ({
           if (label === "TQQQ Ratio") seriesKey = "Ratio";
         } else if (chartType === "pullback") {
           if (label === "Portfolio Pullback") seriesKey = "pullback";
+        } else if (chartType === "ratio-pullback") {
+          if (label === "TQQQ Ratio") seriesKey = "Ratio";
+          else if (label === "Portfolio Pullback") seriesKey = "pullback";
         }
 
         // Remove existing value text
@@ -352,7 +423,7 @@ const Chart: React.FC<ChartProps> = ({
       .append("rect")
       .attr("class", "overlay")
       .attr("width", width)
-      .attr("height", height)
+      .attr("height", chartHeight)
       .attr("fill", "none")
       .attr("pointer-events", "all");
 
@@ -426,7 +497,7 @@ const Chart: React.FC<ChartProps> = ({
     // Add axes
     g.append("g")
       .attr("class", "x-axis")
-      .attr("transform", `translate(0,${height})`)
+      .attr("transform", `translate(0,${chartHeight})`)
       .call(
         d3.axisBottom(xScale).tickFormat((domainValue) => {
           return d3.timeFormat("%Y-%m-%d")(domainValue as Date);
@@ -532,7 +603,7 @@ const Chart: React.FC<ChartProps> = ({
     const chartLikeObject = {
       svg: svgRef.current,
       scales: { x: xScale, y: yScale },
-      dimensions: { width, height, margin },
+      dimensions: { width, height: chartHeight, margin },
       setCrosshairPosition: (value: number, time: string) => {
         const date = parseTime(time);
         if (date) {
@@ -618,7 +689,7 @@ const Chart: React.FC<ChartProps> = ({
       ref={chartContainerRef}
       style={{
         width: "100%",
-        height: "400px",
+        height: height,
         backgroundColor: "white",
       }}
     >

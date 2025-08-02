@@ -30,16 +30,6 @@ const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) =
   const firstValidDate = Object.keys(marketData.TQQQ).find((date) => date >= simulation.startingDate)!;
   simulation.startingDate = firstValidDate;
 
-  simulation.variables = {
-    rebalanceDays: 90,
-    targetRate: 0.09,
-    CashDayRate: 0,
-    TargetRatio: 0.6,
-    SpikeRate: 0.18,
-    DropRate: -0.09,
-    DoubleDropRate: -0.18,
-  };
-
   const portfolioSnapshot: PortfolioSnapshot = {
     date: firstValidDate,
     investments: investments,

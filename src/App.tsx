@@ -10,31 +10,31 @@ const theme = createTheme();
 
 function App() {
   const [simulation, setSimulation] = useState<Simulation | null>(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const simulationParam = urlParams.get("simulation");
+    // const urlParams = new URLSearchParams(window.location.search);
+    // const simulationParam = urlParams.get("simulation");
 
-    if (simulationParam) {
-      try {
-        // Decode from base64 first, then parse JSON
-        const decodedString = atob(simulationParam);
-        const parsedData = JSON.parse(decodedString);
+    // if (simulationParam) {
+    //   try {
+    //     // Decode from base64 first, then parse JSON
+    //     const decodedString = atob(simulationParam);
+    //     const parsedData = JSON.parse(decodedString);
 
-        // Create a proper Simulation object
-        const simulation: Simulation = {
-          started: parsedData.started,
-          startingDate: parsedData.startingDate,
-          initialMoney: parsedData.initialMoney,
-          portfolioSnapshots: [],
-          rebalanceLogs: [],
-          variables: parsedData.variables,
-        };
-        // console.log("Decoded simulation", simulation);
-        return simulation;
-      } catch (error) {
-        console.error("Failed to parse simulation from URL:", error);
-        return null;
-      }
-    }
+    //     // Create a proper Simulation object
+    //     const simulation: Simulation = {
+    //       started: parsedData.started,
+    //       startingDate: parsedData.startingDate,
+    //       initialMoney: parsedData.initialMoney,
+    //       portfolioSnapshots: [],
+    //       rebalanceLogs: [],
+    //       variables: parsedData.variables,
+    //     };
+    //     // console.log("Decoded simulation", simulation);
+    //     return simulation;
+    //   } catch (error) {
+    //     console.error("Failed to parse simulation from URL:", error);
+    //     return null;
+    //   }
+    // }
 
     return null;
   });
@@ -56,14 +56,14 @@ function App() {
   }, [marketData]);
 
   useEffect(() => {
-    if (!simulation) return;
+    // if (!simulation) return;
 
-    const url = new URL(window.location.href);
-    simulation.portfolioSnapshots = [];
-    simulation.rebalanceLogs = [];
-    const encodedSimulation = btoa(JSON.stringify(simulation));
-    url.searchParams.set("simulation", encodedSimulation);
-    window.history.replaceState({}, "", url.toString());
+    // const url = new URL(window.location.href);
+    // simulation.portfolioSnapshots = [];
+    // simulation.rebalanceLogs = [];
+    // const encodedSimulation = btoa(JSON.stringify(simulation));
+    // url.searchParams.set("simulation", encodedSimulation);
+    // window.history.replaceState({}, "", url.toString());
   }, [simulation]);
 
   const componentsManager = () => {

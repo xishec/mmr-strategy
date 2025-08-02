@@ -89,9 +89,9 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
   }, [syncCrosshairToAll]);
 
   useEffect(() => {
-    if (simulation.portfolioSnapshots.length === 0) {
-      startSimulation(simulation, setSimulation, marketData);
-    }
+    startSimulation(simulation, setSimulation, marketData);
+    const last = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
+    console.log("newSimulation", last.investments.Total, simulation.variables);
   }, [marketData, simulation, setSimulation]);
 
   useEffect(() => {
@@ -128,8 +128,8 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
   }, [simulation.portfolioSnapshots]);
 
   return (
-    <Box width="100%" height="100%" display="grid" gridTemplateColumns="1fr 4fr">
-      <Box sx={{ p: 4 }}>
+    <Box width="100%" height="100vh" display="grid" gridTemplateColumns="1fr 4fr" gap={2} sx={{ p: 4 }}>
+      <Box>
         <Button variant="outlined" color="secondary" onClick={handleStopSimulation} sx={{ mb: 4 }}>
           Stop Simulation
         </Button>
@@ -228,68 +228,53 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
         />
       </Box>
 
-      <Box>
+      <Box sx={{ height: "95vh", display: "grid", gridTemplateRows: "2fr 1fr", gap: 0 }}>
         {/* Chart Section */}
         {simulation.portfolioSnapshots.length > 0 && (
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column", mb: 2 }}>
+            <Typography variant="h5" component="h2" sx={{ mb: 1, flexShrink: 0 }}>
               Portfolio Performance Comparison
             </Typography>
 
-            <Chart
-              multiSeriesData={priceChart}
-              onPointClick={handlePointClick}
-              syncId="chart1"
-              onChartReady={handleChartReady}
-              rebalanceLogs={simulation.rebalanceLogs}
-              selectedDate={selectedDate}
-              onCrosshairMove={handleCrosshairMove}
-              onCrosshairLeave={handleCrosshairLeave}
-              chartType="price"
-              isLogScale={isLogScale}
-            />
+            <Box sx={{ flex: 1, minHeight: 0 }}>
+              <Chart
+                multiSeriesData={priceChart}
+                onPointClick={handlePointClick}
+                syncId="chart1"
+                onChartReady={handleChartReady}
+                rebalanceLogs={simulation.rebalanceLogs}
+                selectedDate={selectedDate}
+                onCrosshairMove={handleCrosshairMove}
+                onCrosshairLeave={handleCrosshairLeave}
+                chartType="price"
+                isLogScale={isLogScale}
+                height="100%"
+              />
+            </Box>
           </Box>
         )}
 
         {/* Ratio Chart Section */}
         {simulation.portfolioSnapshots.length > 0 && (
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
-              TQQQ Ratio
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            <Typography variant="h5" component="h2" sx={{ mb: 1, flexShrink: 0 }}>
+              TQQQ Ratio & Portfolio Pullback
             </Typography>
 
-            <Chart
-              multiSeriesData={ratioChart}
-              onPointClick={handlePointClick}
-              syncId="chart3"
-              onChartReady={handleChartReady}
-              rebalanceLogs={simulation.rebalanceLogs}
-              selectedDate={selectedDate}
-              onCrosshairMove={handleCrosshairMove}
-              onCrosshairLeave={handleCrosshairLeave}
-              chartType="ratio"
-            />
-          </Box>
-        )}
-
-        {/* Pullback Chart Section */}
-        {simulation.portfolioSnapshots.length > 0 && (
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
-              Portfolio Pullback
-            </Typography>
-
-            <Chart
-              multiSeriesData={pullbackChart}
-              onPointClick={handlePointClick}
-              syncId="chart4"
-              onChartReady={handleChartReady}
-              rebalanceLogs={simulation.rebalanceLogs}
-              selectedDate={selectedDate}
-              onCrosshairMove={handleCrosshairMove}
-              onCrosshairLeave={handleCrosshairLeave}
-              chartType="pullback"
-            />
+            <Box sx={{ flex: 1, minHeight: 0 }}>
+              <Chart
+                multiSeriesData={{ ...ratioChart, ...pullbackChart }}
+                onPointClick={handlePointClick}
+                syncId="chart3"
+                onChartReady={handleChartReady}
+                rebalanceLogs={simulation.rebalanceLogs}
+                selectedDate={selectedDate}
+                onCrosshairMove={handleCrosshairMove}
+                onCrosshairLeave={handleCrosshairLeave}
+                chartType="ratio-pullback"
+                height="100%"
+              />
+            </Box>
           </Box>
         )}
       </Box>
