@@ -31,7 +31,15 @@ export interface PortfolioSnapshot {
 export interface RebalanceLog {
   date: string;
   cumulativeRateSinceLastRebalance: number;
+  rebalanceType: RebalanceType;
 }
+
+export enum RebalanceType {
+  Rebalance = "Rebalance",
+  Reset = "Reset",
+  Skip = "Skip",
+}
+
 export interface Investments {
   Total: number;
   MockTotalQQQ: number;

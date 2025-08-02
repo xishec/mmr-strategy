@@ -1,4 +1,4 @@
-import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, Simulation } from "./models";
+import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation } from "./models";
 
 export const loadData = async (
   setDataLoading: (loading: boolean) => void,
@@ -56,6 +56,7 @@ const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) =
   const rebalanceLog: RebalanceLog = {
     date: firstValidDate,
     cumulativeRateSinceLastRebalance: 0,
+    rebalanceType: RebalanceType.Skip,
   };
   simulation.rebalanceLogs = [rebalanceLog];
 
@@ -128,14 +129,20 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
   // Double DROP - get the second-to-last snapshot
   const lastRebalanceRate =
     simulation.rebalanceLogs[simulation.rebalanceLogs.length - 1].cumulativeRateSinceLastRebalance;
+
+  let rebalanceType: RebalanceType = RebalanceType.Rebalance;
+
+  // Double DROP
   if (lastRebalanceRate < variables.DoubleDropRate) {
     // console.log("double drop");
+    rebalanceType = RebalanceType.Skip;
     portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
   }
 
   // DROP
   else if (portfolioSnapshot.cumulativeRateSinceRebalance < variables.DropRate) {
     // console.log("drop");
+    rebalanceType = RebalanceType.Skip;
     portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
   }
 
@@ -145,6 +152,7 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
     investments.TQQQ = investments.Total * variables.TargetRatio;
     investments.Cash = investments.Total * (1 - variables.TargetRatio);
 
+    rebalanceType = RebalanceType.Reset;
     portfolioSnapshot.nextTarget = investments.Total * (1 + simulation.variables.targetRate);
     portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
   }
@@ -194,6 +202,7 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
   const rebalanceLog: RebalanceLog = {
     date: portfolioSnapshot.date,
     cumulativeRateSinceLastRebalance: portfolioSnapshot.cumulativeRateSinceRebalance,
+    rebalanceType: rebalanceType,
   };
   simulation.rebalanceLogs.push(rebalanceLog);
 

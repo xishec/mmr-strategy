@@ -82,10 +82,10 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
       // Set up synchronization once all three charts are ready
       if (Object.keys(chartInstancesRef.current).length === 3) {
         const chartIds = Object.keys(chartInstancesRef.current);
-        const charts = chartIds.map(id => chartInstancesRef.current[id]);
+        const charts = chartIds.map((id) => chartInstancesRef.current[id]);
 
         // Clear any existing subscriptions to avoid duplicates
-        charts.forEach(chartInstance => {
+        charts.forEach((chartInstance) => {
           try {
             chartInstance.chart.timeScale().unsubscribeVisibleLogicalRangeChange();
             chartInstance.chart.unsubscribeCrosshairMove();
@@ -125,7 +125,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
           });
         });
 
-        console.log('All three charts synchronized successfully');
+        console.log("All three charts synchronized successfully");
       }
     },
     [getCrosshairDataPoint, syncCrosshair]
@@ -317,6 +317,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               onPointClick={handlePointClick}
               syncId="chart1"
               onChartReady={handleChartReady}
+              rebalanceLogs={simulation.rebalanceLogs}
             />
           </Box>
         )}
@@ -368,6 +369,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               useLogScale
               syncId="chart2"
               onChartReady={handleChartReady}
+              rebalanceLogs={simulation.rebalanceLogs}
             />
           </Box>
         )}

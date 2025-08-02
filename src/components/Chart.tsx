@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
-import { createChart, ColorType, LineSeries } from "lightweight-charts";
-import { ChartData, MultiSeriesChartData } from "../core/models";
+import { createChart, ColorType, LineSeries, createSeriesMarkers } from "lightweight-charts";
+import { ChartData, MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core/models";
 
 interface ChartProps {
   chartData?: ChartData;
@@ -9,9 +9,18 @@ interface ChartProps {
   useLogScale?: boolean;
   syncId?: string;
   onChartReady?: (chartId: string, chart: any, mainSeries: any) => void;
+  rebalanceLogs?: RebalanceLog[];
 }
 
-function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false, syncId, onChartReady }: ChartProps) {
+function Chart({
+  chartData,
+  multiSeriesData,
+  onPointClick,
+  useLogScale = false,
+  syncId,
+  onChartReady,
+  rebalanceLogs,
+}: ChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,10 +55,10 @@ function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false, 
     });
 
     const colors = {
-      Sig9Target: "#FBBC04",
+      Sig9Target: "#E37400",
       Sig9Total: "#FBBC04",
-      MockTotalQQQ: "#4285F4",
-      MockTotalTQQQ: "#EA4335",
+      MockTotalQQQ: "#D2E3FC",
+      MockTotalTQQQ: "#FAD2CF",
       Ratio: "#FBBC04",
       pullback: "#EA4335",
     };
@@ -70,7 +79,7 @@ function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false, 
 
         lineSeries.setData(data);
         seriesMap[seriesName] = { series: lineSeries, data };
-        
+
         // Use the first series as main series for synchronization
         if (!mainSeries) {
           mainSeries = lineSeries;
@@ -80,6 +89,45 @@ function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false, 
       // Notify parent component that chart is ready
       if (onChartReady && syncId) {
         onChartReady(syncId, chart, mainSeries);
+      }
+
+      // Add rebalance markers if provided
+      if (rebalanceLogs && rebalanceLogs.length > 0 && mainSeries) {
+        const markers = rebalanceLogs.map((rebalanceLog) => {
+          if (rebalanceLog.rebalanceType === RebalanceType.Rebalance) {
+            return {
+              time: rebalanceLog.date,
+              position: "inBar" as const,
+              color: "#E37400",
+              shape: "circle" as const,
+              size: 1,
+            };
+          } else if (rebalanceLog.rebalanceType === RebalanceType.Reset) {
+            return {
+              time: rebalanceLog.date,
+              position: "inBar" as const,
+              color: "#34A853",
+              shape: "circle" as const,
+              size: 1,
+            };
+          } else if (rebalanceLog.rebalanceType === RebalanceType.Skip) {
+            return {
+              time: rebalanceLog.date,
+              position: "inBar" as const,
+              color: "#EA4335",
+              shape: "circle" as const,
+              size: 1,
+            };
+          }
+          return {
+            time: rebalanceLog.date,
+            position: "inBar" as const,
+            color: "#E37400",
+            shape: "circle" as const,
+            size: 1,
+          };
+        });
+        createSeriesMarkers(mainSeries, markers);
       }
 
       // Add click event handler for multi-series
@@ -96,34 +144,69 @@ function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false, 
         });
       }
     }
-    // Handle single series data (backward compatibility)
-    else if (chartData) {
-      const lineSeries = chart.addSeries(LineSeries, {
-        color: "#2962FF",
-        lineWidth: 2,
-        priceLineVisible: false, // Hide price line
-        lastValueVisible: false, // Hide last value label
-      });
+    // // Handle single series data (backward compatibility)
+    // else if (chartData) {
+    //   const lineSeries = chart.addSeries(LineSeries, {
+    //     color: "#2962FF",
+    //     lineWidth: 2,
+    //     priceLineVisible: false, // Hide price line
+    //     lastValueVisible: false, // Hide last value label
+    //   });
 
-      lineSeries.setData(chartData);
+    //   lineSeries.setData(chartData);
 
-      // Notify parent component that chart is ready
-      if (onChartReady && syncId) {
-        onChartReady(syncId, chart, lineSeries);
-      }
+    //   // Notify parent component that chart is ready
+    //   if (onChartReady && syncId) {
+    //     onChartReady(syncId, chart, lineSeries);
+    //   }
 
-      // Add click event handler for single series
-      if (onPointClick) {
-        chart.subscribeClick((param) => {
-          if (param.time) {
-            const clickedPoint = chartData.find((point) => point.time === param.time);
-            if (clickedPoint) {
-              onPointClick(clickedPoint.time, clickedPoint.value);
-            }
-          }
-        });
-      }
-    }
+    //   // Add rebalance markers if provided
+    //   if (rebalanceLogs && rebalanceLogs.length > 0) {
+    //     const markers = rebalanceLogs.map((rebalanceLog) => {
+    //       if (rebalanceLog.rebalanceType === RebalanceType.Rebalance) {
+    //         return {
+    //           time: rebalanceLog.date,
+    //           position: "inBar" as const,
+    //           color: "#E37400",
+    //           shape: "circle" as const,
+    //         };
+    //       } else if (rebalanceLog.rebalanceType === RebalanceType.Reset) {
+    //         return {
+    //           time: rebalanceLog.date,
+    //           position: "inBar" as const,
+    //           color: "#34A853",
+    //           shape: "circle" as const,
+    //         };
+    //       } else if (rebalanceLog.rebalanceType === RebalanceType.Skip) {
+    //         return {
+    //           time: rebalanceLog.date,
+    //           position: "inBar" as const,
+    //           color: "#FEEFC3",
+    //           shape: "circle" as const,
+    //         };
+    //       }
+    //       return {
+    //         time: rebalanceLog.date,
+    //         position: "inBar" as const,
+    //         color: "#E37400",
+    //         shape: "circle" as const,
+    //       };
+    //     });
+    //     createSeriesMarkers(lineSeries, markers);
+    //   }
+
+    //   // Add click event handler for single series
+    //   if (onPointClick) {
+    //     chart.subscribeClick((param) => {
+    //       if (param.time) {
+    //         const clickedPoint = chartData.find((point) => point.time === param.time);
+    //         if (clickedPoint) {
+    //           onPointClick(clickedPoint.time, clickedPoint.value);
+    //         }
+    //       }
+    //     });
+    //   }
+    // }
 
     // Fit content to the chart
     chart.timeScale().fitContent();
@@ -141,7 +224,7 @@ function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false, 
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, [chartData, multiSeriesData, onPointClick, useLogScale, syncId, onChartReady]);
+  }, [chartData, multiSeriesData, onPointClick, useLogScale, syncId, onChartReady, rebalanceLogs]);
 
   return (
     <div
