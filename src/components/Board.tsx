@@ -4,6 +4,16 @@ import { startSimulation } from "../core/functions";
 import { MarketData, Simulation, MultiSeriesChartData, Variables, RebalanceLog } from "../core/models";
 import Chart from "./Chart";
 
+// Helper function to format currency values
+const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+};
+
 interface BoardProps {
   marketData: MarketData;
 }
@@ -97,9 +107,16 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     [syncCrosshairToAll]
   );
 
+  const setSelectedDateToLastRebalance = useCallback(() => {
+    if (!simulation) return;
+    const lastRebalanceLog = simulation.rebalanceLogs;
+    setSelectedDate(lastRebalanceLog[lastRebalanceLog.length - 1]?.date || null);
+  }, [simulation]);
+
   const handleCrosshairLeave = useCallback(() => {
     syncCrosshairToAll(null);
-  }, [syncCrosshairToAll]);
+    setSelectedDateToLastRebalance();
+  }, [syncCrosshairToAll, setSelectedDateToLastRebalance]);
 
   // Track when simulation needs to be run
   const lastSimulationParams = useRef<string>("");
@@ -130,8 +147,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       });
       console.log("newRebalanceLogsMap:", newRebalanceLogsMap);
       setRebalanceLogsMap(newRebalanceLogsMap);
-      const lastRebalanceLog = simulation.rebalanceLogs;
-      setSelectedDate(lastRebalanceLog[lastRebalanceLog.length - 1]?.date || null);
+      setSelectedDateToLastRebalance();
 
       setPriceChart({
         Sig9Total: simulation.portfolioSnapshots.map((snapshot) => ({
@@ -333,10 +349,13 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                   <strong>Date:</strong> {selectedDate}
                 </Box>
                 <Box>
-                  <strong>Total:</strong> ${rebalanceLogsMap[selectedDate].total.toFixed(2)}
+                  <strong>Total:</strong> {formatCurrency(rebalanceLogsMap[selectedDate].total)}
                 </Box>
                 <Box>
-                  <strong>Next Target:</strong> ${rebalanceLogsMap[selectedDate].nextTarget?.toFixed(2) || "N/A"}
+                  <strong>Next Target:</strong>{" "}
+                  {rebalanceLogsMap[selectedDate].nextTarget
+                    ? formatCurrency(rebalanceLogsMap[selectedDate].nextTarget!)
+                    : "N/A"}
                 </Box>
                 <Box>
                   <strong>Cumulative Rate:</strong>{" "}
