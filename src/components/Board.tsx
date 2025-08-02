@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { Button, Container, Box, Typography, TextField, Alert } from "@mui/material";
+import { Button, Container, Box, Typography, TextField } from "@mui/material";
 import { startSimulation } from "../core/functions";
 import { MarketData, Simulation, MultiSeriesChartData } from "../core/models";
 import Chart from "./Chart";
@@ -24,7 +24,6 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
   const [ratioChart, setRatioChart] = useState<MultiSeriesChartData>({});
   const [pullbackChart, setPullbackChart] = useState<MultiSeriesChartData>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [crosshairDate, setCrosshairDate] = useState<string | null>(null);
 
   // Chart synchronization state
   const chartInstancesRef = useRef<{
@@ -79,14 +78,12 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
 
   const handleCrosshairMove = useCallback(
     (date: string | null) => {
-      setCrosshairDate(date);
       syncCrosshairToAll(date);
     },
     [syncCrosshairToAll]
   );
 
   const handleCrosshairLeave = useCallback(() => {
-    setCrosshairDate(null);
     syncCrosshairToAll(null);
   }, [syncCrosshairToAll]);
 

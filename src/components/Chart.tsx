@@ -34,39 +34,38 @@ const Chart: React.FC<ChartProps> = ({
   const chartInstanceRef = useRef<any>(null);
 
   // Legend data configuration
-  const getLegendData = useCallback(
-    (chartType: string, seriesData: { [key: string]: any[] }) => {
-      const legendItems: Array<{
-        label: string;
-        color: string;
-        type: "line" | "circle";
-        dashed?: boolean;
-      }> = [];
+  const getLegendData = useCallback((chartType: string, seriesData: { [key: string]: any[] }) => {
+    const legendItems: Array<{
+      label: string;
+      color: string;
+      type: "line" | "circle";
+      dashed?: boolean;
+    }> = [];
 
-      if (chartType === "price") {
-        if (seriesData.Sig9Total) {
-          legendItems.push({ label: "Sig9 Total", color: "#FBBC04", type: "line" });
-        }
-        if (seriesData.Sig9Target) {
-          legendItems.push({ label: "Sig9 Target", color: "#FBBC04", type: "line", dashed: true });
-        }
-        if (seriesData.MockTotalQQQ) {
-          legendItems.push({ label: "Mock Total QQQ", color: "#4285F4", type: "line" });
-        }
-        if (seriesData.MockTotalTQQQ) {
-          legendItems.push({ label: "Mock Total TQQQ", color: "#EA4335", type: "line" });
-        }
-        // Add rebalance markers for price chart
-        if (rebalanceLogs && rebalanceLogs.length > 0) {
-          legendItems.push({ label: "Rebalance", color: "#E37400", type: "circle" });
-          legendItems.push({ label: "Reset", color: "#34A853", type: "circle" });
-          legendItems.push({ label: "Skip", color: "#EA4335", type: "circle" });
-        }
+    if (chartType === "price") {
+      if (seriesData.Sig9Total) {
+        legendItems.push({ label: "Sig9 Total", color: "#FBBC04", type: "line" });
       }
-      return legendItems;
-    },
-    [rebalanceLogs]
-  );
+      if (seriesData.Sig9Target) {
+        legendItems.push({ label: "Sig9 Target", color: "#FBBC04", type: "line", dashed: true });
+      }
+      if (seriesData.MockTotalQQQ) {
+        legendItems.push({ label: "Mock Total QQQ", color: "#4285F4", type: "line" });
+      }
+      if (seriesData.MockTotalTQQQ) {
+        legendItems.push({ label: "Mock Total TQQQ", color: "#EA4335", type: "line" });
+      }
+    } else if (chartType === "ratio") {
+      if (seriesData.Ratio) {
+        legendItems.push({ label: "TQQQ Ratio", color: "#FBBC04", type: "line" });
+      }
+    } else if (chartType === "pullback") {
+      if (seriesData.pullback) {
+        legendItems.push({ label: "Portfolio Pullback", color: "#EA4335", type: "line" });
+      }
+    }
+    return legendItems;
+  }, []);
 
   const createD3Chart = useCallback(() => {
     if (!chartContainerRef.current || !svgRef.current) return null;
@@ -78,7 +77,7 @@ const Chart: React.FC<ChartProps> = ({
     svg.selectAll("*").remove();
 
     // Set up dimensions
-    const margin = { top: 40, right: 40, bottom: 40, left: 60 }; // Increased top margin for legend
+    const margin = { top: 60, right: 40, bottom: 40, left: 60 }; // Increased top margin for legend
     const width = container.clientWidth - margin.left - margin.right;
     const height = 400 - margin.top - margin.bottom;
 
@@ -143,9 +142,9 @@ const Chart: React.FC<ChartProps> = ({
 
     // Add grid lines
     const xAxis = d3.axisBottom(xScale).tickSize(-height);
-    
+
     // Configure y-axis grid with same tick settings as the actual axis
-    const yAxis = useLogScale 
+    const yAxis = useLogScale
       ? d3.axisLeft(yScale).tickSize(-width).ticks(5, "~g")
       : d3.axisLeft(yScale).tickSize(-width);
 
@@ -263,6 +262,71 @@ const Chart: React.FC<ChartProps> = ({
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", "3,3");
 
+    // Function to format value based on chart type
+    const formatValue = (value: number, chartType: string, useLogScale: boolean) => {
+      if (typeof value !== "number") return String(value);
+
+      if (chartType === "ratio") {
+        return value.toFixed(2);
+      } else if (chartType === "pullback") {
+        return (value * 100).toFixed(1) + "%";
+      }
+
+      return value.toFixed(2);
+    };
+
+    // Function to update legend with selected date values
+    const updateLegendWithValues = (selectedDate: string | null) => {
+      const legend = svg.select(".legend");
+      if (legend.empty()) return;
+
+      legend.selectAll(".legend-item").each(function (d: any, i: number) {
+        const item = d3.select(this);
+        const label = d.label;
+
+        // Map legend labels to data series keys
+        let seriesKey = label;
+        if (chartType === "price") {
+          // Direct mapping for price chart
+          if (label === "Sig9 Total") seriesKey = "Sig9Total";
+          else if (label === "Sig9 Target") seriesKey = "Sig9Target";
+          else if (label === "Mock Total QQQ") seriesKey = "MockTotalQQQ";
+          else if (label === "Mock Total TQQQ") seriesKey = "MockTotalTQQQ";
+        } else if (chartType === "ratio") {
+          if (label === "TQQQ Ratio") seriesKey = "Ratio";
+        } else if (chartType === "pullback") {
+          if (label === "Portfolio Pullback") seriesKey = "pullback";
+        }
+
+        // Remove existing value text
+        item.select(".value-text").remove();
+
+        if (selectedDate) {
+          // Find the data point for this series and date
+          const data = seriesData[seriesKey];
+          if (data) {
+            const dataPoint = data.find((dp: any) => dp.time === selectedDate);
+            if (dataPoint) {
+              const formattedValue = formatValue(dataPoint.value, chartType, useLogScale);
+
+              // Add value text to the legend item
+              item
+                .append("text")
+                .attr("class", "value-text")
+                .attr("x", 20)
+                .attr("y", 25)
+                .attr("dy", "0.35em")
+                .style("font-size", "11px")
+                .style("font-family", "Arial, sans-serif")
+                .style("fill", d.color)
+                .style("font-weight", "bold")
+                .text(formattedValue);
+            }
+          }
+        }
+      });
+    };
+
     // Add invisible overlay for mouse events
     const overlay = g
       .append("rect")
@@ -350,9 +414,8 @@ const Chart: React.FC<ChartProps> = ({
       );
 
     // Configure y-axis with custom formatting for log scale
-    const yAxisConfig = useLogScale 
-      ? d3.axisLeft(yScale)
-          .ticks(5, "~g") // Use D3's log scale tick generation with clean formatting
+    const yAxisConfig = useLogScale
+      ? d3.axisLeft(yScale).ticks(5, "~g") // Use D3's log scale tick generation with clean formatting
       : d3.axisLeft(yScale);
 
     g.append("g").attr("class", "y-axis").call(yAxisConfig);
@@ -414,10 +477,14 @@ const Chart: React.FC<ChartProps> = ({
           const x = xScale(date);
           crosshair.style("display", null);
           crosshairLine.attr("x1", x).attr("x2", x);
+          // Update legend with selected date values
+          updateLegendWithValues(time);
         }
       },
       clearCrosshairPosition: () => {
         crosshair.style("display", "none");
+        // Clear legend values
+        updateLegendWithValues(null);
       },
       timeScale: () => ({
         subscribeVisibleLogicalRangeChange: (callback: any) => {
@@ -452,6 +519,8 @@ const Chart: React.FC<ChartProps> = ({
   useEffect(() => {
     if (selectedDate && chartInstanceRef.current) {
       chartInstanceRef.current.chart.setCrosshairPosition(0, selectedDate);
+    } else if (!selectedDate && chartInstanceRef.current) {
+      chartInstanceRef.current.chart.clearCrosshairPosition();
     }
   }, [selectedDate]);
 
