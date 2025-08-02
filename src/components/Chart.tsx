@@ -63,8 +63,9 @@ function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false, 
         const lineSeries = chart.addSeries(LineSeries, {
           color: colors[seriesName as keyof typeof colors] || "#2962FF",
           lineWidth: 2,
-          title: seriesName,
           lineStyle: seriesName === "Sig9Target" ? 1 : 0, // 1 = dashed, 0 = solid
+          priceLineVisible: false, // Hide price line
+          lastValueVisible: false, // Hide last value label
         });
 
         lineSeries.setData(data);
@@ -100,6 +101,8 @@ function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false, 
       const lineSeries = chart.addSeries(LineSeries, {
         color: "#2962FF",
         lineWidth: 2,
+        priceLineVisible: false, // Hide price line
+        lastValueVisible: false, // Hide last value label
       });
 
       lineSeries.setData(chartData);
