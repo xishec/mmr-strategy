@@ -130,9 +130,13 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           time: snapshot.date,
           value: snapshot.investments.Total,
         })),
-        Sig9Target: simulation.portfolioSnapshots.map((snapshot) => ({
-          time: snapshot.date,
-          value: snapshot.nextTarget,
+        // Sig9Target: simulation.portfolioSnapshots.map((snapshot) => ({
+        //   time: snapshot.date,
+        //   value: snapshot.nextTarget,
+        // })),
+        Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
+          time: rebalanceLog.date,
+          value: rebalanceLog.nextTarget,
         })),
         MockTotalQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
           time: snapshot.date,

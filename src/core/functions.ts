@@ -48,6 +48,7 @@ const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) =
   const rebalanceLog: RebalanceLog = {
     date: firstValidDate,
     total: investments.Total,
+    nextTarget: portfolioSnapshot.nextTarget,
     cumulativeRateSinceLastRebalance: 0,
     rebalanceType: RebalanceType.Skip,
   };
@@ -204,6 +205,7 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
   const rebalanceLog: RebalanceLog = {
     date: portfolioSnapshot.date,
     total: investments.Total,
+    nextTarget: portfolioSnapshot.nextTarget,
     cumulativeRateSinceLastRebalance: portfolioSnapshot.cumulativeRateSinceRebalance,
     rebalanceType: rebalanceType,
   };

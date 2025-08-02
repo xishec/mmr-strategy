@@ -51,6 +51,9 @@ const Chart: React.FC<ChartProps> = ({
       if (seriesData.Sig9Target) {
         legendItems.push({ label: "Sig9 Target", color: "#202124", type: "line", dashed: true });
       }
+      if (seriesData.Target) {
+        legendItems.push({ label: "Target", color: "#202124", type: "circle" });
+      }
       if (seriesData.MockTotalQQQ) {
         legendItems.push({ label: "Mock Total QQQ", color: "#4285F4", type: "line" });
       }
@@ -195,6 +198,7 @@ const Chart: React.FC<ChartProps> = ({
     const colors = {
       Sig9Target: "#202124",
       Sig9Total: "#FBBC04",
+      Target: "#202124",
       MockTotalQQQ: "#4285F4",
       MockTotalTQQQ: "#EA4335",
       Ratio: chartType === "ratio-pullback" ? "#4285F4" : "#FBBC04",
@@ -285,6 +289,25 @@ const Chart: React.FC<ChartProps> = ({
         if (!mainSeries || index === 0) {
           mainSeries = { data: processedData, element: linePath };
         }
+      } else if (seriesName === "Target") {
+        // Draw points for Target series
+        const pointsGroup = g.append("g").attr("class", `points series-${seriesName}`);
+
+        pointsGroup
+          .selectAll("circle")
+          .data(processedData)
+          .enter()
+          .append("circle")
+          .attr("cx", (d) => xScale(d.parsedTime))
+          .attr("cy", (d) => yScale(d.value))
+          .attr("r", 3)
+          .attr("fill", seriesColor)
+          .attr("stroke", "white")
+          .attr("stroke-width", 1);
+
+        if (!mainSeries || index === 0) {
+          mainSeries = { data: processedData, element: pointsGroup };
+        }
       } else {
         // Draw regular line
         const path = g
@@ -344,6 +367,7 @@ const Chart: React.FC<ChartProps> = ({
           // Direct mapping for price chart
           if (label === "Sig9 Total") seriesKey = "Sig9Total";
           else if (label === "Sig9 Target") seriesKey = "Sig9Target";
+          else if (label === "Target") seriesKey = "Target";
           else if (label === "Mock Total QQQ") seriesKey = "MockTotalQQQ";
           else if (label === "Mock Total TQQQ") seriesKey = "MockTotalTQQQ";
         } else if (chartType === "ratio") {

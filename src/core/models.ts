@@ -31,6 +31,7 @@ export interface PortfolioSnapshot {
 export interface RebalanceLog {
   date: string;
   total: number;
+  nextTarget: number;
   cumulativeRateSinceLastRebalance: number;
   rebalanceType: RebalanceType;
 }
