@@ -52,6 +52,9 @@ function Chart({
         timeVisible: true,
         secondsVisible: false,
       },
+      localization: {
+        timeFormatter: (date: string) => date,
+      },
     });
 
     const colors = {
