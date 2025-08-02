@@ -39,7 +39,8 @@ export enum RebalanceType {
   Rebalance = "Rebalance",
   Reset = "Reset",
   Skip = "Skip",
-  RealityCheck = "Reality Check",
+  StillDropping = "Still Dropping",
+  BigPullback = "Big Pullback",
 }
 
 export interface Investments {

@@ -29,7 +29,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [targetRatio, setTargetRatio] = useState<number>(0.6);
   const [spikeRate, setSpikeRate] = useState<number>(0.3);
   const [dropRate, setDropRate] = useState<number>(-0.06);
-  const [bigDropRate, setBigDropRate] = useState<number>(-0.36);
+  const [bigDropRate, setBigDropRate] = useState<number>(-0.5);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
@@ -311,13 +311,13 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
 
           <TextField
-            label="Big Drop Rate"
+            label="Last 3 Rebalance sum should be hight than this"
             type="number"
             value={bigDropRate}
             onChange={(e) => setBigDropRate(Number(e.target.value))}
             variant="outlined"
             slotProps={{
-              htmlInput: { step: 0.01 },
+              htmlInput: { step: 0.1 },
             }}
           />
         </Box>
