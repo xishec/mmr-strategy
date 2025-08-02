@@ -43,3 +43,9 @@ export interface MarketData {
   QQQ: Record<string, number>;
   TQQQ: Record<string, number>;
 }
+
+export interface ChartPoint {
+  time: string;
+  value: number;
+}
+export type ChartData = ChartPoint[];

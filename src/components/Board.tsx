@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Button, Container, Box, Typography, TextField } from "@mui/material";
+import React, { useEffect, useState, useCallback } from "react";
+import { Button, Container, Box, Typography, TextField, Alert } from "@mui/material";
 import { startSimulation } from "../core/functions";
-import { MarketData, Simulation } from "../core/models";
+import { ChartData, MarketData, Simulation } from "../core/models";
+import Chart from "./Chart";
 
 interface BoardProps {
   simulation: Simulation;
@@ -18,6 +19,10 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
   const [spikeRate, setSpikeRate] = useState<number>(simulation.variables.SpikeRate);
   const [dropRate, setDropRate] = useState<number>(simulation.variables.DropRate);
   const [doubleDropRate, setDoubleDropRate] = useState<number>(simulation.variables.DoubleDropRate);
+
+  const [totalChart, setTotalChart] = useState<ChartData>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedValue, setSelectedValue] = useState<number | null>(null);
 
   const handleStopSimulation = () => {
     setSimulation({
@@ -37,14 +42,30 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
         SpikeRate: spikeRate,
         DropRate: dropRate,
         DoubleDropRate: doubleDropRate,
-      }
+      },
     };
     setSimulation(updatedSimulation);
   };
 
+  const handlePointClick = useCallback((date: string, value: number) => {
+    setSelectedDate(date);
+    setSelectedValue(value);
+  }, []);
+
   useEffect(() => {
-    startSimulation(simulation, setSimulation, marketData);
-  }, [simulation, setSimulation, marketData]);
+    if (simulation.portfolioSnapshots.length === 0) {
+      startSimulation(simulation, setSimulation, marketData);
+    }
+  }, [marketData, simulation, setSimulation]);
+
+  useEffect(() => {
+    setTotalChart(
+      simulation.portfolioSnapshots.map((snapshot) => ({
+        time: snapshot.date,
+        value: snapshot.investments.Total,
+      }))
+    );
+  }, [simulation.portfolioSnapshots]);
 
   return (
     <Container maxWidth="md">
@@ -52,7 +73,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
         <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
           Simulation Board
         </Typography>
-        
+
         <Button variant="outlined" color="secondary" onClick={handleStopSimulation} sx={{ mb: 4 }}>
           Stop Simulation
         </Button>
@@ -61,7 +82,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
           Simulation Variables
         </Typography>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 2, mb: 3 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 2, mb: 3 }}>
           <TextField
             label="Rebalance Days"
             type="number"
@@ -69,10 +90,10 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
             onChange={(e) => setRebalanceDays(Number(e.target.value))}
             variant="outlined"
             slotProps={{
-              htmlInput: { step: 1 }
+              htmlInput: { step: 1 },
             }}
           />
-          
+
           <TextField
             label="Target Rate"
             type="number"
@@ -80,7 +101,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
             onChange={(e) => setTargetRate(Number(e.target.value))}
             variant="outlined"
             slotProps={{
-              htmlInput: { step: 0.01 }
+              htmlInput: { step: 0.01 },
             }}
           />
 
@@ -91,7 +112,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
             onChange={(e) => setCashDayRate(Number(e.target.value))}
             variant="outlined"
             slotProps={{
-              htmlInput: { step: 0.0001 }
+              htmlInput: { step: 0.0001 },
             }}
           />
 
@@ -102,7 +123,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
             onChange={(e) => setTargetRatio(Number(e.target.value))}
             variant="outlined"
             slotProps={{
-              htmlInput: { step: 0.01 }
+              htmlInput: { step: 0.01 },
             }}
           />
 
@@ -113,7 +134,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
             onChange={(e) => setSpikeRate(Number(e.target.value))}
             variant="outlined"
             slotProps={{
-              htmlInput: { step: 0.01 }
+              htmlInput: { step: 0.01 },
             }}
           />
 
@@ -124,7 +145,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
             onChange={(e) => setDropRate(Number(e.target.value))}
             variant="outlined"
             slotProps={{
-              htmlInput: { step: 0.01 }
+              htmlInput: { step: 0.01 },
             }}
           />
 
@@ -135,7 +156,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
             onChange={(e) => setDoubleDropRate(Number(e.target.value))}
             variant="outlined"
             slotProps={{
-              htmlInput: { step: 0.01 }
+              htmlInput: { step: 0.01 },
             }}
           />
         </Box>
@@ -143,6 +164,23 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
         <Button variant="contained" color="primary" onClick={handleUpdateVariables}>
           Update Variables & Restart Simulation
         </Button>
+
+        {/* Chart Section */}
+        {simulation.portfolioSnapshots.length > 0 && (
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
+              Portfolio Performance
+            </Typography>
+
+            {selectedDate && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Selected Date: {selectedDate} | Portfolio Value: ${selectedValue?.toLocaleString()}
+              </Alert>
+            )}
+
+            <Chart chartData={totalChart} onPointClick={handlePointClick} />
+          </Box>
+        )}
       </Box>
     </Container>
   );
