@@ -27,9 +27,9 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [targetRate, setTargetRate] = useState<number>(0.09);
   const [cashDayRate, setCashDayRate] = useState<number>(0);
   const [targetRatio, setTargetRatio] = useState<number>(0.6);
-  const [spikeRate, setSpikeRate] = useState<number>(0.18);
-  const [dropRate, setDropRate] = useState<number>(-0.09);
-  const [doubleDropRate, setDoubleDropRate] = useState<number>(-0.09);
+  const [spikeRate, setSpikeRate] = useState<number>(0.3);
+  const [dropRate, setDropRate] = useState<number>(-0.06);
+  const [bigDropRate, setBigDropRate] = useState<number>(-0.36);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
@@ -51,7 +51,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       TargetRatio: targetRatio,
       SpikeRate: spikeRate,
       DropRate: dropRate,
-      DoubleDropRate: doubleDropRate,
+      BigDropRate: bigDropRate,
     } as Variables,
   } as Simulation);
 
@@ -67,7 +67,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
   // Auto-update simulation when variables change
   useEffect(() => {
-    setSimulation(prevSimulation => ({
+    setSimulation((prevSimulation) => ({
       ...prevSimulation,
       startingDate: startingDate.toISOString().split("T")[0],
       initialMoney: initialMoney,
@@ -78,7 +78,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         TargetRatio: targetRatio,
         SpikeRate: spikeRate,
         DropRate: dropRate,
-        DoubleDropRate: doubleDropRate,
+        BigDropRate: bigDropRate,
       },
     }));
   }, [
@@ -90,7 +90,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     targetRatio,
     spikeRate,
     dropRate,
-    doubleDropRate,
+    bigDropRate,
   ]);
 
   // Chart synchronization functions
@@ -311,10 +311,10 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
 
           <TextField
-            label="Double Drop Rate"
+            label="Big Drop Rate"
             type="number"
-            value={doubleDropRate}
-            onChange={(e) => setDoubleDropRate(Number(e.target.value))}
+            value={bigDropRate}
+            onChange={(e) => setBigDropRate(Number(e.target.value))}
             variant="outlined"
             slotProps={{
               htmlInput: { step: 0.01 },

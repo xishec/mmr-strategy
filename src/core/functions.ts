@@ -129,16 +129,17 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
   const variables = simulation.variables!;
   const investments = portfolioSnapshot.investments;
 
-  // Double DROP - get the second-to-last snapshot
-  const lastRebalanceRate =
-    simulation.rebalanceLogs[simulation.rebalanceLogs.length - 1].cumulativeRateSinceLastRebalance;
+  // // Double DROP - get the second-to-last snapshot
+  // const lastRebalanceRate =
+  //   simulation.rebalanceLogs[simulation.rebalanceLogs.length - 1].cumulativeRateSinceLastRebalance;
 
   let rebalanceType: RebalanceType = RebalanceType.Rebalance;
 
   // Double DROP
-  if (lastRebalanceRate < variables.DoubleDropRate) {
-    if (DEBUG) console.log("double drop");
-    rebalanceType = RebalanceType.Skip;
+  if (portfolioSnapshot.cumulativeRateSinceRebalance < variables.BigDropRate) {
+    if (DEBUG) console.log("big drop");
+    rebalanceType = RebalanceType.RealityCheck;
+    portfolioSnapshot.nextTarget = investments.Total * (1 + simulation.variables.targetRate);
     portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
   }
 
@@ -152,10 +153,9 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
   // SPIKE
   else if (portfolioSnapshot.cumulativeRateSinceRebalance > variables.SpikeRate) {
     if (DEBUG) console.log("spike");
+    rebalanceType = RebalanceType.Reset;
     investments.TQQQ = investments.Total * variables.TargetRatio;
     investments.Cash = investments.Total * (1 - variables.TargetRatio);
-
-    rebalanceType = RebalanceType.Reset;
     portfolioSnapshot.nextTarget = investments.Total * (1 + simulation.variables.targetRate);
     portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
   }
@@ -165,7 +165,6 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
     if (DEBUG) console.log("excess");
     const excess = investments.Total - portfolioSnapshot.nextTarget;
     const actualExcess = Math.min(excess, investments.TQQQ);
-
     investments.TQQQ -= actualExcess;
     investments.Cash += actualExcess;
 
@@ -178,7 +177,6 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
     if (DEBUG) console.log("shortfall");
     const shortfall = portfolioSnapshot.nextTarget - investments.Total;
     const actualShortfall = Math.min(shortfall, investments.Cash);
-
     investments.TQQQ += actualShortfall;
     investments.Cash -= actualShortfall;
 

@@ -13,7 +13,7 @@ export interface Variables {
   TargetRatio: number;
   SpikeRate: number;
   DropRate: number;
-  DoubleDropRate: number;
+  BigDropRate: number;
 }
 
 export interface PortfolioSnapshot {
@@ -39,6 +39,7 @@ export enum RebalanceType {
   Rebalance = "Rebalance",
   Reset = "Reset",
   Skip = "Skip",
+  RealityCheck = "Reality Check",
 }
 
 export interface Investments {
