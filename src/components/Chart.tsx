@@ -13,7 +13,7 @@ interface ChartProps {
   selectedDate: string | null;
   onCrosshairMove?: (date: string | null) => void;
   onCrosshairLeave?: () => void;
-  chartType?: 'price' | 'ratio' | 'pullback';
+  chartType?: "price" | "ratio" | "pullback";
 }
 
 const Chart: React.FC<ChartProps> = ({
@@ -27,52 +27,46 @@ const Chart: React.FC<ChartProps> = ({
   selectedDate,
   onCrosshairMove,
   onCrosshairLeave,
-  chartType = 'price',
+  chartType = "price",
 }: ChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const chartInstanceRef = useRef<any>(null);
 
   // Legend data configuration
-  const getLegendData = useCallback((chartType: string, seriesData: { [key: string]: any[] }) => {
-    const legendItems: Array<{
-      label: string;
-      color: string;
-      type: 'line' | 'circle';
-      dashed?: boolean;
-    }> = [];
+  const getLegendData = useCallback(
+    (chartType: string, seriesData: { [key: string]: any[] }) => {
+      const legendItems: Array<{
+        label: string;
+        color: string;
+        type: "line" | "circle";
+        dashed?: boolean;
+      }> = [];
 
-    if (chartType === 'price') {
-      if (seriesData.Sig9Total) {
-        legendItems.push({ label: 'Sig9 Total', color: '#FBBC04', type: 'line' });
+      if (chartType === "price") {
+        if (seriesData.Sig9Total) {
+          legendItems.push({ label: "Sig9 Total", color: "#FBBC04", type: "line" });
+        }
+        if (seriesData.Sig9Target) {
+          legendItems.push({ label: "Sig9 Target", color: "#FBBC04", type: "line", dashed: true });
+        }
+        if (seriesData.MockTotalQQQ) {
+          legendItems.push({ label: "Mock Total QQQ", color: "#4285F4", type: "line" });
+        }
+        if (seriesData.MockTotalTQQQ) {
+          legendItems.push({ label: "Mock Total TQQQ", color: "#EA4335", type: "line" });
+        }
+        // Add rebalance markers for price chart
+        if (rebalanceLogs && rebalanceLogs.length > 0) {
+          legendItems.push({ label: "Rebalance", color: "#E37400", type: "circle" });
+          legendItems.push({ label: "Reset", color: "#34A853", type: "circle" });
+          legendItems.push({ label: "Skip", color: "#EA4335", type: "circle" });
+        }
       }
-      if (seriesData.Sig9Target) {
-        legendItems.push({ label: 'Sig9 Target', color: '#FBBC04', type: 'line', dashed: true });
-      }
-      if (seriesData.MockTotalQQQ) {
-        legendItems.push({ label: 'Mock Total QQQ', color: '#4285F4', type: 'line' });
-      }
-      if (seriesData.MockTotalTQQQ) {
-        legendItems.push({ label: 'Mock Total TQQQ', color: '#EA4335', type: 'line' });
-      }
-      // Add rebalance markers for price chart
-      if (rebalanceLogs && rebalanceLogs.length > 0) {
-        legendItems.push({ label: 'Rebalance', color: '#E37400', type: 'circle' });
-        legendItems.push({ label: 'Reset', color: '#34A853', type: 'circle' });
-        legendItems.push({ label: 'Skip', color: '#EA4335', type: 'circle' });
-      }
-    } else if (chartType === 'ratio') {
-      if (seriesData.Ratio) {
-        legendItems.push({ label: 'TQQQ Ratio', color: '#FBBC04', type: 'line' });
-      }
-    } else if (chartType === 'pullback') {
-      if (seriesData.pullback) {
-        legendItems.push({ label: 'Pullback', color: '#EA4335', type: 'line' });
-      }
-    }
-
-    return legendItems;
-  }, [rebalanceLogs]);
+      return legendItems;
+    },
+    [rebalanceLogs]
+  );
 
   const createD3Chart = useCallback(() => {
     if (!chartContainerRef.current || !svgRef.current) return null;
@@ -84,7 +78,7 @@ const Chart: React.FC<ChartProps> = ({
     svg.selectAll("*").remove();
 
     // Set up dimensions
-    const margin = { top: 60, right: 60, bottom: 40, left: 60 }; // Increased top margin for legend
+    const margin = { top: 40, right: 40, bottom: 40, left: 60 }; // Increased top margin for legend
     const width = container.clientWidth - margin.left - margin.right;
     const height = 400 - margin.top - margin.bottom;
 
@@ -149,7 +143,11 @@ const Chart: React.FC<ChartProps> = ({
 
     // Add grid lines
     const xAxis = d3.axisBottom(xScale).tickSize(-height);
-    const yAxis = d3.axisLeft(yScale).tickSize(-width);
+    
+    // Configure y-axis grid with same tick settings as the actual axis
+    const yAxis = useLogScale 
+      ? d3.axisLeft(yScale).tickSize(-width).ticks(5, "~g")
+      : d3.axisLeft(yScale).tickSize(-width);
 
     g.append("g")
       .attr("class", "grid")
@@ -159,7 +157,13 @@ const Chart: React.FC<ChartProps> = ({
       .attr("stroke", "#e1e1e1")
       .attr("stroke-width", 1);
 
+    // Remove grid text labels to avoid duplication with axis labels
+    g.selectAll(".grid text").remove();
+
     g.append("g").attr("class", "grid").call(yAxis).selectAll("line").attr("stroke", "#e1e1e1").attr("stroke-width", 1);
+
+    // Remove grid text labels for y-axis too
+    g.selectAll(".grid text").remove();
 
     // Color mapping
     const colors = {
@@ -177,8 +181,8 @@ const Chart: React.FC<ChartProps> = ({
     Object.entries(seriesData).forEach(([seriesName, data], index) => {
       const seriesColor = colors[seriesName as keyof typeof colors] || colors.default;
       const isDashed = seriesName === "Sig9Target";
-      const isRatioChart = chartType === 'ratio';
-      const isPullbackChart = chartType === 'pullback';
+      const isRatioChart = chartType === "ratio";
+      const isPullbackChart = chartType === "pullback";
 
       // Prepare data with parsed time
       const processedData = data.map((d) => ({
@@ -186,10 +190,9 @@ const Chart: React.FC<ChartProps> = ({
         parsedTime: parseTime(d.time),
       }));
 
-      if (isRatioChart && seriesName === 'Ratio') {
+      if (isRatioChart && seriesName === "Ratio") {
         // Draw area for ratio chart (area below line)
-        g
-          .append("path")
+        g.append("path")
           .datum(processedData)
           .attr("class", `area series-${seriesName}`)
           .attr("fill", seriesColor)
@@ -209,7 +212,7 @@ const Chart: React.FC<ChartProps> = ({
         if (!mainSeries || index === 0) {
           mainSeries = { data: processedData, element: linePath };
         }
-      } else if (isPullbackChart && seriesName === 'pullback') {
+      } else if (isPullbackChart && seriesName === "pullback") {
         // Draw line first for pullback chart
         const linePath = g
           .append("path")
@@ -221,8 +224,7 @@ const Chart: React.FC<ChartProps> = ({
           .attr("d", line);
 
         // Draw area from top for pullback chart
-        g
-          .append("path")
+        g.append("path")
           .datum(processedData)
           .attr("class", `area series-${seriesName}`)
           .attr("fill", seriesColor)
@@ -249,41 +251,6 @@ const Chart: React.FC<ChartProps> = ({
         }
       }
     });
-
-    // // Add rebalance log series as points
-    // if (rebalanceLogs && rebalanceLogs.length > 0) {
-    //   const rebalanceData = rebalanceLogs.map(log => ({
-    //     ...log,
-    //     parsedTime: parseTime(log.date)
-    //   })).filter(d => d.parsedTime !== null);
-
-    //   const markerColors = {
-    //     [RebalanceType.Rebalance]: "#E37400",
-    //     [RebalanceType.Reset]: "#34A853",
-    //     [RebalanceType.Skip]: "#EA4335"
-    //   };
-
-    //   // Add rebalance points
-    //   g.selectAll(".rebalance-point")
-    //     .data(rebalanceData)
-    //     .enter()
-    //     .append("circle")
-    //     .attr("class", "rebalance-point")
-    //     .attr("cx", d => xScale(d.parsedTime!))
-    //     .attr("cy", d => yScale(d.total))
-    //     .attr("r", 4)
-    //     .attr("fill", d => markerColors[d.rebalanceType] || "#E37400")
-    //     .attr("stroke", "white")
-    //     .attr("stroke-width", 1)
-    //     .style("cursor", "pointer")
-    //     .on("mouseover", function(event, d) {
-    //       // Add tooltip or highlight effect
-    //       d3.select(this).attr("r", 6);
-    //     })
-    //     .on("mouseout", function(event, d) {
-    //       d3.select(this).attr("r", 4);
-    //     });
-    // }
 
     // Add crosshair
     const crosshair = g.append("g").attr("class", "crosshair").style("display", "none");
@@ -328,7 +295,7 @@ const Chart: React.FC<ChartProps> = ({
             // Snap crosshair to closest rebalance date
             const snapX = xScale(closestRebalanceDate);
             crosshairLine.attr("x1", snapX).attr("x2", snapX);
-            
+
             // Notify parent for synchronization
             if (onCrosshairMove) {
               onCrosshairMove(d3.timeFormat("%Y-%m-%d")(closestRebalanceDate));
@@ -382,17 +349,22 @@ const Chart: React.FC<ChartProps> = ({
         })
       );
 
-    g.append("g").attr("class", "y-axis").call(d3.axisLeft(yScale));
+    // Configure y-axis with custom formatting for log scale
+    const yAxisConfig = useLogScale 
+      ? d3.axisLeft(yScale)
+          .ticks(5, "~g") // Use D3's log scale tick generation with clean formatting
+      : d3.axisLeft(yScale);
+
+    g.append("g").attr("class", "y-axis").call(yAxisConfig);
 
     // Add legend
     const legendData = getLegendData(chartType, seriesData);
     if (legendData.length > 0) {
-      const legend = svg.append("g")
-        .attr("class", "legend")
-        .attr("transform", `translate(${margin.left}, 10)`);
+      const legend = svg.append("g").attr("class", "legend").attr("transform", `translate(${margin.left}, 10)`);
 
       const legendItemWidth = 140;
-      const legendItems = legend.selectAll(".legend-item")
+      const legendItems = legend
+        .selectAll(".legend-item")
         .data(legendData)
         .enter()
         .append("g")
@@ -400,12 +372,13 @@ const Chart: React.FC<ChartProps> = ({
         .attr("transform", (d, i) => `translate(${i * legendItemWidth}, 0)`);
 
       // Add legend symbols
-      legendItems.each(function(d: any) {
+      legendItems.each(function (d: any) {
         const item = d3.select(this);
-        
-        if (d.type === 'line') {
+
+        if (d.type === "line") {
           // Line legend
-          item.append("line")
+          item
+            .append("line")
             .attr("x1", 0)
             .attr("y1", 8)
             .attr("x2", 16)
@@ -415,15 +388,12 @@ const Chart: React.FC<ChartProps> = ({
             .attr("stroke-dasharray", d.dashed ? "3,3" : "none");
         } else {
           // Circle legend
-          item.append("circle")
-            .attr("cx", 8)
-            .attr("cy", 8)
-            .attr("r", 4)
-            .attr("fill", d.color);
+          item.append("circle").attr("cx", 8).attr("cy", 8).attr("r", 4).attr("fill", d.color);
         }
-        
+
         // Add legend text
-        item.append("text")
+        item
+          .append("text")
           .attr("x", 20)
           .attr("y", 8)
           .attr("dy", "0.35em")
@@ -519,8 +489,6 @@ const Chart: React.FC<ChartProps> = ({
       style={{
         width: "100%",
         height: "400px",
-        border: "1px solid #e1e1e1",
-        borderRadius: "4px",
         backgroundColor: "white",
       }}
     >

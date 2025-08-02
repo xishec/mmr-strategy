@@ -77,6 +77,7 @@ const Lobby: React.FC<LobbyProps> = ({ setSimulation }) => {
               $.
             </Typography>
           </Box>
+
           <Box display="grid" alignItems="center" justifyContent="center" gridTemplateColumns="50%">
             <Button
               variant="contained"

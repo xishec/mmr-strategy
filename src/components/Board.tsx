@@ -77,10 +77,13 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
     });
   }, []);
 
-  const handleCrosshairMove = useCallback((date: string | null) => {
-    setCrosshairDate(date);
-    syncCrosshairToAll(date);
-  }, [syncCrosshairToAll]);
+  const handleCrosshairMove = useCallback(
+    (date: string | null) => {
+      setCrosshairDate(date);
+      syncCrosshairToAll(date);
+    },
+    [syncCrosshairToAll]
+  );
 
   const handleCrosshairLeave = useCallback(() => {
     setCrosshairDate(null);
@@ -231,18 +234,6 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               Portfolio Performance Comparison
             </Typography>
 
-            {selectedDate && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                Selected Date: {selectedDate}
-              </Alert>
-            )}
-
-            {crosshairDate && (
-              <Alert severity="success" sx={{ mb: 2 }}>
-                Crosshair Date: {crosshairDate}
-              </Alert>
-            )}
-
             <Chart
               multiSeriesData={priceChart}
               onPointClick={handlePointClick}
@@ -263,12 +254,6 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
             <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
               Portfolio Performance Comparison (Log Scale)
             </Typography>
-
-            {selectedDate && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                Selected Date: {selectedDate}
-              </Alert>
-            )}
 
             <Chart
               multiSeriesData={priceChart}
