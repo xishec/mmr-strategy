@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { Button, Box, Typography, TextField, FormControlLabel, Switch } from "@mui/material";
+import { Box, Typography, TextField, FormControlLabel, Switch } from "@mui/material";
 import { startSimulation } from "../core/functions";
 import { MarketData, Simulation, MultiSeriesChartData, Variables, RebalanceLog } from "../core/models";
 import Chart from "./Chart";
@@ -39,7 +39,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
   const [rebalanceLogsMap, setRebalanceLogsMap] = useState<Record<string, RebalanceLog>>({});
 
-  const [simulation, setSimulation] = useState<Simulation | null>({
+  const [simulation, setSimulation] = useState<Simulation>({
     startingDate: startingDate.toISOString().split("T")[0],
     initialMoney: initialMoney,
     portfolioSnapshots: [],
@@ -61,11 +61,14 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   }>({});
   const crosshairTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleUpdateVariables = () => {
-    if (!simulation) return;
+  const handlePointClick = useCallback((date: string, value: number) => {
+    // setSelectedDate(date);
+  }, []);
 
-    const updatedSimulation: Simulation = {
-      ...simulation,
+  // Auto-update simulation when variables change
+  useEffect(() => {
+    setSimulation(prevSimulation => ({
+      ...prevSimulation,
       startingDate: startingDate.toISOString().split("T")[0],
       initialMoney: initialMoney,
       variables: {
@@ -77,13 +80,18 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         DropRate: dropRate,
         DoubleDropRate: doubleDropRate,
       },
-    };
-    setSimulation(updatedSimulation);
-  };
-
-  const handlePointClick = useCallback((date: string, value: number) => {
-    // setSelectedDate(date);
-  }, []);
+    }));
+  }, [
+    startingDate,
+    initialMoney,
+    rebalanceDays,
+    targetRate,
+    cashDayRate,
+    targetRatio,
+    spikeRate,
+    dropRate,
+    doubleDropRate,
+  ]);
 
   // Chart synchronization functions
   const handleChartReady = useCallback((chartId: string, chart: any, mainSeries: any) => {
@@ -109,7 +117,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   );
 
   const setSelectedDateToLastRebalance = useCallback(() => {
-    if (!simulation) return;
     const lastRebalanceLog = simulation.rebalanceLogs;
     setSelectedDate(lastRebalanceLog[lastRebalanceLog.length - 1]?.date || null);
   }, [simulation]);
@@ -125,7 +132,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     if (crosshairTimeoutRef.current) {
       clearTimeout(crosshairTimeoutRef.current);
     }
-    
+
     // Add a small delay to ensure the crosshair is properly cleared
     crosshairTimeoutRef.current = setTimeout(() => {
       clearAllCrosshairs();
@@ -197,41 +204,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     }
   }, [simulation, setSelectedDateToLastRebalance]);
 
-  // If no simulation exists, start one with default values
-  useEffect(() => {
-    if (!simulation) {
-      const date = startingDate.toISOString().split("T")[0];
-      const newSimulation: Simulation = {
-        startingDate: date,
-        initialMoney: initialMoney,
-        portfolioSnapshots: [],
-        rebalanceLogs: [],
-        variables: {
-          rebalanceDays,
-          targetRate,
-          CashDayRate: cashDayRate,
-          TargetRatio: targetRatio,
-          SpikeRate: spikeRate,
-          DropRate: dropRate,
-          DoubleDropRate: doubleDropRate,
-        },
-      };
-      setSimulation(newSimulation);
-    }
-  }, [
-    simulation,
-    startingDate,
-    initialMoney,
-    rebalanceDays,
-    targetRate,
-    cashDayRate,
-    targetRatio,
-    spikeRate,
-    dropRate,
-    doubleDropRate,
-    setSimulation,
-  ]);
-
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -243,6 +215,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
   return (
     <Box width="100%" height="100vh" display="grid" gridTemplateColumns="1fr 4fr" gap={2} sx={{ p: 4 }}>
+      {/* Variables */}
       <Box>
         <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
           Simulation Setup
@@ -349,10 +322,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
         </Box>
 
-        <Button variant="contained" color="primary" onClick={handleUpdateVariables} sx={{ mb: 2 }}>
-          {!simulation ? "Start Simulation" : "Update Variables & Restart Simulation"}
-        </Button>
-
         <FormControlLabel
           control={<Switch checked={isLogScale} onChange={(e) => setIsLogScale(e.target.checked)} color="primary" />}
           label="Log Scale"
@@ -360,7 +329,9 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         />
       </Box>
 
-      <Box sx={{ height: "95vh", display: "grid", gridTemplateRows: "1fr 4fr 2fr", gap: 0 }}
+      {/* Rebalance Log Details */}
+      <Box
+        sx={{ height: "95vh", display: "grid", gridTemplateRows: "1fr 4fr 2fr", gap: 0 }}
         onMouseLeave={handleCrosshairLeave}
       >
         <Box sx={{ p: 2, border: "1px solid #e0e0e0", borderRadius: 1 }}>
