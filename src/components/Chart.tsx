@@ -34,7 +34,7 @@ const Chart: React.FC<ChartProps> = ({
   const chartInstanceRef = useRef<any>(null);
 
   // Legend data configuration
-  const getLegendData = (chartType: string, seriesData: { [key: string]: any[] }) => {
+  const getLegendData = useCallback((chartType: string, seriesData: { [key: string]: any[] }) => {
     const legendItems: Array<{
       label: string;
       color: string;
@@ -72,7 +72,7 @@ const Chart: React.FC<ChartProps> = ({
     }
 
     return legendItems;
-  };
+  }, [rebalanceLogs]);
 
   const createD3Chart = useCallback(() => {
     if (!chartContainerRef.current || !svgRef.current) return null;
@@ -131,6 +131,22 @@ const Chart: React.FC<ChartProps> = ({
       .y((d) => yScale(d.value))
       .curve(d3.curveLinear);
 
+    // Create area generator for ratio chart
+    const area = d3
+      .area<any>()
+      .x((d) => xScale(d.parsedTime))
+      .y0(height)
+      .y1((d) => yScale(d.value))
+      .curve(d3.curveLinear);
+
+    // Create area generator for pullback chart (area from top)
+    const pullbackArea = d3
+      .area<any>()
+      .x((d) => xScale(d.parsedTime))
+      .y0(0) // Start from top of chart
+      .y1((d) => yScale(d.value))
+      .curve(d3.curveLinear);
+
     // Add grid lines
     const xAxis = d3.axisBottom(xScale).tickSize(-height);
     const yAxis = d3.axisLeft(yScale).tickSize(-width);
@@ -156,11 +172,13 @@ const Chart: React.FC<ChartProps> = ({
       default: "#2962FF",
     };
 
-    // Draw lines for each series
+    // Draw lines/areas for each series
     let mainSeries: any = null;
     Object.entries(seriesData).forEach(([seriesName, data], index) => {
       const seriesColor = colors[seriesName as keyof typeof colors] || colors.default;
       const isDashed = seriesName === "Sig9Target";
+      const isRatioChart = chartType === 'ratio';
+      const isPullbackChart = chartType === 'pullback';
 
       // Prepare data with parsed time
       const processedData = data.map((d) => ({
@@ -168,18 +186,67 @@ const Chart: React.FC<ChartProps> = ({
         parsedTime: parseTime(d.time),
       }));
 
-      const path = g
-        .append("path")
-        .datum(processedData)
-        .attr("class", `line series-${seriesName}`)
-        .attr("fill", "none")
-        .attr("stroke", seriesColor)
-        .attr("stroke-width", 2)
-        .attr("stroke-dasharray", isDashed ? "5,5" : "none")
-        .attr("d", line);
+      if (isRatioChart && seriesName === 'Ratio') {
+        // Draw area for ratio chart (area below line)
+        g
+          .append("path")
+          .datum(processedData)
+          .attr("class", `area series-${seriesName}`)
+          .attr("fill", seriesColor)
+          .attr("fill-opacity", 0.3)
+          .attr("d", area);
 
-      if (!mainSeries || index === 0) {
-        mainSeries = { data: processedData, element: path };
+        // Draw line on top of area
+        const linePath = g
+          .append("path")
+          .datum(processedData)
+          .attr("class", `line series-${seriesName}`)
+          .attr("fill", "none")
+          .attr("stroke", seriesColor)
+          .attr("stroke-width", 2)
+          .attr("d", line);
+
+        if (!mainSeries || index === 0) {
+          mainSeries = { data: processedData, element: linePath };
+        }
+      } else if (isPullbackChart && seriesName === 'pullback') {
+        // Draw line first for pullback chart
+        const linePath = g
+          .append("path")
+          .datum(processedData)
+          .attr("class", `line series-${seriesName}`)
+          .attr("fill", "none")
+          .attr("stroke", seriesColor)
+          .attr("stroke-width", 2)
+          .attr("d", line);
+
+        // Draw area from top for pullback chart
+        g
+          .append("path")
+          .datum(processedData)
+          .attr("class", `area series-${seriesName}`)
+          .attr("fill", seriesColor)
+          .attr("fill-opacity", 0.3)
+          .attr("d", pullbackArea);
+
+        if (!mainSeries || index === 0) {
+          mainSeries = { data: processedData, element: linePath };
+        }
+      } else {
+        // Draw regular line
+        const path = g
+          .append("path")
+          .datum(processedData)
+          .attr("class", `line series-${seriesName}`)
+          .attr("fill", "none")
+          .attr("stroke", seriesColor)
+          .attr("stroke-width", 2)
+          .attr("stroke-dasharray", isDashed ? "5,5" : "none")
+          .attr("d", line);
+
+        if (!mainSeries || index === 0) {
+          mainSeries = { data: processedData, element: path };
+        }
       }
     });
 
