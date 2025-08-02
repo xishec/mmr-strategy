@@ -23,7 +23,6 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
   const [metadataChart, setMetadataChart] = useState<MultiSeriesChartData>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedValue, setSelectedValue] = useState<number | null>(null);
 
   // Chart synchronization state
   const chartInstancesRef = useRef<{
@@ -53,9 +52,20 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
     setSimulation(updatedSimulation);
   };
 
+  const findClosestRebalanceDate = (date: string) => {
+    const rebalanceDates = simulation.rebalanceLogs.map((rebalanceLog) => rebalanceLog.date);
+    const closestDate = rebalanceDates.reduce((prev, curr) => {
+      return Math.abs(new Date(curr).getTime() - new Date(date).getTime()) <
+        Math.abs(new Date(prev).getTime() - new Date(date).getTime())
+        ? curr
+        : prev;
+    });
+    return closestDate;
+  };
+
   const handlePointClick = useCallback((date: string, value: number) => {
-    setSelectedDate(date);
-    setSelectedValue(value);
+    const closestRebalanceDate = findClosestRebalanceDate(date);
+    setSelectedDate(closestRebalanceDate);
   }, []);
 
   // Chart synchronization functions
@@ -308,7 +318,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
 
             {selectedDate && (
               <Alert severity="info" sx={{ mb: 2 }}>
-                Selected Date: {selectedDate} | Portfolio Value: ${selectedValue?.toLocaleString()}
+                Selected Date: {selectedDate}
               </Alert>
             )}
 
@@ -359,7 +369,7 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
 
             {selectedDate && (
               <Alert severity="info" sx={{ mb: 2 }}>
-                Selected Date: {selectedDate} | Portfolio Value: ${selectedValue?.toLocaleString()}
+                Selected Date: {selectedDate}
               </Alert>
             )}
 

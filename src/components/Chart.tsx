@@ -144,69 +144,6 @@ function Chart({
         });
       }
     }
-    // // Handle single series data (backward compatibility)
-    // else if (chartData) {
-    //   const lineSeries = chart.addSeries(LineSeries, {
-    //     color: "#2962FF",
-    //     lineWidth: 2,
-    //     priceLineVisible: false, // Hide price line
-    //     lastValueVisible: false, // Hide last value label
-    //   });
-
-    //   lineSeries.setData(chartData);
-
-    //   // Notify parent component that chart is ready
-    //   if (onChartReady && syncId) {
-    //     onChartReady(syncId, chart, lineSeries);
-    //   }
-
-    //   // Add rebalance markers if provided
-    //   if (rebalanceLogs && rebalanceLogs.length > 0) {
-    //     const markers = rebalanceLogs.map((rebalanceLog) => {
-    //       if (rebalanceLog.rebalanceType === RebalanceType.Rebalance) {
-    //         return {
-    //           time: rebalanceLog.date,
-    //           position: "inBar" as const,
-    //           color: "#E37400",
-    //           shape: "circle" as const,
-    //         };
-    //       } else if (rebalanceLog.rebalanceType === RebalanceType.Reset) {
-    //         return {
-    //           time: rebalanceLog.date,
-    //           position: "inBar" as const,
-    //           color: "#34A853",
-    //           shape: "circle" as const,
-    //         };
-    //       } else if (rebalanceLog.rebalanceType === RebalanceType.Skip) {
-    //         return {
-    //           time: rebalanceLog.date,
-    //           position: "inBar" as const,
-    //           color: "#FEEFC3",
-    //           shape: "circle" as const,
-    //         };
-    //       }
-    //       return {
-    //         time: rebalanceLog.date,
-    //         position: "inBar" as const,
-    //         color: "#E37400",
-    //         shape: "circle" as const,
-    //       };
-    //     });
-    //     createSeriesMarkers(lineSeries, markers);
-    //   }
-
-    //   // Add click event handler for single series
-    //   if (onPointClick) {
-    //     chart.subscribeClick((param) => {
-    //       if (param.time) {
-    //         const clickedPoint = chartData.find((point) => point.time === param.time);
-    //         if (clickedPoint) {
-    //           onPointClick(clickedPoint.time, clickedPoint.value);
-    //         }
-    //       }
-    //     });
-    //   }
-    // }
 
     // Fit content to the chart
     chart.timeScale().fitContent();
