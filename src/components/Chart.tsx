@@ -50,6 +50,8 @@ function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false, 
       Sig9Total: "#FBBC04",
       MockTotalQQQ: "#4285F4",
       MockTotalTQQQ: "#EA4335",
+      Ratio: "#FBBC04",
+      pullback: "#EA4335",
     };
 
     // Handle multi-series data

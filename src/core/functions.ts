@@ -113,7 +113,7 @@ const computePortfolioSnapshot = (simulation: Simulation, date: string, TQQQDelt
   newPortfolioSnapshot.date = date;
   newPortfolioSnapshot.investments = investments;
   newPortfolioSnapshot.peak = Math.max(lastInvestmentsSnapshot.peak, newTotal);
-  newPortfolioSnapshot.pullback = 1;
+  newPortfolioSnapshot.pullback = 1 + (newTotal - newPortfolioSnapshot.peak) / newPortfolioSnapshot.peak;
   newPortfolioSnapshot.cumulativeRateSinceRebalance =
     (1 + newPortfolioSnapshot.cumulativeRateSinceRebalance) * (1 + TQQQDelta / 100) - 1;
   simulation.portfolioSnapshots.push(newPortfolioSnapshot);

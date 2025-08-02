@@ -20,7 +20,8 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
   const [dropRate, setDropRate] = useState<number>(simulation.variables.DropRate);
   const [doubleDropRate, setDoubleDropRate] = useState<number>(simulation.variables.DoubleDropRate);
 
-  const [multiSeriesChart, setMultiSeriesChart] = useState<MultiSeriesChartData>({});
+  const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
+  const [metadataChart, setMetadataChart] = useState<MultiSeriesChartData>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedValue, setSelectedValue] = useState<number | null>(null);
 
@@ -74,37 +75,61 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
     chart.clearCrosshairPosition();
   }, []);
 
-  const handleChartReady = useCallback((chartId: string, chart: any, mainSeries: any) => {
-    chartInstancesRef.current[chartId] = { chart, mainSeries };
-    
-    // Set up synchronization once both charts are ready
-    if (Object.keys(chartInstancesRef.current).length === 2) {
-      const chartIds = Object.keys(chartInstancesRef.current);
-      const [chart1Id, chart2Id] = chartIds;
-      const { chart: chart1, mainSeries: mainSeries1 } = chartInstancesRef.current[chart1Id];
-      const { chart: chart2, mainSeries: mainSeries2 } = chartInstancesRef.current[chart2Id];
+  const handleChartReady = useCallback(
+    (chartId: string, chart: any, mainSeries: any) => {
+      chartInstancesRef.current[chartId] = { chart, mainSeries };
 
-      // Sync time scale
-      chart1.timeScale().subscribeVisibleLogicalRangeChange((timeRange: any) => {
-        chart2.timeScale().setVisibleLogicalRange(timeRange);
-      });
+      // Set up synchronization once all three charts are ready
+      if (Object.keys(chartInstancesRef.current).length === 3) {
+        const chartIds = Object.keys(chartInstancesRef.current);
+        const charts = chartIds.map(id => chartInstancesRef.current[id]);
 
-      chart2.timeScale().subscribeVisibleLogicalRangeChange((timeRange: any) => {
-        chart1.timeScale().setVisibleLogicalRange(timeRange);
-      });
+        // Clear any existing subscriptions to avoid duplicates
+        charts.forEach(chartInstance => {
+          try {
+            chartInstance.chart.timeScale().unsubscribeVisibleLogicalRangeChange();
+            chartInstance.chart.unsubscribeCrosshairMove();
+          } catch (e) {
+            // Ignore errors if no subscriptions exist
+          }
+        });
 
-      // Sync crosshair
-      chart1.subscribeCrosshairMove((param: any) => {
-        const dataPoint = getCrosshairDataPoint(mainSeries1, param);
-        syncCrosshair(chart2, mainSeries2, dataPoint);
-      });
+        // Sync time scale between all charts
+        charts.forEach((chartInstance, index) => {
+          chartInstance.chart.timeScale().subscribeVisibleLogicalRangeChange((timeRange: any) => {
+            charts.forEach((otherChartInstance, otherIndex) => {
+              if (index !== otherIndex) {
+                try {
+                  otherChartInstance.chart.timeScale().setVisibleLogicalRange(timeRange);
+                } catch (e) {
+                  // Ignore errors if chart is not ready
+                }
+              }
+            });
+          });
+        });
 
-      chart2.subscribeCrosshairMove((param: any) => {
-        const dataPoint = getCrosshairDataPoint(mainSeries2, param);
-        syncCrosshair(chart1, mainSeries1, dataPoint);
-      });
-    }
-  }, [getCrosshairDataPoint, syncCrosshair]);
+        // Sync crosshair between all charts
+        charts.forEach((chartInstance, index) => {
+          chartInstance.chart.subscribeCrosshairMove((param: any) => {
+            const dataPoint = getCrosshairDataPoint(chartInstance.mainSeries, param);
+            charts.forEach((otherChartInstance, otherIndex) => {
+              if (index !== otherIndex) {
+                try {
+                  syncCrosshair(otherChartInstance.chart, otherChartInstance.mainSeries, dataPoint);
+                } catch (e) {
+                  // Ignore errors if chart is not ready
+                }
+              }
+            });
+          });
+        });
+
+        console.log('All three charts synchronized successfully');
+      }
+    },
+    [getCrosshairDataPoint, syncCrosshair]
+  );
 
   useEffect(() => {
     if (simulation.portfolioSnapshots.length === 0) {
@@ -112,9 +137,13 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
     }
   }, [marketData, simulation, setSimulation]);
 
+  // Clear chart instances when simulation changes to ensure fresh synchronization
   useEffect(() => {
-    // Create multi-series data
-    setMultiSeriesChart({
+    chartInstancesRef.current = {};
+  }, [simulation]);
+
+  useEffect(() => {
+    setPriceChart({
       Sig9Total: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
         value: snapshot.investments.Total,
@@ -130,6 +159,16 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
       MockTotalTQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
         value: snapshot.investments.MockTotalTQQQ,
+      })),
+    });
+    setMetadataChart({
+      Ratio: simulation.portfolioSnapshots.map((snapshot) => ({
+        time: snapshot.date,
+        value: snapshot.investments.Ratio,
+      })),
+      pullback: simulation.portfolioSnapshots.map((snapshot) => ({
+        time: snapshot.date,
+        value: snapshot.pullback,
       })),
     });
   }, [simulation.portfolioSnapshots]);
@@ -246,13 +285,13 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
                 <Typography variant="body2">Sig9 Total</Typography>
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box 
-                  sx={{ 
-                    width: 16, 
-                    height: 3, 
+                <Box
+                  sx={{
+                    width: 16,
+                    height: 3,
                     backgroundColor: "#FBBC04",
                     borderTop: "1px dashed #FBBC04",
-                    borderBottom: "1px dashed #FBBC04"
+                    borderBottom: "1px dashed #FBBC04",
                   }}
                 ></Box>
                 <Typography variant="body2">Sig9 Target</Typography>
@@ -273,8 +312,8 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               </Alert>
             )}
 
-            <Chart 
-              multiSeriesData={multiSeriesChart} 
+            <Chart
+              multiSeriesData={priceChart}
               onPointClick={handlePointClick}
               syncId="chart1"
               onChartReady={handleChartReady}
@@ -296,13 +335,13 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
                 <Typography variant="body2">Sig9 Total</Typography>
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box 
-                  sx={{ 
-                    width: 16, 
-                    height: 3, 
+                <Box
+                  sx={{
+                    width: 16,
+                    height: 3,
                     backgroundColor: "#FBBC04",
                     borderTop: "1px dashed #FBBC04",
-                    borderBottom: "1px dashed #FBBC04"
+                    borderBottom: "1px dashed #FBBC04",
                   }}
                 ></Box>
                 <Typography variant="body2">Sig9 Target</Typography>
@@ -323,11 +362,39 @@ const Board: React.FC<BoardProps> = ({ simulation, setSimulation, marketData }) 
               </Alert>
             )}
 
-            <Chart 
-              multiSeriesData={multiSeriesChart} 
-              onPointClick={handlePointClick} 
-              useLogScale 
+            <Chart
+              multiSeriesData={priceChart}
+              onPointClick={handlePointClick}
+              useLogScale
               syncId="chart2"
+              onChartReady={handleChartReady}
+            />
+          </Box>
+        )}
+
+        {/* Metadata Chart Section */}
+        {simulation.portfolioSnapshots.length > 0 && (
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
+              Portfolio Metadata
+            </Typography>
+
+            {/* Legend */}
+            <Box sx={{ display: "flex", gap: 3, mb: 2, flexWrap: "wrap" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 16, height: 3, backgroundColor: "#2962FF" }}></Box>
+                <Typography variant="body2">TQQQ Ratio</Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 16, height: 3, backgroundColor: "#FF6D00" }}></Box>
+                <Typography variant="body2">Pullback</Typography>
+              </Box>
+            </Box>
+
+            <Chart
+              multiSeriesData={metadataChart}
+              onPointClick={handlePointClick}
+              syncId="chart3"
               onChartReady={handleChartReady}
             />
           </Box>
