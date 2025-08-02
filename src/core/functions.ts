@@ -1,6 +1,6 @@
 import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation } from "./models";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export const loadData = async (
   setDataLoading: (loading: boolean) => void,

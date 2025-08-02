@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Button, Box, Typography, TextField, FormControlLabel, Switch } from "@mui/material";
 import { startSimulation } from "../core/functions";
-import { MarketData, Simulation, MultiSeriesChartData, Variables } from "../core/models";
+import { MarketData, Simulation, MultiSeriesChartData, Variables, RebalanceLog } from "../core/models";
 import Chart from "./Chart";
 
 interface BoardProps {
@@ -27,8 +27,9 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [pullbackChart, setPullbackChart] = useState<MultiSeriesChartData>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
+  const [rebalanceLogsMap, setRebalanceLogsMap] = useState<Record<string, RebalanceLog>>({});
+
   const [simulation, setSimulation] = useState<Simulation | null>({
-    started: true,
     startingDate: startingDate.toISOString().split("T")[0],
     initialMoney: initialMoney,
     portfolioSnapshots: [],
@@ -48,10 +49,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const chartInstancesRef = useRef<{
     [key: string]: { chart: any; mainSeries: any };
   }>({});
-
-  useEffect(() => {
-    console.log(selectedDate);
-  }, [selectedDate]);
 
   const handleUpdateVariables = () => {
     if (!simulation) return;
@@ -74,7 +71,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   };
 
   const handlePointClick = useCallback((date: string, value: number) => {
-    setSelectedDate(date);
+    // setSelectedDate(date);
   }, []);
 
   // Chart synchronization functions
@@ -94,6 +91,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
   const handleCrosshairMove = useCallback(
     (date: string | null) => {
+      setSelectedDate(date);
       syncCrosshairToAll(date);
     },
     [syncCrosshairToAll]
@@ -107,7 +105,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const lastSimulationParams = useRef<string>("");
 
   useEffect(() => {
-    if (marketData && simulation && simulation.started) {
+    if (marketData && simulation) {
       // Create a key from the simulation parameters that affect the calculation
       const currentParams = JSON.stringify({
         startingDate: simulation.startingDate,
@@ -125,15 +123,21 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
   useEffect(() => {
     if (simulation) {
+      // Create rebalance logs map for quick lookup by date
+      const newRebalanceLogsMap: Record<string, RebalanceLog> = {};
+      simulation.rebalanceLogs.forEach((log) => {
+        newRebalanceLogsMap[log.date] = log;
+      });
+      console.log("newRebalanceLogsMap:", newRebalanceLogsMap);
+      setRebalanceLogsMap(newRebalanceLogsMap);
+      const lastRebalanceLog = simulation.rebalanceLogs;
+      setSelectedDate(lastRebalanceLog[lastRebalanceLog.length - 1]?.date || null);
+
       setPriceChart({
         Sig9Total: simulation.portfolioSnapshots.map((snapshot) => ({
           time: snapshot.date,
           value: snapshot.investments.Total,
         })),
-        // Sig9Target: simulation.portfolioSnapshots.map((snapshot) => ({
-        //   time: snapshot.date,
-        //   value: snapshot.nextTarget,
-        // })),
         Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
           time: rebalanceLog.date,
           value: rebalanceLog.nextTarget,
@@ -167,7 +171,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     if (!simulation) {
       const date = startingDate.toISOString().split("T")[0];
       const newSimulation: Simulation = {
-        started: true,
         startingDate: date,
         initialMoney: initialMoney,
         portfolioSnapshots: [],
@@ -317,7 +320,44 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         />
       </Box>
 
-      <Box sx={{ height: "95vh", display: "grid", gridTemplateRows: "2fr 1fr", gap: 0 }}>
+      <Box sx={{ height: "95vh", display: "grid", gridTemplateRows: "1fr 4fr 2fr", gap: 0 }}>
+        <Box sx={{ p: 2, border: "1px solid #e0e0e0", borderRadius: 1 }}>
+          <Typography variant="h6" component="h3" sx={{ mb: 2 }}>
+            Rebalance Log Details
+          </Typography>
+
+          {selectedDate ? (
+            rebalanceLogsMap[selectedDate] ? (
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 1, fontSize: "0.875rem" }}>
+                <Box>
+                  <strong>Date:</strong> {selectedDate}
+                </Box>
+                <Box>
+                  <strong>Total:</strong> ${rebalanceLogsMap[selectedDate].total.toFixed(2)}
+                </Box>
+                <Box>
+                  <strong>Next Target:</strong> ${rebalanceLogsMap[selectedDate].nextTarget?.toFixed(2) || "N/A"}
+                </Box>
+                <Box>
+                  <strong>Cumulative Rate:</strong>{" "}
+                  {(rebalanceLogsMap[selectedDate].cumulativeRateSinceLastRebalance * 100).toFixed(2)}%
+                </Box>
+                <Box>
+                  <strong>Rebalance Type:</strong> {rebalanceLogsMap[selectedDate].rebalanceType}
+                </Box>
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                No rebalance occurred on {selectedDate}
+              </Typography>
+            )
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Hover over the chart to see rebalance details
+            </Typography>
+          )}
+        </Box>
+
         {/* Chart Section */}
         {simulation && simulation.portfolioSnapshots.length > 0 && (
           <Box sx={{ flex: 1, display: "flex", flexDirection: "column", mb: 2 }}>

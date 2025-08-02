@@ -1,5 +1,4 @@
 export interface Simulation {
-  started: boolean;
   startingDate: string;
   initialMoney: number;
   portfolioSnapshots: PortfolioSnapshot[];
