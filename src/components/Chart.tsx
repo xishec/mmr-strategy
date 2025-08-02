@@ -7,9 +7,11 @@ interface ChartProps {
   multiSeriesData?: MultiSeriesChartData;
   onPointClick?: (date: string, value: number) => void;
   useLogScale?: boolean;
+  syncId?: string;
+  onChartReady?: (chartId: string, chart: any, mainSeries: any) => void;
 }
 
-function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false }: ChartProps) {
+function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false, syncId, onChartReady }: ChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,6 +55,7 @@ function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false }
     // Handle multi-series data
     if (multiSeriesData) {
       const seriesMap: { [key: string]: any } = {};
+      let mainSeries: any = null;
 
       Object.entries(multiSeriesData).forEach(([seriesName, data]) => {
         const lineSeries = chart.addSeries(LineSeries, {
@@ -64,7 +67,17 @@ function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false }
 
         lineSeries.setData(data);
         seriesMap[seriesName] = { series: lineSeries, data };
+        
+        // Use the first series as main series for synchronization
+        if (!mainSeries) {
+          mainSeries = lineSeries;
+        }
       });
+
+      // Notify parent component that chart is ready
+      if (onChartReady && syncId) {
+        onChartReady(syncId, chart, mainSeries);
+      }
 
       // Add click event handler for multi-series
       if (onPointClick) {
@@ -88,6 +101,11 @@ function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false }
       });
 
       lineSeries.setData(chartData);
+
+      // Notify parent component that chart is ready
+      if (onChartReady && syncId) {
+        onChartReady(syncId, chart, lineSeries);
+      }
 
       // Add click event handler for single series
       if (onPointClick) {
@@ -118,7 +136,7 @@ function Chart({ chartData, multiSeriesData, onPointClick, useLogScale = false }
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, [chartData, multiSeriesData, onPointClick, useLogScale]);
+  }, [chartData, multiSeriesData, onPointClick, useLogScale, syncId, onChartReady]);
 
   return (
     <div
