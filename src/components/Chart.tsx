@@ -2,6 +2,12 @@ import React, { useEffect, useRef, useCallback } from "react";
 import * as d3 from "d3";
 import { ChartData, MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core/models";
 
+const black = "#202124";
+const yellow = "#FBBC04";
+const blue = "#4285F4";
+const red = "#EA4335";
+const green = "#34A853";
+
 interface ChartProps {
   chartData?: ChartData;
   multiSeriesData?: MultiSeriesChartData;
@@ -46,34 +52,34 @@ const Chart: React.FC<ChartProps> = ({
 
     if (chartType === "price") {
       if (seriesData.StrategyTotal) {
-        legendItems.push({ label: "Strategy Total", color: "#FBBC04", type: "line" });
+        legendItems.push({ label: "Strategy Total", color: yellow, type: "line" });
       }
       if (seriesData.StrategyTarget) {
-        legendItems.push({ label: "Strategy Target", color: "#202124", type: "line", dashed: true });
+        legendItems.push({ label: "Strategy Target", color: black, type: "line", dashed: true });
       }
       if (seriesData.Target) {
-        legendItems.push({ label: "Target", color: "#202124", type: "circle" });
+        legendItems.push({ label: "Target", color: black, type: "circle" });
       }
       if (seriesData.MockTotalQQQ) {
-        legendItems.push({ label: "Mock Total QQQ", color: "#4285F4", type: "line" });
+        legendItems.push({ label: "Mock Total QQQ", color: blue, type: "line" });
       }
       if (seriesData.MockTotalTQQQ) {
-        legendItems.push({ label: "Mock Total TQQQ", color: "#EA4335", type: "line" });
+        legendItems.push({ label: "Mock Total TQQQ", color: red, type: "line" });
       }
     } else if (chartType === "ratio") {
       if (seriesData.Ratio) {
-        legendItems.push({ label: "TQQQ Ratio", color: "#FBBC04", type: "line" });
+        legendItems.push({ label: "TQQQ Ratio", color: yellow, type: "line" });
       }
     } else if (chartType === "pullback") {
       if (seriesData.pullback) {
-        legendItems.push({ label: "Portfolio Pullback", color: "#EA4335", type: "line" });
+        legendItems.push({ label: "Portfolio Pullback", color: red, type: "line" });
       }
     } else if (chartType === "ratio-pullback") {
       if (seriesData.Ratio) {
-        legendItems.push({ label: "TQQQ Ratio", color: "#4285F4", type: "line" });
+        legendItems.push({ label: "TQQQ Ratio", color: blue, type: "line" });
       }
       if (seriesData.pullback) {
-        legendItems.push({ label: "Portfolio Pullback", color: "#EA4335", type: "line" });
+        legendItems.push({ label: "Portfolio Pullback", color: red, type: "line" });
       }
     }
     return legendItems;
@@ -188,24 +194,21 @@ const Chart: React.FC<ChartProps> = ({
         .attr("stroke-width", 2)
         .attr("stroke-dasharray", "5,5");
     }
-
     // Color mapping
     const colors = {
-      StrategyTarget: "#202124",
-      StrategyTotal: "#FBBC04",
-      Target: "#202124",
-      MockTotalQQQ: "#4285F4",
-      MockTotalTQQQ: "#EA4335",
-      Ratio: chartType === "ratio-pullback" ? "#4285F4" : "#FBBC04",
-      pullback: "#EA4335",
+      StrategyTotal: yellow,
+      Target: black,
+      MockTotalQQQ: blue,
+      MockTotalTQQQ: red,
+      Ratio: chartType === "ratio-pullback" ? blue : yellow,
+      pullback: red,
       default: "#2962FF",
     };
-
     // Draw lines/areas for each series
     let mainSeries: any = null;
     Object.entries(seriesData).forEach(([seriesName, data], index) => {
       const seriesColor = colors[seriesName as keyof typeof colors] || colors.default;
-      const isDashed = seriesName === "StrategyTarget";
+      const isDashed = seriesName === "Target";
       const isRatioChart = chartType === "ratio";
       const isPullbackChart = chartType === "pullback";
       const isCombinedChart = chartType === "ratio-pullback";
@@ -261,7 +264,7 @@ const Chart: React.FC<ChartProps> = ({
           mainSeries = { data: processedData, element: linePath };
         }
       } else if (isCombinedChart && (seriesName === "Ratio" || seriesName === "pullback")) {
-        // Draw area for combined chart (centered at y=0)
+        // Draw area for combined chart (centeblueq at y=0)
         const areaGenerator = seriesName === "Ratio" ? combinedRatioArea : combinedPullbackArea;
 
         g.append("path")
@@ -295,31 +298,35 @@ const Chart: React.FC<ChartProps> = ({
           .append("circle")
           .attr("cx", (d) => xScale(d.parsedTime))
           .attr("cy", (d) => yScale(d.value))
-          .attr("r", 3)
-          .attr("stroke", (d) => {
-            let rebalanceSeriesColor = "none";
+          .attr("r", (d) => {
+            let size = 1;
             const dateKey = d3.timeFormat("%Y-%m-%d")(d.parsedTime);
             const rebalanceType = rebalanceLogsMap![dateKey]?.rebalanceType;
             if (rebalanceType === RebalanceType.Excess) {
-              rebalanceSeriesColor = seriesColor;
+              size = 2;
             } else if (rebalanceType === RebalanceType.Shortfall) {
-              rebalanceSeriesColor = seriesColor;
+              size = 2;
             } else if (rebalanceType === RebalanceType.Drop) {
             } else if (rebalanceType === RebalanceType.Spike) {
+              size = 2;
             } else if (rebalanceType === RebalanceType.StillDropping) {
             }
-            return rebalanceSeriesColor;
+            return size;
           })
           .attr("fill", (d) => {
             let rebalanceSeriesColor = "none";
             const dateKey = d3.timeFormat("%Y-%m-%d")(d.parsedTime);
             const rebalanceType = rebalanceLogsMap![dateKey]?.rebalanceType;
             if (rebalanceType === RebalanceType.Excess) {
+              rebalanceSeriesColor = seriesColor;
             } else if (rebalanceType === RebalanceType.Shortfall) {
+              rebalanceSeriesColor = seriesColor;
             } else if (rebalanceType === RebalanceType.Drop) {
+              rebalanceSeriesColor = seriesColor;
             } else if (rebalanceType === RebalanceType.Spike) {
               rebalanceSeriesColor = seriesColor;
             } else if (rebalanceType === RebalanceType.StillDropping) {
+              rebalanceSeriesColor = seriesColor;
             }
             return rebalanceSeriesColor;
           });

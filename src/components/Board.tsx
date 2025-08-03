@@ -203,33 +203,33 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         }))
       );
       setPriceChart({
-        StrategyTotal: simulation.rebalanceLogs.map((snapshot) => ({
-          time: snapshot.date,
-          value: portfolioSnapshotsMap[snapshot.date].investments.total,
+        StrategyTotal: simulation.rebalanceLogs.map((rebalanceLog) => ({
+          time: rebalanceLog.date,
+          value: portfolioSnapshotsMap[rebalanceLog.date].investments.total,
         })),
         Target: simulation.rebalanceLogs.map((rebalanceLog, i) => ({
           time: rebalanceLog.date,
           value: i > 0 ? simulation.rebalanceLogs[i - 1].nextTarget : rebalanceLog.total,
         })),
-        MockTotalQQQ: simulation.rebalanceLogs.map((snapshot) => ({
-          time: snapshot.date,
-          value: portfolioSnapshotsMap[snapshot.date].investments.mockTotalQQQ,
+        MockTotalQQQ: simulation.rebalanceLogs.map((rebalanceLog) => ({
+          time: rebalanceLog.date,
+          value: portfolioSnapshotsMap[rebalanceLog.date].investments.mockTotalQQQ,
         })),
-        MockTotalTQQQ: simulation.rebalanceLogs.map((snapshot) => ({
-          time: snapshot.date,
-          value: portfolioSnapshotsMap[snapshot.date].investments.mockTotalTQQQ,
+        MockTotalTQQQ: simulation.rebalanceLogs.map((rebalanceLog) => ({
+          time: rebalanceLog.date,
+          value: portfolioSnapshotsMap[rebalanceLog.date].investments.mockTotalTQQQ,
         })),
       });
       setRatioChart({
-        Ratio: simulation.rebalanceLogs.map((snapshot) => ({
-          time: snapshot.date,
-          value: portfolioSnapshotsMap[snapshot.date].investments.ratio,
+        Ratio: simulation.rebalanceLogs.map((rebalanceLog) => ({
+          time: rebalanceLog.date,
+          value: portfolioSnapshotsMap[rebalanceLog.date].investments.ratio,
         })),
       });
       setPullbackChart({
-        pullback: simulation.rebalanceLogs.map((snapshot) => ({
-          time: snapshot.date,
-          value: portfolioSnapshotsMap[snapshot.date].pullback,
+        pullback: simulation.rebalanceLogs.map((rebalanceLog) => ({
+          time: rebalanceLog.date,
+          value: portfolioSnapshotsMap[rebalanceLog.date].pullback,
         })),
       });
     }
