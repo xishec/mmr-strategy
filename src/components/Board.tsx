@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Box, Typography, TextField, FormControlLabel, Switch, MenuItem } from "@mui/material";
-import { startSimulation } from "../core/functions";
+import { convertAnnualRateToDaily, startSimulation } from "../core/functions";
 import {
   MarketData,
   Simulation,
@@ -26,16 +26,18 @@ interface BoardProps {
 }
 
 const Board: React.FC<BoardProps> = ({ marketData }) => {
-  const [startingDate, setStartingDate] = useState<string>(new Date("2001-01-01").toISOString().split("T")[0]);
-  const [startingYear, setStartingYear] = useState<number>(2001);
+  const [startingYear, setStartingYear] = useState<number>(2000);
+  const [startingDate, setStartingDate] = useState<string>(
+    new Date(`${startingYear}-01-01`).toISOString().split("T")[0]
+  );
   const [initialMoney, setInitialMoney] = useState<number>(100);
   const [rebalanceDays, setRebalanceDays] = useState<number>(60);
   const [targetRate, setTargetRate] = useState<number>(0.09);
-  const [cashDayRate, setCashDayRate] = useState<number>(0);
+  const [cashYearRate, setCashYearRate] = useState<number>(0.0);
   const [targetRatio, setTargetRatio] = useState<number>(0.6);
   const [spikeRate, setSpikeRate] = useState<number>(0.18);
-  const [dropRate, setDropRate] = useState<number>(-0.06);
-  const [bigDropRate, setBigDropRate] = useState<number>(0.01);
+  const [dropRate, setDropRate] = useState<number>(-0.09);
+  const [bigDropRate, setBigDropRate] = useState<number>(0.06);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
@@ -53,7 +55,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       startingDate: startingDate,
       rebalanceDays,
       targetRate,
-      CashDayRate: cashDayRate,
+      CashDayRate: convertAnnualRateToDaily(cashYearRate),
       TargetRatio: targetRatio,
       SpikeRate: spikeRate,
       DropRate: dropRate,
@@ -80,7 +82,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         startingDate: startingDate,
         rebalanceDays,
         targetRate,
-        CashDayRate: cashDayRate,
+        CashDayRate: convertAnnualRateToDaily(cashYearRate),
         TargetRatio: targetRatio,
         SpikeRate: spikeRate,
         DropRate: dropRate,
@@ -92,7 +94,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     initialMoney,
     rebalanceDays,
     targetRate,
-    cashDayRate,
+    cashYearRate,
     targetRatio,
     spikeRate,
     dropRate,
@@ -283,13 +285,13 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
 
           <TextField
-            label="Cash Day Rate"
+            label="Cash Year Rate"
             type="number"
-            value={cashDayRate}
-            onChange={(e) => setCashDayRate(Number(e.target.value))}
+            value={cashYearRate}
+            onChange={(e) => setCashYearRate(Number(e.target.value))}
             variant="outlined"
             slotProps={{
-              htmlInput: { step: 0.0001 },
+              htmlInput: { step: 0.01 },
             }}
           />
 
@@ -333,7 +335,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
             onChange={(e) => setBigDropRate(Number(e.target.value))}
             variant="outlined"
             slotProps={{
-              htmlInput: { step: 0.1 },
+              htmlInput: { step: 0.01 },
             }}
           />
         </Box>
