@@ -1,4 +1,12 @@
-import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation } from "./models";
+import {
+  Investments,
+  MarketData,
+  PortfolioSnapshot,
+  RebalanceLog,
+  RebalanceType,
+  Simulation,
+  Variables,
+} from "./models";
 
 const DEBUG = false;
 
@@ -101,7 +109,7 @@ export const startSimulation = (
 
 const calculateAnnualizedRates = (simulation: Simulation) => {
   const endDate = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].date;
-  
+
   simulation.annualizedSig9lRate = calculateAnnualizedRate(
     simulation.initialMoney,
     simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.Total,
@@ -240,20 +248,207 @@ const addDaysToDate = (date: string, days: number): string => {
 };
 
 export const calculateAnnualizedRate = (
-  initial: number, 
-  end: number, 
-  initialDateString: string, 
+  initial: number,
+  end: number,
+  initialDateString: string,
   endDateString: string
 ): number => {
   const initialDate = new Date(initialDateString);
   const endDate = new Date(endDateString);
   const nbYears = (endDate.getTime() - initialDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-  console.log('Annualized rate calculation:', { initial, end, initialDateString, endDateString, nbYears });
-  
+
   // Ensure we have at least some time period to avoid division by zero
   if (nbYears <= 0) {
     return 0;
   }
-  
+
   return (end / initial) ** (1 / nbYears) - 1;
+};
+
+export const convertAnnualRateToDaily = (annualRate: number): number => {
+  return Math.pow(1 + annualRate, 1 / 365) - 1;
+};
+
+/**
+ * Runs multiple simulations starting every 10 days from 2000-01-01 to today
+ * @param variables - The simulation variables to use for all simulations (including all required fields)
+ * @param initialMoney - The initial investment amount
+ * @param marketData - The market data containing QQQ and TQQQ prices
+ * @returns Array of simulation results with their starting dates
+ */
+export const runMultipleSimulations = (
+  variables: Variables,
+  initialMoney: number,
+  marketData: MarketData
+): Array<{ startDate: string; simulation: Simulation }> => {
+  const results: Array<{ startDate: string; simulation: Simulation }> = [];
+
+  // Start from 2000-01-01
+  const startDate = new Date("2000-01-01");
+  // End at today's date
+  const endDate = new Date();
+
+  // Get all available dates from market data (sorted)
+  const availableDates = Object.keys(marketData.TQQQ).sort();
+  const firstAvailableDate = availableDates[0];
+  const lastAvailableDate = availableDates[availableDates.length - 1];
+
+  console.log(`Running simulations from ${firstAvailableDate} to ${lastAvailableDate}`);
+
+  let currentDate = new Date(Math.max(startDate.getTime(), new Date(firstAvailableDate).getTime()));
+  const finalDate = new Date(Math.min(endDate.getTime(), new Date(lastAvailableDate).getTime()));
+
+  let simulationCount = 0;
+
+  while (currentDate <= finalDate) {
+    const dateString = currentDate.toISOString().split("T")[0];
+
+    // Check if this date exists in market data or find next available date
+    const nextAvailableDate = availableDates.find((date) => date >= dateString);
+
+    if (nextAvailableDate) {
+      // Create simulation for this starting date
+      const simulation: Simulation = {
+        initialMoney: initialMoney,
+        portfolioSnapshots: [],
+        rebalanceLogs: [],
+        variables: {
+          ...variables,
+          startingDate: nextAvailableDate,
+        },
+      };
+
+      // Run the simulation
+      const simulationCopy: Simulation = {
+        ...simulation,
+        portfolioSnapshots: [],
+        rebalanceLogs: [],
+      };
+
+      try {
+        setupInitialPortfolio(simulationCopy, marketData);
+
+        // Only run simulation if we have enough data (at least 30 days after start)
+        const startDateObj = new Date(simulationCopy.variables.startingDate);
+        const minEndDate = new Date(startDateObj.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
+        const hasEnoughData = new Date(lastAvailableDate) > minEndDate;
+
+        if (hasEnoughData) {
+          for (const [date, TQQQDelta] of Object.entries(marketData.TQQQ)) {
+            const QQQDelta = marketData.QQQ[date];
+            if (date <= simulationCopy.variables.startingDate) continue;
+
+            const portfolioSnapshot = computePortfolioSnapshot(simulationCopy, date, TQQQDelta, QQQDelta);
+
+            if (date >= portfolioSnapshot.nextRebalanceDate) {
+              rebalance(portfolioSnapshot, simulationCopy);
+            }
+          }
+
+          // Final rebalance and calculate rates
+          if (simulationCopy.portfolioSnapshots.length > 0) {
+            rebalance(simulationCopy.portfolioSnapshots[simulationCopy.portfolioSnapshots.length - 1], simulationCopy);
+            calculateAnnualizedRates(simulationCopy);
+
+            results.push({
+              startDate: nextAvailableDate,
+              simulation: simulationCopy,
+            });
+
+            simulationCount++;
+          }
+        }
+      } catch (error) {
+        console.warn(`Simulation failed for start date ${nextAvailableDate}:`, error);
+      }
+    }
+
+    // Move to next date (10 days later)
+    currentDate.setDate(currentDate.getDate() + 10);
+  }
+
+  console.log(
+    `Completed ${simulationCount} simulations from ${results[0]?.startDate} to ${
+      results[results.length - 1]?.startDate
+    }`
+  );
+
+  analyzeSimulationResults(results);
+
+  return results;
+};
+
+/**
+ * Analyzes multiple simulation results to get statistics
+ * @param results - Array of simulation results from runMultipleSimulations
+ * @returns Statistics about the simulation results
+ */
+export const analyzeSimulationResults = (results: Array<{ startDate: string; simulation: Simulation }>) => {
+  if (results.length === 0) {
+    return {
+      totalSimulations: 0,
+      averageSig9Rate: 0,
+      averageQQQRate: 0,
+      averageTQQQRate: 0,
+      bestSig9Rate: 0,
+      worstSig9Rate: 0,
+      winRate: 0,
+    };
+  }
+
+  const sig9Rates = results.map((r) => r.simulation.annualizedSig9lRate || 0);
+  const qqqRates = results.map((r) => r.simulation.annualizedQQQRate || 0);
+  const tqqqRates = results.map((r) => r.simulation.annualizedTQQQRate || 0);
+
+  const averageSig9Rate = sig9Rates.reduce((sum, rate) => sum + rate, 0) / sig9Rates.length;
+  const averageQQQRate = qqqRates.reduce((sum, rate) => sum + rate, 0) / qqqRates.length;
+  const averageTQQQRate = tqqqRates.reduce((sum, rate) => sum + rate, 0) / tqqqRates.length;
+
+  const bestSig9Rate = Math.max(...sig9Rates);
+  const worstSig9Rate = Math.min(...sig9Rates);
+
+  const resultsWithRates = results.map((r) => ({
+    startDate: r.startDate,
+    sig9Rate: r.simulation.annualizedSig9lRate || 0,
+    qqqRate: r.simulation.annualizedQQQRate || 0,
+    tqqqRate: r.simulation.annualizedTQQQRate || 0,
+  }));
+
+  const worst10Sig9 = resultsWithRates.sort((a, b) => a.sig9Rate - b.sig9Rate).slice(0, 10);
+
+  console.log({
+    totalSimulations: results.length,
+    averageSig9Rate,
+    averageQQQRate,
+    averageTQQQRate,
+    bestSig9Rate,
+    worstSig9Rate,
+    dateRange: {
+      start: results[0]?.startDate,
+      end: results[results.length - 1]?.startDate,
+    },
+  });
+
+  console.log("\nWorst 10 Sig9 rates:");
+  worst10Sig9.forEach((result, index) => {
+    console.log(
+      `${index + 1}. ${result.startDate}: Sig9=${(result.sig9Rate * 100).toFixed(2)}%, QQQ=${(
+        result.qqqRate * 100
+      ).toFixed(2)}%, TQQQ=${(result.tqqqRate * 100).toFixed(2)}%`
+    );
+  });
+
+  return {
+    totalSimulations: results.length,
+    averageSig9Rate,
+    averageQQQRate,
+    averageTQQQRate,
+    bestSig9Rate,
+    worstSig9Rate,
+    worst10Sig9,
+    dateRange: {
+      start: results[0]?.startDate,
+      end: results[results.length - 1]?.startDate,
+    },
+  };
 };

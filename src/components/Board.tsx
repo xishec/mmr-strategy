@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { Box, Typography, TextField, FormControlLabel, Switch, MenuItem } from "@mui/material";
-import { convertAnnualRateToDaily, startSimulation } from "../core/functions";
+import { Box, Typography, TextField, FormControlLabel, Switch, MenuItem, Button } from "@mui/material";
+import { convertAnnualRateToDaily, runMultipleSimulations, startSimulation } from "../core/functions";
 import {
   MarketData,
   Simulation,
@@ -72,6 +72,14 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const handlePointClick = useCallback((date: string, value: number) => {
     // setSelectedDate(date);
   }, []);
+
+  // Handle multiple simulations button click
+  const handleRunMultipleSimulations = useCallback(() => {
+    if (marketData && simulation.variables) {
+      console.log("Starting multiple simulations...");
+      runMultipleSimulations(simulation.variables, initialMoney, marketData);
+    }
+  }, [marketData, simulation.variables, initialMoney]);
 
   // Auto-update simulation when variables change
   useEffect(() => {
@@ -164,6 +172,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       if (currentParams !== lastSimulationParams.current) {
         lastSimulationParams.current = currentParams;
         startSimulation(simulation, setSimulation, marketData);
+
       }
     }
   }, [marketData, simulation, setSimulation]);
@@ -345,6 +354,16 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           label="Log Scale"
           sx={{ mt: 2 }}
         />
+
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleRunMultipleSimulations}
+          sx={{ mt: 2, alignSelf: "start" }}
+          disabled={!marketData}
+        >
+          Run Multiple Simulations (Every 10 Days)
+        </Button>
       </Box>
 
       {/* Rebalance Log Details */}
