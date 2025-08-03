@@ -33,13 +33,13 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [startDate, setStartDate] = useState<Date>(new Date(2000, 0, 1)); // Year, Month (0-based), Day
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [initialMoney, setInitialMoney] = useState<number>(100);
-  const [rebalanceDays, setRebalanceDays] = useState<number>(60);
-  const [targetRate, setTargetRate] = useState<number>(0.05);
+  const [rebalanceDays, setRebalanceDays] = useState<number>(90);
+  const [targetRate, setTargetRate] = useState<number>(0.1);
   const [cashYearRate, setCashYearRate] = useState<number>(0.0);
   const [targetRatio, setTargetRatio] = useState<number>(0.5);
-  const [spikeRate, setSpikeRate] = useState<number>(0.1);
+  const [spikeRate, setSpikeRate] = useState<number>(0.5);
   const [dropRate, setDropRate] = useState<number>(-0.1);
-  const [lookBackEnterRate, setLookBackEnterRate] = useState<number>(0.0);
+  const [lookBackEnterRate, setLookBackEnterRate] = useState<number>(-0);
   const [lookBackDays, setLookBackDays] = useState<number>(300);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
 

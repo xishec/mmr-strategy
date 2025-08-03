@@ -299,7 +299,7 @@ const Chart: React.FC<ChartProps> = ({
           .attr("cx", (d) => xScale(d.parsedTime))
           .attr("cy", (d) => yScale(d.value))
           .attr("r", (d) => {
-            let size = 1;
+            let size = 2;
             const dateKey = d3.timeFormat("%Y-%m-%d")(d.parsedTime);
             const rebalanceType = rebalanceLogsMap![dateKey]?.rebalanceType;
             if (rebalanceType === RebalanceType.Excess) {
@@ -313,7 +313,7 @@ const Chart: React.FC<ChartProps> = ({
             }
             return size;
           })
-          .attr("fill", (d) => {
+          .attr("stroke", (d) => {
             let rebalanceSeriesColor = "none";
             const dateKey = d3.timeFormat("%Y-%m-%d")(d.parsedTime);
             const rebalanceType = rebalanceLogsMap![dateKey]?.rebalanceType;
@@ -327,6 +327,21 @@ const Chart: React.FC<ChartProps> = ({
               rebalanceSeriesColor = seriesColor;
             } else if (rebalanceType === RebalanceType.StillDropping) {
               rebalanceSeriesColor = seriesColor;
+            }
+            return rebalanceSeriesColor;
+          })
+          .attr("fill", (d) => {
+            let rebalanceSeriesColor = "none";
+            const dateKey = d3.timeFormat("%Y-%m-%d")(d.parsedTime);
+            const rebalanceType = rebalanceLogsMap![dateKey]?.rebalanceType;
+            if (rebalanceType === RebalanceType.Excess) {
+              rebalanceSeriesColor = seriesColor;
+            } else if (rebalanceType === RebalanceType.Shortfall) {
+              rebalanceSeriesColor = seriesColor;
+            } else if (rebalanceType === RebalanceType.Drop) {
+            } else if (rebalanceType === RebalanceType.Spike) {
+              rebalanceSeriesColor = seriesColor;
+            } else if (rebalanceType === RebalanceType.StillDropping) {
             }
             return rebalanceSeriesColor;
           });
