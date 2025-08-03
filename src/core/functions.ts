@@ -242,9 +242,9 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
     console.log("bug");
   }
 
-  investments.cash += (2 / 30) * simulation.variables.rebalanceDays;
-  investments.mockTotalQQQ += (2 / 30) * simulation.variables.rebalanceDays;
-  investments.mockTotalTQQQ += (2 / 30) * simulation.variables.rebalanceDays;
+  // investments.cash += (2 / 30) * simulation.variables.rebalanceDays;
+  // investments.mockTotalQQQ += (2 / 30) * simulation.variables.rebalanceDays;
+  // investments.mockTotalTQQQ += (2 / 30) * simulation.variables.rebalanceDays;
 
   portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
 
