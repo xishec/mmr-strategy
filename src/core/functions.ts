@@ -205,10 +205,6 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
     3
   )}`;
 
-  // investments.cash += 2;
-  // investments.mockTotalQQQ += 2;
-  // investments.mockTotalTQQQ += 2;
-
   if (isBigDrop) {
     rebalanceType = RebalanceType.Drop;
     portfolioSnapshot.nextTarget = investments.total * (1 + targetRate);
@@ -254,6 +250,10 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
   } else {
     console.log("bug");
   }
+
+  investments.cash += (2 / 30) * simulation.variables.rebalanceDays;
+  investments.mockTotalQQQ += (2 / 30) * simulation.variables.rebalanceDays;
+  investments.mockTotalTQQQ += (2 / 30) * simulation.variables.rebalanceDays;
 
   portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
 

@@ -57,9 +57,9 @@ const Chart: React.FC<ChartProps> = ({
       if (seriesData.StrategyTarget) {
         legendItems.push({ label: "Strategy Target", color: black, type: "line", dashed: true });
       }
-      if (seriesData.Target) {
-        legendItems.push({ label: "Target", color: black, type: "circle" });
-      }
+      // if (seriesData.Target) {
+      //   legendItems.push({ label: "Target", color: black, type: "circle" });
+      // }
       if (seriesData.MockTotalQQQ) {
         legendItems.push({ label: "Mock Total QQQ", color: blue, type: "line" });
       }
