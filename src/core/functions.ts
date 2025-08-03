@@ -472,7 +472,6 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
   const worstStrategyRate = Math.min(...strategyRates);
 
   // Calculate how much better strategy is than QQQ
-  const strategyVsQQQDifference = averageStrategyRate - averageQQQRate;
   const strategyVsQQQPercentageImprovement = (averageStrategyRate / averageQQQRate - 1) * 100;
 
   // Count how many times strategy beats QQQ
@@ -519,8 +518,6 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
     `${(averageQQQRate * 100).toFixed(3)}%`,
     "\naverageTQQQRate\t\t\t\t",
     `${(averageTQQQRate * 100).toFixed(3)}%`,
-    "\nstrategyVsQQQDifference\t\t\t\t",
-    `+${(strategyVsQQQDifference * 100).toFixed(3)}%`,
     "\nstrategyVsQQQImprovement\t\t\t\t",
     `${strategyVsQQQPercentageImprovement.toFixed(2)}%`,
     "\nwinRateVsQQQ\t\t\t\t",
