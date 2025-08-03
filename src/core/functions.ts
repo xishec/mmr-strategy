@@ -464,12 +464,19 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
 
   // Calculate how much better strategy is than QQQ
   const strategyVsQQQPercentageImprovement = (averageStrategyRate / averageQQQRate - 1) * 100;
-
   // Count how many times strategy beats QQQ
   const strategyWinsOverQQQ = results.filter(
     (r) => (r.simulation.annualizedStrategyRate || 0) > (r.simulation.annualizedQQQRate || 0)
   ).length;
   const winRateVsQQQ = (strategyWinsOverQQQ / results.length) * 100;
+
+  // Calculate how much better strategy is than QQQ
+  const TQQQVsQQQPercentageImprovement = (averageTQQQRate / averageQQQRate - 1) * 100;
+  // Count how many times strategy beats QQQ
+  const TQQQWinsOverQQQ = results.filter(
+    (r) => (r.simulation.annualizedTQQQRate || 0) > (r.simulation.annualizedQQQRate || 0)
+  ).length;
+  const winRateTQQQVsQQQ = (TQQQWinsOverQQQ / results.length) * 100;
 
   const resultsWithRates = results.map((r) => ({
     startDate: r.startDate,
@@ -512,7 +519,11 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
     "\nstrategyVsQQQImprovement\t\t\t\t",
     `${strategyVsQQQPercentageImprovement.toFixed(2)}%`,
     "\nwinRateVsQQQ\t\t\t\t",
-    `${winRateVsQQQ.toFixed(1)}% (${strategyWinsOverQQQ}/${results.length} simulations)`
+    `${winRateVsQQQ.toFixed(1)}%`,
+    "\nTQQQVsQQQImprovement\t\t\t\t",
+    `${TQQQVsQQQPercentageImprovement.toFixed(2)}%`,
+    "\nwinRateTQQQVsQQQ\t\t\t\t",
+    `${winRateTQQQVsQQQ.toFixed(1)}%`
   );
 
   return {
