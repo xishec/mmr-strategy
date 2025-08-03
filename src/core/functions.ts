@@ -37,8 +37,8 @@ const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) =
     MockTotalTQQQ: simulation.initialMoney,
   };
 
-  const firstValidDate = Object.keys(marketData.TQQQ).find((date) => date >= simulation.variables.startingDate)!;
-  simulation.variables.startingDate = firstValidDate;
+  const firstValidDate = Object.keys(marketData.TQQQ).find((date) => date >= simulation.variables.startDate)!;
+  simulation.variables.startDate = firstValidDate;
 
   const portfolioSnapshot: PortfolioSnapshot = {
     date: firstValidDate,
@@ -94,7 +94,7 @@ export const startSimulation = (
 
   for (const [date, TQQQDelta] of Object.entries(marketData.TQQQ)) {
     const QQQDelta = marketData.QQQ[date];
-    if (date <= simulationCopy.variables.startingDate) continue;
+    if (date <= simulationCopy.variables.startDate) continue;
 
     const portfolioSnapshot = computePortfolioSnapshot(simulationCopy, date, TQQQDelta, QQQDelta);
 
@@ -113,19 +113,19 @@ const calculateAnnualizedRates = (simulation: Simulation) => {
   simulation.annualizedSig9lRate = calculateAnnualizedRate(
     simulation.initialMoney,
     simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.Total,
-    simulation.variables.startingDate,
+    simulation.variables.startDate,
     endDate
   );
   simulation.annualizedQQQRate = calculateAnnualizedRate(
     simulation.initialMoney,
     simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.MockTotalQQQ,
-    simulation.variables.startingDate,
+    simulation.variables.startDate,
     endDate
   );
   simulation.annualizedTQQQRate = calculateAnnualizedRate(
     simulation.initialMoney,
     simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.MockTotalTQQQ,
-    simulation.variables.startingDate,
+    simulation.variables.startDate,
     endDate
   );
 };
@@ -274,12 +274,14 @@ export const convertAnnualRateToDaily = (annualRate: number): number => {
  * @param variables - The simulation variables to use for all simulations (including all required fields)
  * @param initialMoney - The initial investment amount
  * @param marketData - The market data containing QQQ and TQQQ prices
+ * @param nbYear - Number of years to run each simulation (default: 5)
  * @returns Array of simulation results with their starting dates
  */
 export const runMultipleSimulations = (
   variables: Variables,
   initialMoney: number,
-  marketData: MarketData
+  marketData: MarketData,
+  nbYear = 5
 ): Array<{ startDate: string; simulation: Simulation }> => {
   const results: Array<{ startDate: string; simulation: Simulation }> = [];
 
@@ -293,7 +295,9 @@ export const runMultipleSimulations = (
   const firstAvailableDate = availableDates[0];
   const lastAvailableDate = availableDates[availableDates.length - 1];
 
-  console.log(`Running simulations from ${firstAvailableDate} to ${lastAvailableDate}`);
+  console.log(
+    `Running simulations from ${firstAvailableDate} to ${lastAvailableDate} (${nbYear} years per simulation)`
+  );
 
   let currentDate = new Date(Math.max(startDate.getTime(), new Date(firstAvailableDate).getTime()));
   const finalDate = new Date(Math.min(endDate.getTime(), new Date(lastAvailableDate).getTime()));
@@ -314,7 +318,7 @@ export const runMultipleSimulations = (
         rebalanceLogs: [],
         variables: {
           ...variables,
-          startingDate: nextAvailableDate,
+          startDate: nextAvailableDate,
         },
       };
 
@@ -329,14 +333,22 @@ export const runMultipleSimulations = (
         setupInitialPortfolio(simulationCopy, marketData);
 
         // Only run simulation if we have enough data (at least 30 days after start)
-        const startDateObj = new Date(simulationCopy.variables.startingDate);
+        const startDateObj = new Date(simulationCopy.variables.startDate);
         const minEndDate = new Date(startDateObj.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
         const hasEnoughData = new Date(lastAvailableDate) > minEndDate;
 
         if (hasEnoughData) {
+          // Calculate end date for this simulation (start date + nbYear years)
+          const simulationEndDate = new Date(startDateObj.getTime());
+          simulationEndDate.setFullYear(simulationEndDate.getFullYear() + nbYear);
+          const simulationEndDateString = simulationEndDate.toISOString().split("T")[0];
+
           for (const [date, TQQQDelta] of Object.entries(marketData.TQQQ)) {
             const QQQDelta = marketData.QQQ[date];
-            if (date <= simulationCopy.variables.startingDate) continue;
+            if (date <= simulationCopy.variables.startDate) continue;
+
+            // Stop simulation when we reach the end date (nbYear years later)
+            if (date > simulationEndDateString) break;
 
             const portfolioSnapshot = computePortfolioSnapshot(simulationCopy, date, TQQQDelta, QQQDelta);
 
@@ -414,7 +426,7 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
     tqqqRate: r.simulation.annualizedTQQQRate || 0,
   }));
 
-  const worst10Sig9 = resultsWithRates.sort((a, b) => a.sig9Rate - b.sig9Rate).slice(0, 10);
+  const worst10Sig9 = resultsWithRates.sort((a, b) => a.sig9Rate - a.qqqRate - (b.sig9Rate - b.qqqRate)).slice(0, 10);
 
   console.log({
     totalSimulations: results.length,
@@ -432,9 +444,9 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
   console.log("\nWorst 10 Sig9 rates:");
   worst10Sig9.forEach((result, index) => {
     console.log(
-      `${index + 1}. ${result.startDate}: Sig9=${(result.sig9Rate * 100).toFixed(2)}%, QQQ=${(
+      `${index + 1}. ${result.startDate}: Sig9= ${(result.sig9Rate * 100).toFixed(2)}%, QQQ= ${(
         result.qqqRate * 100
-      ).toFixed(2)}%, TQQQ=${(result.tqqqRate * 100).toFixed(2)}%`
+      ).toFixed(2)}%, TQQQ= ${(result.tqqqRate * 100).toFixed(2)}%`
     );
   });
 

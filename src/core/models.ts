@@ -9,7 +9,8 @@ export interface Simulation {
 }
 
 export interface Variables {
-  startingDate: string;
+  startDate: string;
+  endDate: string;
   rebalanceDays: number;
   targetRate: number;
   CashDayRate: number;

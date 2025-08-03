@@ -26,10 +26,11 @@ interface BoardProps {
 }
 
 const Board: React.FC<BoardProps> = ({ marketData }) => {
-  const [startingYear, setStartingYear] = useState<number>(2000);
-  const [startingDate, setStartingDate] = useState<string>(
-    new Date(`${startingYear}-01-01`).toISOString().split("T")[0]
-  );
+  const [startYear, setStartYear] = useState<number>(2000);
+  const [endYear, setEndYear] = useState<number>(2025);
+  const [simulationYears, setSimulationYears] = useState<number>(5);
+  const [startDate, setStartDate] = useState<string>(new Date(`${startYear}-01-01`).toISOString().split("T")[0]);
+  const [endDate, setEndDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [initialMoney, setInitialMoney] = useState<number>(100);
   const [rebalanceDays, setRebalanceDays] = useState<number>(60);
   const [targetRate, setTargetRate] = useState<number>(0.09);
@@ -52,7 +53,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     portfolioSnapshots: [],
     rebalanceLogs: [],
     variables: {
-      startingDate: startingDate,
+      startDate: startDate,
       rebalanceDays,
       targetRate,
       CashDayRate: convertAnnualRateToDaily(cashYearRate),
@@ -76,10 +77,10 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   // Handle multiple simulations button click
   const handleRunMultipleSimulations = useCallback(() => {
     if (marketData && simulation.variables) {
-      console.log("Starting multiple simulations...");
-      runMultipleSimulations(simulation.variables, initialMoney, marketData);
+      console.log(`Starting multiple simulations for ${simulationYears} years each...`);
+      runMultipleSimulations(simulation.variables, initialMoney, marketData, simulationYears);
     }
-  }, [marketData, simulation.variables, initialMoney]);
+  }, [marketData, simulation.variables, initialMoney, simulationYears]);
 
   // Auto-update simulation when variables change
   useEffect(() => {
@@ -87,7 +88,8 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       ...prevSimulation,
       initialMoney: initialMoney,
       variables: {
-        startingDate: startingDate,
+        startDate: startDate,
+        endDate: endDate,
         rebalanceDays,
         targetRate,
         CashDayRate: convertAnnualRateToDaily(cashYearRate),
@@ -97,17 +99,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         BigDropRate: bigDropRate,
       },
     }));
-  }, [
-    startingDate,
-    initialMoney,
-    rebalanceDays,
-    targetRate,
-    cashYearRate,
-    targetRatio,
-    spikeRate,
-    dropRate,
-    bigDropRate,
-  ]);
+  }, [startDate, initialMoney, rebalanceDays, targetRate, cashYearRate, targetRatio, spikeRate, dropRate, bigDropRate]);
 
   // Chart synchronization functions
   const handleChartReady = useCallback((chartId: string, chart: any, mainSeries: any) => {
@@ -163,7 +155,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     if (marketData && simulation) {
       // Create a key from the simulation parameters that affect the calculation
       const currentParams = JSON.stringify({
-        startingDate: simulation.variables.startingDate,
+        startDate: simulation.variables.startDate,
         initialMoney: simulation.initialMoney,
         variables: simulation.variables,
       });
@@ -172,7 +164,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       if (currentParams !== lastSimulationParams.current) {
         lastSimulationParams.current = currentParams;
         startSimulation(simulation, setSimulation, marketData);
-
       }
     }
   }, [marketData, simulation, setSimulation]);
@@ -243,13 +234,31 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
         <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 2, mb: 3 }}>
           <TextField
-            label="Starting Year"
+            label="Start"
             select
-            value={startingYear}
+            value={startYear}
             onChange={(e) => {
               const year = Number(e.target.value);
-              setStartingYear(year);
-              setStartingDate(new Date(`${year}-01-01`).toISOString().split("T")[0]);
+              setStartYear(year);
+              setStartDate(new Date(`${year}-01-01`).toISOString().split("T")[0]);
+            }}
+            variant="outlined"
+          >
+            {Array.from({ length: 26 }, (_, i) => 2000 + i).map((year) => (
+              <MenuItem key={year} value={year}>
+                {year}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            label="End"
+            select
+            value={endYear}
+            onChange={(e) => {
+              const year = Number(e.target.value);
+              setEndYear(year);
+              setEndDate(new Date(`${year}-01-01`).toISOString().split("T")[0]);
             }}
             variant="outlined"
           >
@@ -345,6 +354,17 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
             variant="outlined"
             slotProps={{
               htmlInput: { step: 0.01 },
+            }}
+          />
+
+          <TextField
+            label="Simulation Years (for Multiple Simulations)"
+            type="number"
+            value={simulationYears}
+            onChange={(e) => setSimulationYears(Number(e.target.value))}
+            variant="outlined"
+            slotProps={{
+              htmlInput: { step: 1, min: 1, max: 25 },
             }}
           />
         </Box>
