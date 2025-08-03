@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import * as d3 from "d3";
 import { ChartData, MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core/models";
-import { el } from "date-fns/locale";
 
 interface ChartProps {
   chartData?: ChartData;

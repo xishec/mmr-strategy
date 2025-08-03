@@ -353,9 +353,9 @@ export const runMultipleSimulations = (
   const firstAvailableDate = availableDates[0];
   const lastAvailableDate = availableDates[availableDates.length - 1];
 
-  console.log(
-    `Running simulations from ${firstAvailableDate} to ${lastAvailableDate} (${nbYear} years per simulation)`
-  );
+  // console.log(
+  //   `Running simulations from ${firstAvailableDate} to ${lastAvailableDate} (${nbYear} years per simulation)`
+  // );
 
   // Parse available dates as UTC to avoid timezone issues
   const [firstYear, firstMonth, firstDay] = firstAvailableDate.split("-").map(Number);
@@ -413,7 +413,7 @@ export const runMultipleSimulations = (
               simulation: completedSimulation,
             });
 
-            simulationCount++;
+            // simulationCount++;
           }
         }
       } catch (error) {
@@ -425,11 +425,11 @@ export const runMultipleSimulations = (
     currentDate.setDate(currentDate.getDate() + 10);
   }
 
-  // console.log(
-  //   `Completed ${simulationCount} simulations from ${results[0]?.startDate} to ${
-  //     results[results.length - 1]?.startDate
-  //   }`
-  // );
+  console.log(
+    `Completed ${simulationCount} simulations from ${results[0]?.startDate} to ${
+      results[results.length - 1]?.startDate
+    }`
+  );
 
   analyzeSimulationResults(results);
 
@@ -472,7 +472,9 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
     tqqqRate: r.simulation.annualizedTQQQRate || 0,
   }));
 
-  const worst10Strategy = resultsWithRates.sort((a, b) => a.strategyRate - a.qqqRate - (b.strategyRate - b.qqqRate)).slice(0, 10);
+  const worst10Strategy = resultsWithRates
+    .sort((a, b) => a.strategyRate - a.qqqRate - (b.strategyRate - b.qqqRate))
+    .slice(0, 10);
 
   console.log({
     totalSimulations: results.length,
