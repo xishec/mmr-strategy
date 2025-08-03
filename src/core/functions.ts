@@ -478,29 +478,38 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
     tqqqRate: r.simulation.annualizedTQQQRate || 0,
   }));
 
-  const worst10Strategy = resultsWithRates
+  console.log("Absolute worst 10");
+  resultsWithRates
+    .sort((a, b) => a.strategyRate - b.strategyRate)
+    .slice(0, 10)
+    .forEach((result, index) => {
+      console.log(
+        `${index + 1}. ${result.startDate}: Strategy= ${(result.strategyRate * 100)?.toFixed(2)}%, QQQ= ${(
+          result.qqqRate * 100
+        )?.toFixed(2)}%, TQQQ= ${(result.tqqqRate * 100)?.toFixed(2)}%`
+      );
+    });
+
+  console.log("Relative worst 10");
+  resultsWithRates
     .sort((a, b) => a.strategyRate - a.qqqRate - (b.strategyRate - b.qqqRate))
-    .slice(0, 10);
+    .slice(0, 10)
+    .forEach((result, index) => {
+      console.log(
+        `${index + 1}. ${result.startDate}: Strategy= ${(result.strategyRate * 100)?.toFixed(2)}%, QQQ= ${(
+          result.qqqRate * 100
+        )?.toFixed(2)}%, TQQQ= ${(result.tqqqRate * 100)?.toFixed(2)}%`
+      );
+    });
 
   console.log({
-    totalSimulations: results.length,
-    averageStrategyRate,
-    averageQQQRate,
-    averageTQQQRate,
-    bestStrategyRate,
-    worstStrategyRate,
+    averageStrategyRate: (averageStrategyRate * 100).toFixed(3),
+    averageQQQRate: (averageQQQRate * 100).toFixed(3),
+    averageTQQQRate: (averageTQQQRate * 100).toFixed(3),
     dateRange: {
       start: results[0]?.startDate,
       end: results[results.length - 1]?.startDate,
     },
-  });
-
-  worst10Strategy.forEach((result, index) => {
-    console.log(
-      `${index + 1}. ${result.startDate}: Strategy= ${(result.strategyRate * 100)?.toFixed(2)}%, QQQ= ${(
-        result.qqqRate * 100
-      )?.toFixed(2)}%, TQQQ= ${(result.tqqqRate * 100)?.toFixed(2)}%`
-    );
   });
 
   return {
@@ -510,7 +519,6 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
     averageTQQQRate,
     bestStrategyRate,
     worstStrategyRate,
-    worst10Strategy,
     dateRange: {
       start: results[0]?.startDate,
       end: results[results.length - 1]?.startDate,
