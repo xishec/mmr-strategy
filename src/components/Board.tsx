@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { Box, Typography, TextField, FormControlLabel, Switch } from "@mui/material";
+import { Box, Typography, TextField, FormControlLabel, Switch, MenuItem } from "@mui/material";
 import { startSimulation } from "../core/functions";
 import { MarketData, Simulation, MultiSeriesChartData, Variables, RebalanceLog } from "../core/models";
 import Chart from "./Chart";
@@ -22,6 +22,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [startingDate, setStartingDate] = useState<Date>(() => {
     return new Date("2001-01-01");
   });
+  const [startingYear, setStartingYear] = useState<number>(2001);
   const [initialMoney, setInitialMoney] = useState<number>(100);
   const [rebalanceDays, setRebalanceDays] = useState<number>(92);
   const [targetRate, setTargetRate] = useState<number>(0.09);
@@ -223,15 +224,22 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
         <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 2, mb: 3 }}>
           <TextField
-            label="Starting Date"
-            type="date"
-            value={startingDate.toISOString().split("T")[0]}
-            onChange={(e) => setStartingDate(new Date(e.target.value))}
-            variant="outlined"
-            slotProps={{
-              htmlInput: { step: 1 },
+            label="Starting Year"
+            select
+            value={startingYear}
+            onChange={(e) => {
+              const year = Number(e.target.value);
+              setStartingYear(year);
+              setStartingDate(new Date(`${year}-01-01`));
             }}
-          />
+            variant="outlined"
+          >
+            {Array.from({ length: 26 }, (_, i) => 2000 + i).map((year) => (
+              <MenuItem key={year} value={year}>
+                {year}
+              </MenuItem>
+            ))}
+          </TextField>
 
           <TextField
             label="Initial Money ($)"
