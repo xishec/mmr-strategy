@@ -207,13 +207,15 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
 
   if (isBigDrop) {
     rebalanceType = RebalanceType.Drop;
+    investments.TQQQ = investments.total * variables.targetRatio;
+    investments.cash = investments.total * (1 - variables.targetRatio);
     portfolioSnapshot.nextTarget = investments.total * (1 + targetRate);
     reason += `Big Drop (${portfolioSnapshot.cumulativeRateSinceRebalance.toFixed(3)} < ${variables.dropRate.toFixed(
       3
     )})`;
   }
 
-  if (isBigDown && isPullback) {
+  if (isBigDown ) {
     rebalanceType = RebalanceType.StillDropping;
     reason += `isBigDown (${lastLookBackDaysRate.toFixed(3)} < ${variables.lookBackEnterRate.toFixed(3)})`;
   } else if (isDrop) {
