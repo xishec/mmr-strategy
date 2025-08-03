@@ -391,11 +391,11 @@ export const runMultipleSimulations = (
     currentDate.setDate(currentDate.getDate() + 10);
   }
 
-  console.log(
-    `Completed ${simulationCount} simulations from ${results[0]?.startDate} to ${
-      results[results.length - 1]?.startDate
-    }`
-  );
+  // console.log(
+  //   `Completed ${simulationCount} simulations from ${results[0]?.startDate} to ${
+  //     results[results.length - 1]?.startDate
+  //   }`
+  // );
 
   analyzeSimulationResults(results);
 
@@ -453,14 +453,15 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
     },
   });
 
-  console.log("\nWorst 10 Sig9 rates:");
+  const worst: string[] = [];
   worst10Sig9.forEach((result, index) => {
-    console.log(
+    worst.push(
       `${index + 1}. ${result.startDate}: Sig9= ${(result.sig9Rate * 100)?.toFixed(2)}%, QQQ= ${(
         result.qqqRate * 100
       )?.toFixed(2)}%, TQQQ= ${(result.tqqqRate * 100)?.toFixed(2)}%`
     );
   });
+  console.log("worst: ", worst);
 
   return {
     totalSimulations: results.length,
