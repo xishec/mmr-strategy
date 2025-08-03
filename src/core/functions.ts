@@ -210,10 +210,7 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
     rebalanceType = RebalanceType.Drop;
     portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
     reason += `Drop (${portfolioSnapshot.cumulativeRateSinceRebalance.toFixed(3)} < ${variables.dropRate.toFixed(3)})`;
-  } else if (
-    portfolioSnapshot.pullback > -0.5 &&
-    portfolioSnapshot.cumulativeRateSinceRebalance > variables.spikeRate
-  ) {
+  } else if (portfolioSnapshot.cumulativeRateSinceRebalance > variables.spikeRate) {
     // SPIKE
     if (DEBUG) console.log("spike");
     rebalanceType = RebalanceType.Spike;

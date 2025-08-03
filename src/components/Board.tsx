@@ -33,15 +33,14 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [startDate, setStartDate] = useState<Date>(new Date(2000, 0, 1)); // Year, Month (0-based), Day
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [initialMoney, setInitialMoney] = useState<number>(100);
-  const [rebalanceDays, setRebalanceDays] = useState<number>(60);
+  const [rebalanceDays, setRebalanceDays] = useState<number>(30);
   const [targetRate, setTargetRate] = useState<number>(0.09);
   const [cashYearRate, setCashYearRate] = useState<number>(0.0);
   const [targetRatio, setTargetRatio] = useState<number>(0.6);
   const [spikeRate, setSpikeRate] = useState<number>(0.18);
   const [dropRate, setDropRate] = useState<number>(-0.09);
-  const [lookBackEnterRate, setLookBackEnterRate] = useState<number>(0.04);
-  const [lookbackRebalances, setLookbackRebalances] = useState<number>(3);
-  const [pullbackRate, setPullbackRate] = useState<number>(-0.5);
+  const [lookBackEnterRate, setLookBackEnterRate] = useState<number>(0.03);
+  const [lookbackRebalances, setLookbackRebalances] = useState<number>(6);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
@@ -66,7 +65,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       dropRate: dropRate,
       lookBackEnterRate: lookBackEnterRate,
       lookBackRebalances: lookbackRebalances,
-      pullbackRate: pullbackRate,
     },
   });
 
@@ -104,7 +102,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         dropRate: dropRate,
         lookBackEnterRate: lookBackEnterRate,
         lookBackRebalances: lookbackRebalances,
-        pullbackRate: pullbackRate,
       },
     }));
   }, [
@@ -119,7 +116,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     dropRate,
     lookBackEnterRate,
     lookbackRebalances,
-    pullbackRate,
   ]);
 
   // Chart synchronization functions
@@ -374,6 +370,17 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
               htmlInput: { step: 1 },
             }}
           />
+{/* 
+          <TextField
+            label="Minimum pullback rate"
+            type="number"
+            value={minMinPullbackRate}
+            onChange={(e) => setMinPullbackRate(Number(e.target.value))}
+            variant="outlined"
+            slotProps={{
+              htmlInput: { step: 0.1 },
+            }}
+          /> */}
 
           <TextField
             label="Simulation Years (for Multiple Simulations)"

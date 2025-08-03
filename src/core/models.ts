@@ -19,7 +19,6 @@ export interface Variables {
   dropRate: number;
   lookBackEnterRate: number;
   lookBackRebalances: number;
-  pullbackRate: number;
 }
 
 export interface PortfolioSnapshot {
