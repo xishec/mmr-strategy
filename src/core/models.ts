@@ -1,5 +1,4 @@
 export interface Simulation {
-  initialMoney: number;
   portfolioSnapshots: PortfolioSnapshot[];
   rebalanceLogs: RebalanceLog[];
   variables: Variables;
@@ -9,6 +8,7 @@ export interface Simulation {
 }
 
 export interface Variables {
+  initialMoney: number;
   startDate: string;
   endDate: string;
   rebalanceDays: number;

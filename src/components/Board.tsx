@@ -26,8 +26,8 @@ const formatCurrency = (value: number): string => {
 // Helper function to format date as YYYY-MM-DD in local timezone
 const formatDateToString = (date: Date): string => {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
@@ -87,16 +87,16 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const handleRunMultipleSimulations = useCallback(() => {
     if (marketData && simulation.variables) {
       console.log(`Starting multiple simulations for ${simulationYears} years each...`);
-      runMultipleSimulations(simulation.variables, initialMoney, marketData, simulationYears);
+      runMultipleSimulations(simulation.variables, marketData, simulationYears);
     }
-  }, [marketData, simulation.variables, initialMoney, simulationYears]);
+  }, [marketData, simulation.variables, simulationYears]);
 
   // Auto-update simulation when variables change
   useEffect(() => {
     setSimulation((prevSimulation) => ({
       ...prevSimulation,
-      initialMoney: initialMoney,
       variables: {
+        initialMoney: initialMoney,
         startDate: formatDateToString(startDate),
         endDate: formatDateToString(endDate),
         rebalanceDays,
@@ -174,11 +174,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   useEffect(() => {
     if (marketData && simulation) {
       // Create a key from the simulation parameters that affect the calculation
-      const currentParams = JSON.stringify({
-        startDate: simulation.variables.startDate,
-        initialMoney: simulation.initialMoney,
-        variables: simulation.variables,
-      });
+      const currentParams = JSON.stringify(simulation.variables);
 
       // Only run simulation if parameters have changed
       if (currentParams !== lastSimulationParams.current) {
