@@ -30,9 +30,9 @@ export const loadData = async (
 const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) => {
   const investments: Investments = {
     total: simulation.variables.initialMoney,
-    TQQQ: simulation.variables.initialMoney * 0.6,
-    cash: simulation.variables.initialMoney * 0.4,
-    ratio: 0.6,
+    TQQQ: simulation.variables.initialMoney * simulation.variables.targetRatio,
+    cash: simulation.variables.initialMoney * (1 - simulation.variables.targetRatio),
+    ratio: simulation.variables.targetRatio,
     mockTotalQQQ: simulation.variables.initialMoney,
     mockTotalTQQQ: simulation.variables.initialMoney,
   };
@@ -136,7 +136,7 @@ const runSingleSimulation = (simulation: Simulation, marketData: MarketData): Si
 const calculateAnnualizedRates = (simulation: Simulation) => {
   const endDate = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].date;
 
-  simulation.annualizedSig9lRate = calculateAnnualizedRate(
+  simulation.annualizedStrategylRate = calculateAnnualizedRate(
     simulation.variables.initialMoney,
     simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.total,
     simulation.variables.startDate,
@@ -193,9 +193,9 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
   const targetRate = simulation.variables.targetRate;
   let reason = ``;
 
-  investments.cash += 2;
-  investments.mockTotalQQQ += 2;
-  investments.mockTotalTQQQ += 2;
+  // investments.cash += 2;
+  // investments.mockTotalQQQ += 2;
+  // investments.mockTotalTQQQ += 2;
 
   if (cumulativeLastRebalanceLogs < variables.lookBackEnterRate * simulation.variables.lookBackRebalances) {
     if (DEBUG) console.log("still dropping");
@@ -445,51 +445,51 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
   if (results.length === 0) {
     return {
       totalSimulations: 0,
-      averageSig9Rate: 0,
+      averageStrategyRate: 0,
       averageQQQRate: 0,
       averageTQQQRate: 0,
-      bestSig9Rate: 0,
-      worstSig9Rate: 0,
+      bestStrategyRate: 0,
+      worstStrategyRate: 0,
       winRate: 0,
     };
   }
 
-  const sig9Rates = results.map((r) => r.simulation.annualizedSig9lRate || 0);
+  const strategyRates = results.map((r) => r.simulation.annualizedStrategylRate || 0);
   const qqqRates = results.map((r) => r.simulation.annualizedQQQRate || 0);
   const tqqqRates = results.map((r) => r.simulation.annualizedTQQQRate || 0);
 
-  const averageSig9Rate = sig9Rates.reduce((sum, rate) => sum + rate, 0) / sig9Rates.length;
+  const averageStrategyRate = strategyRates.reduce((sum, rate) => sum + rate, 0) / strategyRates.length;
   const averageQQQRate = qqqRates.reduce((sum, rate) => sum + rate, 0) / qqqRates.length;
   const averageTQQQRate = tqqqRates.reduce((sum, rate) => sum + rate, 0) / tqqqRates.length;
 
-  const bestSig9Rate = Math.max(...sig9Rates);
-  const worstSig9Rate = Math.min(...sig9Rates);
+  const bestStrategyRate = Math.max(...strategyRates);
+  const worstStrategyRate = Math.min(...strategyRates);
 
   const resultsWithRates = results.map((r) => ({
     startDate: r.startDate,
-    sig9Rate: r.simulation.annualizedSig9lRate || 0,
+    strategyRate: r.simulation.annualizedStrategylRate || 0,
     qqqRate: r.simulation.annualizedQQQRate || 0,
     tqqqRate: r.simulation.annualizedTQQQRate || 0,
   }));
 
-  const worst10Sig9 = resultsWithRates.sort((a, b) => a.sig9Rate - a.qqqRate - (b.sig9Rate - b.qqqRate)).slice(0, 10);
+  const worst10Strategy = resultsWithRates.sort((a, b) => a.strategyRate - a.qqqRate - (b.strategyRate - b.qqqRate)).slice(0, 10);
 
   console.log({
     totalSimulations: results.length,
-    averageSig9Rate,
+    averageStrategyRate,
     averageQQQRate,
     averageTQQQRate,
-    bestSig9Rate,
-    worstSig9Rate,
+    bestStrategyRate,
+    worstStrategyRate,
     dateRange: {
       start: results[0]?.startDate,
       end: results[results.length - 1]?.startDate,
     },
   });
 
-  worst10Sig9.forEach((result, index) => {
+  worst10Strategy.forEach((result, index) => {
     console.log(
-      `${index + 1}. ${result.startDate}: Sig9= ${(result.sig9Rate * 100)?.toFixed(2)}%, QQQ= ${(
+      `${index + 1}. ${result.startDate}: Strategy= ${(result.strategyRate * 100)?.toFixed(2)}%, QQQ= ${(
         result.qqqRate * 100
       )?.toFixed(2)}%, TQQQ= ${(result.tqqqRate * 100)?.toFixed(2)}%`
     );
@@ -497,12 +497,12 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
 
   return {
     totalSimulations: results.length,
-    averageSig9Rate,
+    averageStrategyRate,
     averageQQQRate,
     averageTQQQRate,
-    bestSig9Rate,
-    worstSig9Rate,
-    worst10Sig9,
+    bestStrategyRate,
+    worstStrategyRate,
+    worst10Strategy,
     dateRange: {
       start: results[0]?.startDate,
       end: results[results.length - 1]?.startDate,

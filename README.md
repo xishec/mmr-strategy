@@ -1,1 +1,1 @@
-# mmr-sig9
+# mmr-strategy

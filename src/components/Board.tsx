@@ -34,12 +34,12 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [initialMoney, setInitialMoney] = useState<number>(100);
   const [rebalanceDays, setRebalanceDays] = useState<number>(30);
-  const [targetRate, setTargetRate] = useState<number>(0.09);
+  const [targetRate, setTargetRate] = useState<number>(0.1);
   const [cashYearRate, setCashYearRate] = useState<number>(0.0);
-  const [targetRatio, setTargetRatio] = useState<number>(0.6);
-  const [spikeRate, setSpikeRate] = useState<number>(0.18);
-  const [dropRate, setDropRate] = useState<number>(-0.09);
-  const [lookBackEnterRate, setLookBackEnterRate] = useState<number>(0.03);
+  const [targetRatio, setTargetRatio] = useState<number>(0.5);
+  const [spikeRate, setSpikeRate] = useState<number>(0.2);
+  const [dropRate, setDropRate] = useState<number>(-0.1);
+  const [lookBackEnterRate, setLookBackEnterRate] = useState<number>(0.0);
   const [lookbackRebalances, setLookbackRebalances] = useState<number>(6);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
 
@@ -196,7 +196,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         portfolioSnapshotsMap[snapshot.date] = snapshot;
       });
       setPriceChart({
-        Sig9Total: simulation.rebalanceLogs.map((snapshot) => ({
+        StrategyTotal: simulation.rebalanceLogs.map((snapshot) => ({
           time: snapshot.date,
           value: portfolioSnapshotsMap[snapshot.date].investments.total,
         })),
@@ -323,7 +323,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
             onChange={(e) => setTargetRatio(Number(e.target.value))}
             variant="outlined"
             slotProps={{
-              htmlInput: { step: 0.01 },
+              htmlInput: { step: 0.1 },
             }}
           />
 
@@ -444,8 +444,8 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                   <strong>Rebalance Type:</strong> {rebalanceLogsMap[selectedDate].rebalanceType}
                 </Box>
                 <Box>
-                  <strong>Sig9 Rate:</strong>{" "}
-                  {simulation.annualizedSig9lRate ? (simulation.annualizedSig9lRate * 100).toFixed(2) : "N/A"}%
+                  <strong>Strategy Rate:</strong>{" "}
+                  {simulation.annualizedStrategylRate ? (simulation.annualizedStrategylRate * 100).toFixed(2) : "N/A"}%
                 </Box>
                 <Box>
                   <strong>QQQ Rate:</strong>{" "}

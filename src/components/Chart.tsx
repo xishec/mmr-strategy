@@ -46,11 +46,11 @@ const Chart: React.FC<ChartProps> = ({
     }> = [];
 
     if (chartType === "price") {
-      if (seriesData.Sig9Total) {
-        legendItems.push({ label: "Sig9 Total", color: "#FBBC04", type: "line" });
+      if (seriesData.StrategyTotal) {
+        legendItems.push({ label: "Strategy Total", color: "#FBBC04", type: "line" });
       }
-      if (seriesData.Sig9Target) {
-        legendItems.push({ label: "Sig9 Target", color: "#202124", type: "line", dashed: true });
+      if (seriesData.StrategyTarget) {
+        legendItems.push({ label: "Strategy Target", color: "#202124", type: "line", dashed: true });
       }
       if (seriesData.Target) {
         legendItems.push({ label: "Target", color: "#202124", type: "circle" });
@@ -192,8 +192,8 @@ const Chart: React.FC<ChartProps> = ({
 
     // Color mapping
     const colors = {
-      Sig9Target: "#202124",
-      Sig9Total: "#FBBC04",
+      StrategyTarget: "#202124",
+      StrategyTotal: "#FBBC04",
       Target: "#202124",
       MockTotalQQQ: "#4285F4",
       MockTotalTQQQ: "#EA4335",
@@ -206,7 +206,7 @@ const Chart: React.FC<ChartProps> = ({
     let mainSeries: any = null;
     Object.entries(seriesData).forEach(([seriesName, data], index) => {
       const seriesColor = colors[seriesName as keyof typeof colors] || colors.default;
-      const isDashed = seriesName === "Sig9Target";
+      const isDashed = seriesName === "StrategyTarget";
       const isRatioChart = chartType === "ratio";
       const isPullbackChart = chartType === "pullback";
       const isCombinedChart = chartType === "ratio-pullback";
@@ -385,8 +385,8 @@ const Chart: React.FC<ChartProps> = ({
         let seriesKey = label;
         if (chartType === "price") {
           // Direct mapping for price chart
-          if (label === "Sig9 Total") seriesKey = "Sig9Total";
-          else if (label === "Sig9 Target") seriesKey = "Sig9Target";
+          if (label === "Strategy Total") seriesKey = "StrategyTotal";
+          else if (label === "Strategy Target") seriesKey = "StrategyTarget";
           else if (label === "Target") seriesKey = "Target";
           else if (label === "Mock Total QQQ") seriesKey = "MockTotalQQQ";
           else if (label === "Mock Total TQQQ") seriesKey = "MockTotalTQQQ";

@@ -4,7 +4,7 @@ export interface Simulation {
   variables: Variables;
   annualizedTQQQRate?: number;
   annualizedQQQRate?: number;
-  annualizedSig9lRate?: number;
+  annualizedStrategylRate?: number;
 }
 
 export interface Variables {

@@ -1,7 +1,7 @@
 {
-  "name": "mmr-sig9-react",
+  "name": "mmr-strategy-react",
   "version": "0.1.0",
-  "homepage": "https://xishec.github.io/mmr-sig9/",
+  "homepage": "https://xishec.github.io/mmr-strategy/",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -32,7 +32,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "yarn build",
-    "deploy": "gh-pages -d build -u \"GitHub Actions <xiiicheen@gmail.com>\" -r https://x-access-token:$PERSONAL_ACCESS_TOKEN@github.com/xishec/mmr-sig9.git"
+    "deploy": "gh-pages -d build -u \"GitHub Actions <xiiicheen@gmail.com>\" -r https://x-access-token:$PERSONAL_ACCESS_TOKEN@github.com/xishec/mmr-strategy.git"
   },
   "eslintConfig": {
     "extends": [
