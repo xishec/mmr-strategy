@@ -1,14 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Box, Typography, TextField, FormControlLabel, Switch, MenuItem } from "@mui/material";
 import { startSimulation } from "../core/functions";
-import {
-  MarketData,
-  Simulation,
-  MultiSeriesChartData,
-  Variables,
-  RebalanceLog,
-  PortfolioSnapshot,
-} from "../core/models";
+import { MarketData, Simulation, MultiSeriesChartData, Variables, RebalanceLog } from "../core/models";
 import Chart from "./Chart";
 
 // Helper function to format currency values
@@ -45,7 +38,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [pullbackChart, setPullbackChart] = useState<MultiSeriesChartData>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const [portfolioSnapshotsMap, setPortfolioSnapshotsMap] = useState<Record<string, PortfolioSnapshot>>({});
   const [rebalanceLogsMap, setRebalanceLogsMap] = useState<Record<string, RebalanceLog>>({});
 
   const [simulation, setSimulation] = useState<Simulation>({
@@ -171,47 +163,43 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
   useEffect(() => {
     if (simulation) {
-      const newPortfolioSnapshotMap: Record<string, PortfolioSnapshot> = {};
-      simulation.portfolioSnapshots.forEach((snapshot) => {
-        newPortfolioSnapshotMap[snapshot.date] = snapshot;
-      });
-      setPortfolioSnapshotsMap(newPortfolioSnapshotMap);
+      // Create rebalance logs map for quick lookup by date
       const newRebalanceLogsMap: Record<string, RebalanceLog> = {};
       simulation.rebalanceLogs.forEach((log) => {
         newRebalanceLogsMap[log.date] = log;
       });
+      console.log("newRebalanceLogsMap:", newRebalanceLogsMap);
       setRebalanceLogsMap(newRebalanceLogsMap);
-
       setSelectedDateToLastRebalance();
 
       setPriceChart({
-        Sig9Total: simulation.rebalanceLogs.map((snapshot) => ({
+        Sig9Total: simulation.portfolioSnapshots.map((snapshot) => ({
           time: snapshot.date,
-          value: newPortfolioSnapshotMap[snapshot.date].investments.Total,
+          value: snapshot.investments.Total,
         })),
         Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
           time: rebalanceLog.date,
           value: rebalanceLog.nextTarget,
         })),
-        MockTotalQQQ: simulation.rebalanceLogs.map((snapshot) => ({
+        MockTotalQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
           time: snapshot.date,
-          value: newPortfolioSnapshotMap[snapshot.date].investments.MockTotalQQQ,
+          value: snapshot.investments.MockTotalQQQ,
         })),
-        MockTotalTQQQ: simulation.rebalanceLogs.map((snapshot) => ({
+        MockTotalTQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
           time: snapshot.date,
-          value: newPortfolioSnapshotMap[snapshot.date].investments.MockTotalTQQQ,
+          value: snapshot.investments.MockTotalTQQQ,
         })),
       });
       setRatioChart({
-        Ratio: simulation.rebalanceLogs.map((snapshot) => ({
+        Ratio: simulation.portfolioSnapshots.map((snapshot) => ({
           time: snapshot.date,
-          value: newPortfolioSnapshotMap[snapshot.date].investments.Ratio,
+          value: snapshot.investments.Ratio,
         })),
       });
       setPullbackChart({
-        pullback: simulation.rebalanceLogs.map((snapshot) => ({
+        pullback: simulation.portfolioSnapshots.map((snapshot) => ({
           time: snapshot.date,
-          value: newPortfolioSnapshotMap[snapshot.date].pullback,
+          value: snapshot.pullback,
         })),
       });
     }
