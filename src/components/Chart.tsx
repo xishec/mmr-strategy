@@ -147,39 +147,34 @@ const Chart: React.FC<ChartProps> = ({
     const line = d3
       .line<any>()
       .x((d) => xScale(d.parsedTime))
-      .y((d) => yScale(d.value))
-      .curve(d3.curveLinear);
+      .y((d) => yScale(d.value));
 
     // Create area generator for ratio chart
     const area = d3
       .area<any>()
       .x((d) => xScale(d.parsedTime))
       .y0(chartHeight)
-      .y1((d) => yScale(d.value))
-      .curve(d3.curveLinear);
+      .y1((d) => yScale(d.value));
 
     // Create area generator for pullback chart (area from top)
     const pullbackArea = d3
       .area<any>()
       .x((d) => xScale(d.parsedTime))
       .y0(0) // Start from top of chart
-      .y1((d) => yScale(d.value))
-      .curve(d3.curveLinear);
+      .y1((d) => yScale(d.value));
 
     // Create area generators for combined chart
     const combinedRatioArea = d3
       .area<any>()
       .x((d) => xScale(d.parsedTime))
       .y0(yScale(0)) // Start from center (y=0)
-      .y1((d) => yScale(d.value))
-      .curve(d3.curveLinear);
+      .y1((d) => yScale(d.value));
 
     const combinedPullbackArea = d3
       .area<any>()
       .x((d) => xScale(d.parsedTime))
       .y0(yScale(0)) // Start from center (y=0)
-      .y1((d) => yScale(d.value))
-      .curve(d3.curveLinear);
+      .y1((d) => yScale(d.value));
 
     // Add center line at y=0 for combined chart
     if (chartType === "ratio-pullback") {
