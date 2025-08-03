@@ -94,7 +94,7 @@ export const startSimulation = (
  * @param endDate - Optional end date to limit the simulation (format: YYYY-MM-DD)
  * @returns The completed simulation
  */
-const runSingleSimulation = (simulation: Simulation, marketData: MarketData, endDate?: string): Simulation => {
+const runSingleSimulation = (simulation: Simulation, marketData: MarketData): Simulation => {
   // Create a deep copy of the simulation to avoid mutations
   const simulationCopy: Simulation = {
     ...simulation,
@@ -109,7 +109,7 @@ const runSingleSimulation = (simulation: Simulation, marketData: MarketData, end
     if (date <= simulationCopy.variables.startDate) continue;
 
     // Stop simulation if we've reached the specified end date
-    if (endDate && date > endDate) break;
+    if (date > simulationCopy.variables.endDate) break;
 
     const portfolioSnapshot = computePortfolioSnapshot(simulationCopy, date, TQQQDelta, QQQDelta);
 
@@ -371,7 +371,7 @@ export const runMultipleSimulations = (
           };
 
           // Run the simulation using the shared simulation logic
-          const completedSimulation = runSingleSimulation(simulation, marketData, simulationEndDateString);
+          const completedSimulation = runSingleSimulation(simulation, marketData);
 
           if (completedSimulation.portfolioSnapshots.length > 0) {
             results.push({
