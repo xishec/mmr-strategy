@@ -13,11 +13,12 @@ export interface Variables {
   endDate: string;
   rebalanceDays: number;
   targetRate: number;
-  CashDayRate: number;
-  TargetRatio: number;
-  SpikeRate: number;
-  DropRate: number;
-  BigDropRate: number;
+  cashDayRate: number;
+  targetRatio: number;
+  spikeRate: number;
+  dropRate: number;
+  bigDropRate: number;
+  lookBackRebalances: number;
 }
 
 export interface PortfolioSnapshot {
@@ -48,12 +49,12 @@ export enum RebalanceType {
 }
 
 export interface Investments {
-  Total: number;
-  MockTotalQQQ: number;
-  MockTotalTQQQ: number;
+  total: number;
+  mockTotalQQQ: number;
+  mockTotalTQQQ: number;
   TQQQ: number;
-  Cash: number;
-  Ratio: number;
+  cash: number;
+  ratio: number;
 }
 
 export interface MarketData {

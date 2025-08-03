@@ -39,7 +39,8 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [targetRatio, setTargetRatio] = useState<number>(0.6);
   const [spikeRate, setSpikeRate] = useState<number>(0.18);
   const [dropRate, setDropRate] = useState<number>(-0.09);
-  const [bigDropRate, setBigDropRate] = useState<number>(0.06);
+  const [bigDropRate, setBigDropRate] = useState<number>(0.04);
+  const [lookbackRebalances, setLookbackRebalances] = useState<number>(3);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
@@ -58,11 +59,12 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       endDate: formatDateToString(endDate),
       rebalanceDays,
       targetRate,
-      CashDayRate: convertAnnualRateToDaily(cashYearRate),
-      TargetRatio: targetRatio,
-      SpikeRate: spikeRate,
-      DropRate: dropRate,
-      BigDropRate: bigDropRate,
+      cashDayRate: convertAnnualRateToDaily(cashYearRate),
+      targetRatio: targetRatio,
+      spikeRate: spikeRate,
+      dropRate: dropRate,
+      bigDropRate: bigDropRate,
+      lookBackRebalances: lookbackRebalances,
     },
   });
 
@@ -94,11 +96,12 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         endDate: formatDateToString(endDate),
         rebalanceDays,
         targetRate,
-        CashDayRate: convertAnnualRateToDaily(cashYearRate),
-        TargetRatio: targetRatio,
-        SpikeRate: spikeRate,
-        DropRate: dropRate,
-        BigDropRate: bigDropRate,
+        cashDayRate: convertAnnualRateToDaily(cashYearRate),
+        targetRatio: targetRatio,
+        spikeRate: spikeRate,
+        dropRate: dropRate,
+        bigDropRate: bigDropRate,
+        lookBackRebalances: lookbackRebalances,
       },
     }));
   }, [
@@ -112,6 +115,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     spikeRate,
     dropRate,
     bigDropRate,
+    lookbackRebalances,
   ]);
 
   // Chart synchronization functions
@@ -194,7 +198,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       setPriceChart({
         Sig9Total: simulation.rebalanceLogs.map((snapshot) => ({
           time: snapshot.date,
-          value: portfolioSnapshotsMap[snapshot.date].investments.Total,
+          value: portfolioSnapshotsMap[snapshot.date].investments.total,
         })),
         Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
           time: rebalanceLog.date,
@@ -202,17 +206,17 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         })),
         MockTotalQQQ: simulation.rebalanceLogs.map((snapshot) => ({
           time: snapshot.date,
-          value: portfolioSnapshotsMap[snapshot.date].investments.MockTotalQQQ,
+          value: portfolioSnapshotsMap[snapshot.date].investments.mockTotalQQQ,
         })),
         MockTotalTQQQ: simulation.rebalanceLogs.map((snapshot) => ({
           time: snapshot.date,
-          value: portfolioSnapshotsMap[snapshot.date].investments.MockTotalTQQQ,
+          value: portfolioSnapshotsMap[snapshot.date].investments.mockTotalTQQQ,
         })),
       });
       setRatioChart({
         Ratio: simulation.rebalanceLogs.map((snapshot) => ({
           time: snapshot.date,
-          value: portfolioSnapshotsMap[snapshot.date].investments.Ratio,
+          value: portfolioSnapshotsMap[snapshot.date].investments.ratio,
         })),
       });
       setPullbackChart({
@@ -353,6 +357,17 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
             variant="outlined"
             slotProps={{
               htmlInput: { step: 0.01 },
+            }}
+          />
+
+          <TextField
+            label="Lookback number of rebalances"
+            type="number"
+            value={lookbackRebalances}
+            onChange={(e) => setLookbackRebalances(Number(e.target.value))}
+            variant="outlined"
+            slotProps={{
+              htmlInput: { step: 1 },
             }}
           />
 
