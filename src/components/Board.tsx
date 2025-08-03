@@ -29,7 +29,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [startingDate, setStartingDate] = useState<string>(new Date("2001-01-01").toISOString().split("T")[0]);
   const [startingYear, setStartingYear] = useState<number>(2001);
   const [initialMoney, setInitialMoney] = useState<number>(100);
-  const [rebalanceDays, setRebalanceDays] = useState<number>(92);
+  const [rebalanceDays, setRebalanceDays] = useState<number>(60);
   const [targetRate, setTargetRate] = useState<number>(0.09);
   const [cashDayRate, setCashDayRate] = useState<number>(0);
   const [targetRatio, setTargetRatio] = useState<number>(0.6);
@@ -378,13 +378,13 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                   <strong>Rebalance Type:</strong> {rebalanceLogsMap[selectedDate].rebalanceType}
                 </Box>
                 <Box>
-                  <strong>Sig9 Rate:</strong> {simulation.annualizedSig9lRate! * 100}%
+                  <strong>Sig9 Rate:</strong> {(simulation.annualizedSig9lRate! * 100).toFixed(2)}%
                 </Box>
                 <Box>
-                  <strong>QQQ Rate:</strong> {simulation.annualizedQQQRate! * 100}%
+                  <strong>QQQ Rate:</strong> {(simulation.annualizedQQQRate! * 100).toFixed(2)}%
                 </Box>
                 <Box>
-                  <strong>TQQQ Rate:</strong> {simulation.annualizedTQQQRate! * 100}%
+                  <strong>TQQQ Rate:</strong> {(simulation.annualizedTQQQRate! * 100).toFixed(2)}%
                 </Box>
               </Box>
             ) : (
