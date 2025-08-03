@@ -20,16 +20,16 @@ interface BoardProps {
 
 const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [startingDate, setStartingDate] = useState<Date>(() => {
-    return new Date("2000-01-01");
+    return new Date("2001-01-01");
   });
   const [initialMoney, setInitialMoney] = useState<number>(100);
   const [rebalanceDays, setRebalanceDays] = useState<number>(92);
   const [targetRate, setTargetRate] = useState<number>(0.09);
   const [cashDayRate, setCashDayRate] = useState<number>(0);
   const [targetRatio, setTargetRatio] = useState<number>(0.6);
-  const [spikeRate, setSpikeRate] = useState<number>(0.3);
+  const [spikeRate, setSpikeRate] = useState<number>(0.18);
   const [dropRate, setDropRate] = useState<number>(-0.06);
-  const [bigDropRate, setBigDropRate] = useState<number>(-0.5);
+  const [bigDropRate, setBigDropRate] = useState<number>(0.01);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
@@ -311,7 +311,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
 
           <TextField
-            label="Last 3 Rebalance sum should be hight than this"
+            label="Average last rebalance delta should be higher than this"
             type="number"
             value={bigDropRate}
             onChange={(e) => setBigDropRate(Number(e.target.value))}
