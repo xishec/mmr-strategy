@@ -33,14 +33,14 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [startDate, setStartDate] = useState<Date>(new Date(2000, 0, 1)); // Year, Month (0-based), Day
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [initialMoney, setInitialMoney] = useState<number>(100);
-  const [rebalanceDays, setRebalanceDays] = useState<number>(30);
-  const [targetRate, setTargetRate] = useState<number>(0.1);
+  const [rebalanceDays, setRebalanceDays] = useState<number>(60);
+  const [targetRate, setTargetRate] = useState<number>(0.05);
   const [cashYearRate, setCashYearRate] = useState<number>(0.0);
   const [targetRatio, setTargetRatio] = useState<number>(0.5);
-  const [spikeRate, setSpikeRate] = useState<number>(0.2);
+  const [spikeRate, setSpikeRate] = useState<number>(0.1);
   const [dropRate, setDropRate] = useState<number>(-0.1);
   const [lookBackEnterRate, setLookBackEnterRate] = useState<number>(0.0);
-  const [lookBackDays, setLookBackDays] = useState<number>(180);
+  const [lookBackDays, setLookBackDays] = useState<number>(300);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
@@ -481,11 +481,14 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                     : "N/A"}
                 </Box>
                 <Box>
-                  <strong>Cumulative Rate:</strong>{" "}
-                  {(rebalanceLogsMap[selectedDate].cumulativeRateSinceLastRebalance * 100).toFixed(2)}%
+                  <strong>Rebalance Type:</strong> {rebalanceLogsMap[selectedDate].rebalanceType}
                 </Box>
                 <Box>
-                  <strong>Rebalance Type:</strong> {rebalanceLogsMap[selectedDate].rebalanceType}
+                  <strong>Reason:</strong> {rebalanceLogsMap[selectedDate].reason}
+                </Box>
+                <Box>
+                  <strong>Cumulative Rate:</strong>{" "}
+                  {(rebalanceLogsMap[selectedDate].cumulativeRateSinceLastRebalance * 100).toFixed(2)}%
                 </Box>
                 <Box>
                   <strong>Strategy Rate:</strong>{" "}

@@ -6,7 +6,7 @@ const black = "#202124";
 const yellow = "#FBBC04";
 const blue = "#4285F4";
 const red = "#EA4335";
-const green = "#34A853";
+// const green = "#34A853";
 
 interface ChartProps {
   chartData?: ChartData;

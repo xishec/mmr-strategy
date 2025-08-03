@@ -189,22 +189,25 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
   const investments = portfolioSnapshot.investments;
   const targetRate = simulation.variables.targetRate;
   const lastLookBackDays = simulation.portfolioSnapshots.slice(-simulation.variables.lookBackDays) || [];
-  const averageLastLookBackDaysRate =
-    lastLookBackDays.reduce((acc, log) => acc + marketData.TQQQ[log.date] || 0, 0) / (lastLookBackDays.length || 1);
-  let rebalanceType: RebalanceType = RebalanceType.Excess;
-  let reason = ``;
+  const lastLookBackDaysRate =
+    (portfolioSnapshot.investments.total - lastLookBackDays[0].investments.total) /
+    lastLookBackDays[0].investments.total;
 
-  const isStillDropping = averageLastLookBackDaysRate < variables.lookBackEnterRate;
+  let rebalanceType: RebalanceType = RebalanceType.Excess;
+  let reason = `isBigDown ? ${lastLookBackDaysRate.toFixed(3)} < ${variables.lookBackEnterRate.toFixed(3)}`;
+
+  const isBigDown = lastLookBackDaysRate < variables.lookBackEnterRate;
   const isDrop = portfolioSnapshot.cumulativeRateSinceRebalance < variables.dropRate;
-  const isSpike = portfolioSnapshot.cumulativeRateSinceRebalance > variables.spikeRate;
+  const isSpike =
+    portfolioSnapshot.cumulativeRateSinceRebalance > variables.spikeRate && portfolioSnapshot.pullback > -0.5;
 
   // investments.cash += 2;
   // investments.mockTotalQQQ += 2;
   // investments.mockTotalTQQQ += 2;
 
-  if (isStillDropping) {
+  if (isBigDown) {
     rebalanceType = RebalanceType.StillDropping;
-    reason += `Still dropping (${averageLastLookBackDaysRate.toFixed(3)} < ${variables.lookBackEnterRate.toFixed(3)})`;
+    reason += `isBigDown (${lastLookBackDaysRate.toFixed(3)} < ${variables.lookBackEnterRate.toFixed(3)})`;
   } else if (isDrop) {
     rebalanceType = RebalanceType.Drop;
     reason += `Drop (${portfolioSnapshot.cumulativeRateSinceRebalance.toFixed(3)} < ${variables.dropRate.toFixed(3)})`;
@@ -222,7 +225,7 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
     const actualExcess = Math.min(excess, investments.TQQQ);
     investments.TQQQ -= actualExcess;
     investments.cash += actualExcess;
-    portfolioSnapshot.nextTarget = Math.min(portfolioSnapshot.nextTarget, investments.total) * (1 + targetRate);
+    portfolioSnapshot.nextTarget = investments.total * (1 + targetRate);
     reason += `Excess (${portfolioSnapshot.cumulativeRateSinceRebalance.toFixed(3)} >= ${variables.targetRate.toFixed(
       3
     )})`;
@@ -232,7 +235,7 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
     const actualShortfall = Math.min(shortfall, investments.cash);
     investments.TQQQ += actualShortfall;
     investments.cash -= actualShortfall;
-    portfolioSnapshot.nextTarget = Math.min(portfolioSnapshot.nextTarget, investments.total) * (1 + targetRate);
+    portfolioSnapshot.nextTarget = investments.total * (1 + targetRate);
     reason += `Shortfall (${portfolioSnapshot.cumulativeRateSinceRebalance.toFixed(3)} < ${variables.targetRate.toFixed(
       3
     )})`;
