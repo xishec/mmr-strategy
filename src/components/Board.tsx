@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { Box, Typography, TextField, FormControlLabel, Switch, MenuItem, Button } from "@mui/material";
+import { Box, Typography, TextField, FormControlLabel, Switch, Button } from "@mui/material";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { convertAnnualRateToDaily, runMultipleSimulations, startSimulation } from "../core/functions";
 import {
   MarketData,
@@ -21,16 +23,22 @@ const formatCurrency = (value: number): string => {
   }).format(value);
 };
 
+// Helper function to format date as YYYY-MM-DD in local timezone
+const formatDateToString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 interface BoardProps {
   marketData: MarketData;
 }
 
 const Board: React.FC<BoardProps> = ({ marketData }) => {
-  const [startYear, setStartYear] = useState<number>(2000);
-  const [endYear, setEndYear] = useState<number>(2025);
   const [simulationYears, setSimulationYears] = useState<number>(5);
-  const [startDate, setStartDate] = useState<string>(new Date(`${startYear}-01-01`).toISOString().split("T")[0]);
-  const [endDate, setEndDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [startDate, setStartDate] = useState<Date>(new Date(2000, 0, 1)); // Year, Month (0-based), Day
+  const [endDate, setEndDate] = useState<Date>(new Date());
   const [initialMoney, setInitialMoney] = useState<number>(100);
   const [rebalanceDays, setRebalanceDays] = useState<number>(60);
   const [targetRate, setTargetRate] = useState<number>(0.09);
@@ -53,7 +61,8 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     portfolioSnapshots: [],
     rebalanceLogs: [],
     variables: {
-      startDate: startDate,
+      startDate: formatDateToString(startDate),
+      endDate: formatDateToString(endDate),
       rebalanceDays,
       targetRate,
       CashDayRate: convertAnnualRateToDaily(cashYearRate),
@@ -88,8 +97,8 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       ...prevSimulation,
       initialMoney: initialMoney,
       variables: {
-        startDate: startDate,
-        endDate: endDate,
+        startDate: formatDateToString(startDate),
+        endDate: formatDateToString(endDate),
         rebalanceDays,
         targetRate,
         CashDayRate: convertAnnualRateToDaily(cashYearRate),
@@ -99,7 +108,18 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         BigDropRate: bigDropRate,
       },
     }));
-  }, [startDate, initialMoney, rebalanceDays, targetRate, cashYearRate, targetRatio, spikeRate, dropRate, bigDropRate]);
+  }, [
+    startDate,
+    endDate,
+    initialMoney,
+    rebalanceDays,
+    targetRate,
+    cashYearRate,
+    targetRatio,
+    spikeRate,
+    dropRate,
+    bigDropRate,
+  ]);
 
   // Chart synchronization functions
   const handleChartReady = useCallback((chartId: string, chart: any, mainSeries: any) => {
@@ -233,41 +253,31 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         </Typography>
 
         <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 2, mb: 3 }}>
-          <TextField
-            label="Start"
-            select
-            value={startYear}
-            onChange={(e) => {
-              const year = Number(e.target.value);
-              setStartYear(year);
-              setStartDate(new Date(`${year}-01-01`).toISOString().split("T")[0]);
-            }}
-            variant="outlined"
-          >
-            {Array.from({ length: 26 }, (_, i) => 2000 + i).map((year) => (
-              <MenuItem key={year} value={year}>
-                {year}
-              </MenuItem>
-            ))}
-          </TextField>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="Start Date"
+              value={startDate}
+              onChange={(newValue: Date | null) => {
+                if (newValue) {
+                  setStartDate(newValue);
+                }
+              }}
+              format="yyyy-MM-dd"
+            />
+          </LocalizationProvider>
 
-          <TextField
-            label="End"
-            select
-            value={endYear}
-            onChange={(e) => {
-              const year = Number(e.target.value);
-              setEndYear(year);
-              setEndDate(new Date(`${year}-01-01`).toISOString().split("T")[0]);
-            }}
-            variant="outlined"
-          >
-            {Array.from({ length: 26 }, (_, i) => 2000 + i).map((year) => (
-              <MenuItem key={year} value={year}>
-                {year}
-              </MenuItem>
-            ))}
-          </TextField>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="End Date"
+              value={endDate}
+              onChange={(newValue: Date | null) => {
+                if (newValue) {
+                  setEndDate(newValue);
+                }
+              }}
+              format="yyyy-MM-dd"
+            />
+          </LocalizationProvider>
 
           <TextField
             label="Initial Money ($)"

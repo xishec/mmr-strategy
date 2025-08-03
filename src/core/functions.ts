@@ -253,8 +253,13 @@ export const calculateAnnualizedRate = (
   initialDateString: string,
   endDateString: string
 ): number => {
-  const initialDate = new Date(initialDateString);
-  const endDate = new Date(endDateString);
+  // Parse dates as UTC to avoid timezone issues
+  const [startYear, startMonth, startDay] = initialDateString.split("-").map(Number);
+  const [endYear, endMonth, endDay] = endDateString.split("-").map(Number);
+  
+  const initialDate = new Date(Date.UTC(startYear, startMonth - 1, startDay));
+  const endDate = new Date(Date.UTC(endYear, endMonth - 1, endDay));
+  
   const nbYears = (endDate.getTime() - initialDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
 
   // Ensure we have at least some time period to avoid division by zero
@@ -285,10 +290,11 @@ export const runMultipleSimulations = (
 ): Array<{ startDate: string; simulation: Simulation }> => {
   const results: Array<{ startDate: string; simulation: Simulation }> = [];
 
-  // Start from 2000-01-01
-  const startDate = new Date("2000-01-01");
-  // End at today's date
+  // Start from 2000-01-01 using UTC to avoid timezone issues
+  const startDate = new Date(Date.UTC(2000, 0, 1));
+  // End at today's date using UTC to avoid timezone issues
   const endDate = new Date();
+  endDate.setUTCHours(0, 0, 0, 0); // Set to start of day in UTC
 
   // Get all available dates from market data (sorted)
   const availableDates = Object.keys(marketData.TQQQ).sort();
@@ -299,8 +305,15 @@ export const runMultipleSimulations = (
     `Running simulations from ${firstAvailableDate} to ${lastAvailableDate} (${nbYear} years per simulation)`
   );
 
-  let currentDate = new Date(Math.max(startDate.getTime(), new Date(firstAvailableDate).getTime()));
-  const finalDate = new Date(Math.min(endDate.getTime(), new Date(lastAvailableDate).getTime()));
+  // Parse available dates as UTC to avoid timezone issues
+  const [firstYear, firstMonth, firstDay] = firstAvailableDate.split("-").map(Number);
+  const [lastYear, lastMonth, lastDay] = lastAvailableDate.split("-").map(Number);
+  
+  const firstAvailableUTC = new Date(Date.UTC(firstYear, firstMonth - 1, firstDay));
+  const lastAvailableUTC = new Date(Date.UTC(lastYear, lastMonth - 1, lastDay));
+
+  let currentDate = new Date(Math.max(startDate.getTime(), firstAvailableUTC.getTime()));
+  const finalDate = new Date(Math.min(endDate.getTime(), lastAvailableUTC.getTime()));
 
   let simulationCount = 0;
 
@@ -333,14 +346,20 @@ export const runMultipleSimulations = (
         setupInitialPortfolio(simulationCopy, marketData);
 
         // Only run simulation if we have enough data (at least 30 days after start)
-        const startDateObj = new Date(simulationCopy.variables.startDate);
+        // Parse start date as UTC to avoid timezone issues
+        const [startYear, startMonth, startDay] = simulationCopy.variables.startDate.split("-").map(Number);
+        const startDateObj = new Date(Date.UTC(startYear, startMonth - 1, startDay));
         const minEndDate = new Date(startDateObj.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
-        const hasEnoughData = new Date(lastAvailableDate) > minEndDate;
+        
+        // Parse last available date as UTC for comparison
+        const [lastYear, lastMonth, lastDay] = lastAvailableDate.split("-").map(Number);
+        const lastAvailableUTC = new Date(Date.UTC(lastYear, lastMonth - 1, lastDay));
+        const hasEnoughData = lastAvailableUTC > minEndDate;
 
         if (hasEnoughData) {
           // Calculate end date for this simulation (start date + nbYear years)
           const simulationEndDate = new Date(startDateObj.getTime());
-          simulationEndDate.setFullYear(simulationEndDate.getFullYear() + nbYear);
+          simulationEndDate.setUTCFullYear(simulationEndDate.getUTCFullYear() + nbYear);
           const simulationEndDateString = simulationEndDate.toISOString().split("T")[0];
 
           for (const [date, TQQQDelta] of Object.entries(marketData.TQQQ)) {
