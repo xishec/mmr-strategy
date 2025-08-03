@@ -63,8 +63,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       targetRatio: targetRatio,
       spikeRate: spikeRate,
       dropRate: dropRate,
-      lookBackEnterRate: lookBackEnterRate,
-      lookBackDays: lookBackDays,
     },
   });
 
@@ -349,39 +347,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
               htmlInput: { step: 0.01 },
             }}
           />
-
-          <TextField
-            label="Average last rebalance delta should be higher than this"
-            type="number"
-            value={lookBackEnterRate}
-            onChange={(e) => setLookBackEnterRate(Number(e.target.value))}
-            variant="outlined"
-            slotProps={{
-              htmlInput: { step: 0.01 },
-            }}
-          />
-
-          <TextField
-            label="Lookback number of rebalances"
-            type="number"
-            value={lookBackDays}
-            onChange={(e) => setLookBackDays(Number(e.target.value))}
-            variant="outlined"
-            slotProps={{
-              htmlInput: { step: 1 },
-            }}
-          />
-          {/* 
-          <TextField
-            label="Minimum pullback rate"
-            type="number"
-            value={minMinPullbackRate}
-            onChange={(e) => setMinPullbackRate(Number(e.target.value))}
-            variant="outlined"
-            slotProps={{
-              htmlInput: { step: 0.1 },
-            }}
-          /> */}
 
           <TextField
             label="Simulation Years (for Multiple Simulations)"

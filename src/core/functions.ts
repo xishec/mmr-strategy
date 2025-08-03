@@ -188,22 +188,14 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
   const variables = simulation.variables!;
   const investments = portfolioSnapshot.investments;
   const targetRate = simulation.variables.targetRate;
-  const lastLookBackDays = simulation.portfolioSnapshots.slice(-simulation.variables.lookBackDays) || [];
-  const lastLookBackDaysRate =
-    (portfolioSnapshot.investments.total - lastLookBackDays[0].investments.total) /
-    lastLookBackDays[0].investments.total;
 
   let rebalanceType: RebalanceType = RebalanceType.Excess;
 
-  const isBigDown = lastLookBackDaysRate < variables.lookBackEnterRate;
   const isDrop = portfolioSnapshot.cumulativeRateSinceRebalance < variables.dropRate;
   const isBigDrop = portfolioSnapshot.cumulativeRateSinceRebalance < variables.dropRate * 2;
   const isSpike = portfolioSnapshot.cumulativeRateSinceRebalance > variables.spikeRate;
-  const isPullback = portfolioSnapshot.pullback < -0.5;
 
-  let reason = `isBigDown: ${isBigDown}, isDrop: ${isDrop}, isBigDrop: ${isBigDrop}, isSpike: ${isSpike}, isPullback: ${isPullback}, lastLookBackDaysRate: ${lastLookBackDaysRate.toFixed(
-    3
-  )}`;
+  let reason = `isDrop: ${isDrop}, isBigDrop: ${isBigDrop}, isSpike: ${isSpike}`;
 
   if (isBigDrop) {
     rebalanceType = RebalanceType.Drop;
@@ -215,10 +207,7 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
     )})`;
   }
 
-  if (isBigDown) {
-    rebalanceType = RebalanceType.StillDropping;
-    reason += `isBigDown (${lastLookBackDaysRate.toFixed(3)} < ${variables.lookBackEnterRate.toFixed(3)})`;
-  } else if (isDrop) {
+  if (isDrop) {
     rebalanceType = RebalanceType.Drop;
     reason += `Drop (${portfolioSnapshot.cumulativeRateSinceRebalance.toFixed(3)} < ${variables.dropRate.toFixed(3)})`;
   } else if (isSpike) {
