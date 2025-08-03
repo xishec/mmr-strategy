@@ -3,14 +3,7 @@ import { Box, Typography, TextField, FormControlLabel, Switch, Button } from "@m
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { convertAnnualRateToDaily, runMultipleSimulations, startSimulation } from "../core/functions";
-import {
-  MarketData,
-  Simulation,
-  MultiSeriesChartData,
-  Variables,
-  RebalanceLog,
-  PortfolioSnapshot,
-} from "../core/models";
+import { MarketData, Simulation, MultiSeriesChartData, RebalanceLog, PortfolioSnapshot } from "../core/models";
 import Chart from "./Chart";
 
 // Helper function to format currency values
@@ -57,10 +50,10 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [rebalanceLogsMap, setRebalanceLogsMap] = useState<Record<string, RebalanceLog>>({});
 
   const [simulation, setSimulation] = useState<Simulation>({
-    initialMoney: initialMoney,
     portfolioSnapshots: [],
     rebalanceLogs: [],
     variables: {
+      initialMoney: initialMoney,
       startDate: formatDateToString(startDate),
       endDate: formatDateToString(endDate),
       rebalanceDays,
@@ -70,8 +63,8 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       SpikeRate: spikeRate,
       DropRate: dropRate,
       BigDropRate: bigDropRate,
-    } as Variables,
-  } as Simulation);
+    },
+  });
 
   // Chart synchronization state
   const chartInstancesRef = useRef<{
@@ -425,13 +418,16 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                   <strong>Rebalance Type:</strong> {rebalanceLogsMap[selectedDate].rebalanceType}
                 </Box>
                 <Box>
-                  <strong>Sig9 Rate:</strong> {(simulation.annualizedSig9lRate! * 100).toFixed(2)}%
+                  <strong>Sig9 Rate:</strong>{" "}
+                  {simulation.annualizedSig9lRate ? (simulation.annualizedSig9lRate * 100).toFixed(2) : "N/A"}%
                 </Box>
                 <Box>
-                  <strong>QQQ Rate:</strong> {(simulation.annualizedQQQRate! * 100).toFixed(2)}%
+                  <strong>QQQ Rate:</strong>{" "}
+                  {simulation.annualizedQQQRate ? (simulation.annualizedQQQRate * 100).toFixed(2) : "N/A"}%
                 </Box>
                 <Box>
-                  <strong>TQQQ Rate:</strong> {(simulation.annualizedTQQQRate! * 100).toFixed(2)}%
+                  <strong>TQQQ Rate:</strong>{" "}
+                  {simulation.annualizedTQQQRate ? (simulation.annualizedTQQQRate * 100).toFixed(2) : "N/A"}%
                 </Box>
               </Box>
             ) : (

@@ -67,13 +67,13 @@ const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) =
       "date",
       portfolioSnapshot.date,
       "$$$",
-      portfolioSnapshot.investments.Total.toFixed(3),
+      portfolioSnapshot.investments.Total?.toFixed(3),
       "target",
-      portfolioSnapshot.nextTarget.toFixed(3),
+      portfolioSnapshot.nextTarget?.toFixed(3),
       "TQQQ",
-      portfolioSnapshot.investments.TQQQ.toFixed(3),
+      portfolioSnapshot.investments.TQQQ?.toFixed(3),
       "Rate",
-      (portfolioSnapshot.cumulativeRateSinceRebalance * 100).toFixed(3)
+      (portfolioSnapshot.cumulativeRateSinceRebalance * 100)?.toFixed(3)
     );
   if (DEBUG) console.log("\n");
 };
@@ -94,11 +94,7 @@ export const startSimulation = (
  * @param endDate - Optional end date to limit the simulation (format: YYYY-MM-DD)
  * @returns The completed simulation
  */
-const runSingleSimulation = (
-  simulation: Simulation,
-  marketData: MarketData,
-  endDate?: string
-): Simulation => {
+const runSingleSimulation = (simulation: Simulation, marketData: MarketData, endDate?: string): Simulation => {
   // Create a deep copy of the simulation to avoid mutations
   const simulationCopy: Simulation = {
     ...simulation,
@@ -121,13 +117,13 @@ const runSingleSimulation = (
       rebalance(portfolioSnapshot, simulationCopy);
     }
   }
-  
+
   // Final rebalance and calculate rates
   if (simulationCopy.portfolioSnapshots.length > 0) {
     rebalance(simulationCopy.portfolioSnapshots[simulationCopy.portfolioSnapshots.length - 1], simulationCopy);
     calculateAnnualizedRates(simulationCopy);
   }
-  
+
   return simulationCopy;
 };
 
@@ -241,13 +237,13 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
       "date",
       portfolioSnapshot.date,
       "$$$",
-      portfolioSnapshot.investments.Total.toFixed(3),
+      portfolioSnapshot.investments.Total?.toFixed(3),
       "nextTarget",
-      portfolioSnapshot.nextTarget.toFixed(3),
+      portfolioSnapshot.nextTarget?.toFixed(3),
       "TQQQ",
-      portfolioSnapshot.investments.TQQQ.toFixed(3),
+      portfolioSnapshot.investments.TQQQ?.toFixed(3),
       "Rate",
-      (portfolioSnapshot.cumulativeRateSinceRebalance * 100).toFixed(3)
+      (portfolioSnapshot.cumulativeRateSinceRebalance * 100)?.toFixed(3)
     );
 
   const rebalanceLog: RebalanceLog = {
@@ -460,9 +456,9 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
   console.log("\nWorst 10 Sig9 rates:");
   worst10Sig9.forEach((result, index) => {
     console.log(
-      `${index + 1}. ${result.startDate}: Sig9= ${(result.sig9Rate * 100).toFixed(2)}%, QQQ= ${(
+      `${index + 1}. ${result.startDate}: Sig9= ${(result.sig9Rate * 100)?.toFixed(2)}%, QQQ= ${(
         result.qqqRate * 100
-      ).toFixed(2)}%, TQQQ= ${(result.tqqqRate * 100).toFixed(2)}%`
+      )?.toFixed(2)}%, TQQQ= ${(result.tqqqRate * 100)?.toFixed(2)}%`
     );
   });
 
