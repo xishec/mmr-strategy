@@ -471,6 +471,16 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
   const bestStrategyRate = Math.max(...strategyRates);
   const worstStrategyRate = Math.min(...strategyRates);
 
+  // Calculate how much better strategy is than QQQ
+  const strategyVsQQQDifference = averageStrategyRate - averageQQQRate;
+  const strategyVsQQQPercentageImprovement = (averageStrategyRate / averageQQQRate - 1) * 100;
+
+  // Count how many times strategy beats QQQ
+  const strategyWinsOverQQQ = results.filter(
+    (r) => (r.simulation.annualizedStrategyRate || 0) > (r.simulation.annualizedQQQRate || 0)
+  ).length;
+  const winRateVsQQQ = (strategyWinsOverQQQ / results.length) * 100;
+
   const resultsWithRates = results.map((r) => ({
     startDate: r.startDate,
     strategyRate: r.simulation.annualizedStrategyRate || 0,
@@ -502,15 +512,20 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
       );
     });
 
-  console.log({
-    averageStrategyRate: (averageStrategyRate * 100).toFixed(3),
-    averageQQQRate: (averageQQQRate * 100).toFixed(3),
-    averageTQQQRate: (averageTQQQRate * 100).toFixed(3),
-    dateRange: {
-      start: results[0]?.startDate,
-      end: results[results.length - 1]?.startDate,
-    },
-  });
+  console.log(
+    "\naverageStrategyRate\t\t\t\t",
+    `${(averageStrategyRate * 100).toFixed(3)}%`,
+    "\naverageQQQRate\t\t\t\t",
+    `${(averageQQQRate * 100).toFixed(3)}%`,
+    "\naverageTQQQRate\t\t\t\t",
+    `${(averageTQQQRate * 100).toFixed(3)}%`,
+    "\nstrategyVsQQQDifference\t\t\t\t",
+    `+${(strategyVsQQQDifference * 100).toFixed(3)}%`,
+    "\nstrategyVsQQQImprovement\t\t\t\t",
+    `${strategyVsQQQPercentageImprovement.toFixed(2)}%`,
+    "\nwinRateVsQQQ\t\t\t\t",
+    `${winRateVsQQQ.toFixed(1)}% (${strategyWinsOverQQQ}/${results.length} simulations)`
+  );
 
   return {
     totalSimulations: results.length,
