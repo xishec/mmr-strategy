@@ -195,14 +195,21 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       simulation.portfolioSnapshots.forEach((snapshot) => {
         portfolioSnapshotsMap[snapshot.date] = snapshot;
       });
+
+      console.log(
+        simulation.rebalanceLogs.map((rebalanceLog, i) => ({
+          time: rebalanceLog.date,
+          value: i > 0 ? simulation.rebalanceLogs[i - 1].nextTarget : rebalanceLog.total,
+        }))
+      );
       setPriceChart({
         StrategyTotal: simulation.rebalanceLogs.map((snapshot) => ({
           time: snapshot.date,
           value: portfolioSnapshotsMap[snapshot.date].investments.total,
         })),
-        Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
+        Target: simulation.rebalanceLogs.map((rebalanceLog, i) => ({
           time: rebalanceLog.date,
-          value: rebalanceLog.nextTarget,
+          value: i > 0 ? simulation.rebalanceLogs[i - 1].nextTarget : rebalanceLog.total,
         })),
         MockTotalQQQ: simulation.rebalanceLogs.map((snapshot) => ({
           time: snapshot.date,
@@ -370,7 +377,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
               htmlInput: { step: 1 },
             }}
           />
-{/* 
+          {/* 
           <TextField
             label="Minimum pullback rate"
             type="number"
