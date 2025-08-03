@@ -40,7 +40,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [spikeRate, setSpikeRate] = useState<number>(0.2);
   const [dropRate, setDropRate] = useState<number>(-0.1);
   const [lookBackEnterRate, setLookBackEnterRate] = useState<number>(0.0);
-  const [lookbackDays, setLookbackDays] = useState<number>(180);
+  const [lookBackDays, setLookBackDays] = useState<number>(180);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
@@ -64,7 +64,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       spikeRate: spikeRate,
       dropRate: dropRate,
       lookBackEnterRate: lookBackEnterRate,
-      lookBackDays: lookbackDays,
+      lookBackDays: lookBackDays,
     },
   });
 
@@ -101,7 +101,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         spikeRate: spikeRate,
         dropRate: dropRate,
         lookBackEnterRate: lookBackEnterRate,
-        lookBackDays: lookbackDays,
+        lookBackDays: lookBackDays,
       },
     }));
   }, [
@@ -115,7 +115,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     spikeRate,
     dropRate,
     lookBackEnterRate,
-    lookbackDays,
+    lookBackDays,
   ]);
 
   // Chart synchronization functions
@@ -364,8 +364,8 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           <TextField
             label="Lookback number of rebalances"
             type="number"
-            value={lookbackDays}
-            onChange={(e) => setLookbackDays(Number(e.target.value))}
+            value={lookBackDays}
+            onChange={(e) => setLookBackDays(Number(e.target.value))}
             variant="outlined"
             slotProps={{
               htmlInput: { step: 1 },
@@ -489,7 +489,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                 </Box>
                 <Box>
                   <strong>Strategy Rate:</strong>{" "}
-                  {simulation.annualizedStrategylRate ? (simulation.annualizedStrategylRate * 100).toFixed(2) : "N/A"}%
+                  {simulation.annualizedStrategyRate ? (simulation.annualizedStrategyRate * 100).toFixed(2) : "N/A"}%
                 </Box>
                 <Box>
                   <strong>QQQ Rate:</strong>{" "}
