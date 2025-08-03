@@ -18,7 +18,7 @@ export interface Variables {
   spikeRate: number;
   dropRate: number;
   lookBackEnterRate: number;
-  lookBackRebalances: number;
+  lookBackDays: number;
 }
 
 export interface PortfolioSnapshot {

@@ -40,7 +40,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [spikeRate, setSpikeRate] = useState<number>(0.2);
   const [dropRate, setDropRate] = useState<number>(-0.1);
   const [lookBackEnterRate, setLookBackEnterRate] = useState<number>(0.0);
-  const [lookbackRebalances, setLookbackRebalances] = useState<number>(6);
+  const [lookbackDays, setLookbackDays] = useState<number>(180);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
@@ -64,7 +64,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       spikeRate: spikeRate,
       dropRate: dropRate,
       lookBackEnterRate: lookBackEnterRate,
-      lookBackRebalances: lookbackRebalances,
+      lookBackDays: lookbackDays,
     },
   });
 
@@ -101,7 +101,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         spikeRate: spikeRate,
         dropRate: dropRate,
         lookBackEnterRate: lookBackEnterRate,
-        lookBackRebalances: lookbackRebalances,
+        lookBackDays: lookbackDays,
       },
     }));
   }, [
@@ -115,7 +115,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     spikeRate,
     dropRate,
     lookBackEnterRate,
-    lookbackRebalances,
+    lookbackDays,
   ]);
 
   // Chart synchronization functions
@@ -196,12 +196,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         portfolioSnapshotsMap[snapshot.date] = snapshot;
       });
 
-      console.log(
-        simulation.rebalanceLogs.map((rebalanceLog, i) => ({
-          time: rebalanceLog.date,
-          value: i > 0 ? simulation.rebalanceLogs[i - 1].nextTarget : rebalanceLog.total,
-        }))
-      );
       setPriceChart({
         StrategyTotal: simulation.rebalanceLogs.map((rebalanceLog) => ({
           time: rebalanceLog.date,
@@ -370,8 +364,8 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           <TextField
             label="Lookback number of rebalances"
             type="number"
-            value={lookbackRebalances}
-            onChange={(e) => setLookbackRebalances(Number(e.target.value))}
+            value={lookbackDays}
+            onChange={(e) => setLookbackDays(Number(e.target.value))}
             variant="outlined"
             slotProps={{
               htmlInput: { step: 1 },
@@ -420,10 +414,53 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
       {/* Rebalance Log Details */}
       <Box
-        sx={{ height: "95vh", display: "grid", gridTemplateRows: "1fr 4fr 2fr", gap: 0 }}
+        sx={{ height: "95vh", display: "grid", gridTemplateRows: "50px 3fr 1fr 1fr", gap: 0 }}
         onMouseLeave={handleCrosshairLeave}
       >
-        <Box sx={{ p: 2, border: "1px solid #e0e0e0", borderRadius: 1 }}>
+        <Box>Date</Box>
+
+        {/* Chart Section */}
+        {simulation && simulation.portfolioSnapshots.length > 0 && (
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            <Box sx={{ flex: 1, minHeight: 0 }}>
+              <Chart
+                multiSeriesData={priceChart}
+                onPointClick={handlePointClick}
+                syncId="chart1"
+                onChartReady={handleChartReady}
+                rebalanceLogsMap={rebalanceLogsMap}
+                selectedDate={selectedDate}
+                onCrosshairMove={handleCrosshairMove}
+                onCrosshairLeave={handleCrosshairLeave}
+                chartType="price"
+                isLogScale={isLogScale}
+                height="100%"
+              />
+            </Box>
+          </Box>
+        )}
+
+        {/* Ratio Chart Section */}
+        {simulation && simulation.portfolioSnapshots.length > 0 && (
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            <Box sx={{ flex: 1, minHeight: 0 }}>
+              <Chart
+                multiSeriesData={{ ...ratioChart, ...pullbackChart }}
+                onPointClick={handlePointClick}
+                syncId="chart3"
+                onChartReady={handleChartReady}
+                rebalanceLogsMap={rebalanceLogsMap}
+                selectedDate={selectedDate}
+                onCrosshairMove={handleCrosshairMove}
+                onCrosshairLeave={handleCrosshairLeave}
+                chartType="ratio-pullback"
+                height="100%"
+              />
+            </Box>
+          </Box>
+        )}
+
+        <Box>
           <Typography variant="h6" component="h3" sx={{ mb: 2 }}>
             Rebalance Log Details
           </Typography>
@@ -474,55 +511,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
             </Typography>
           )}
         </Box>
-
-        {/* Chart Section */}
-        {simulation && simulation.portfolioSnapshots.length > 0 && (
-          <Box sx={{ flex: 1, display: "flex", flexDirection: "column", mb: 2 }}>
-            <Typography variant="h5" component="h2" sx={{ mb: 1, flexShrink: 0 }}>
-              Portfolio Performance Comparison
-            </Typography>
-
-            <Box sx={{ flex: 1, minHeight: 0 }}>
-              <Chart
-                multiSeriesData={priceChart}
-                onPointClick={handlePointClick}
-                syncId="chart1"
-                onChartReady={handleChartReady}
-                rebalanceLogsMap={rebalanceLogsMap}
-                selectedDate={selectedDate}
-                onCrosshairMove={handleCrosshairMove}
-                onCrosshairLeave={handleCrosshairLeave}
-                chartType="price"
-                isLogScale={isLogScale}
-                height="100%"
-              />
-            </Box>
-          </Box>
-        )}
-
-        {/* Ratio Chart Section */}
-        {simulation && simulation.portfolioSnapshots.length > 0 && (
-          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-            <Typography variant="h5" component="h2" sx={{ mb: 1, flexShrink: 0 }}>
-              TQQQ Ratio & Portfolio Pullback
-            </Typography>
-
-            <Box sx={{ flex: 1, minHeight: 0 }}>
-              <Chart
-                multiSeriesData={{ ...ratioChart, ...pullbackChart }}
-                onPointClick={handlePointClick}
-                syncId="chart3"
-                onChartReady={handleChartReady}
-                rebalanceLogsMap={rebalanceLogsMap}
-                selectedDate={selectedDate}
-                onCrosshairMove={handleCrosshairMove}
-                onCrosshairLeave={handleCrosshairLeave}
-                chartType="ratio-pullback"
-                height="100%"
-              />
-            </Box>
-          </Box>
-        )}
       </Box>
     </Box>
   );

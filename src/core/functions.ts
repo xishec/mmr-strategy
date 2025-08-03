@@ -102,35 +102,33 @@ export const startSimulation = (
  */
 const runSingleSimulation = (simulation: Simulation, marketData: MarketData): Simulation => {
   // Create a deep copy of the simulation to avoid mutations
-  const simulationCopy: Simulation = {
+  const newSimulation: Simulation = {
     ...simulation,
     portfolioSnapshots: [],
     rebalanceLogs: [],
   };
 
-  setupInitialPortfolio(simulationCopy, marketData);
+  setupInitialPortfolio(newSimulation, marketData);
 
-  for (const [date, TQQQDelta] of Object.entries(marketData.TQQQ)) {
-    const QQQDelta = marketData.QQQ[date];
-    if (date <= simulationCopy.variables.startDate) continue;
+  for (const [date] of Object.entries(marketData.TQQQ)) {
+    if (date <= newSimulation.variables.startDate) continue;
+    if (date > newSimulation.variables.endDate) break;
 
-    // Stop simulation if we've reached the specified end date
-    if (date > simulationCopy.variables.endDate) break;
-
-    const portfolioSnapshot = computePortfolioSnapshot(simulationCopy, date, TQQQDelta, QQQDelta);
+    const portfolioSnapshot = computePortfolioSnapshot(newSimulation, date, marketData);
 
     if (date >= portfolioSnapshot.nextRebalanceDate) {
-      rebalance(portfolioSnapshot, simulationCopy);
+      rebalance(portfolioSnapshot, newSimulation, marketData);
     }
   }
 
   // Final rebalance and calculate rates
-  if (simulationCopy.portfolioSnapshots.length > 0) {
-    rebalance(simulationCopy.portfolioSnapshots[simulationCopy.portfolioSnapshots.length - 1], simulationCopy);
-    calculateAnnualizedRates(simulationCopy);
+  if (newSimulation.portfolioSnapshots.length > 0) {
+    const lastSnapshot = newSimulation.portfolioSnapshots[newSimulation.portfolioSnapshots.length - 1];
+    rebalance(lastSnapshot, newSimulation, marketData);
+    calculateAnnualizedRates(newSimulation);
   }
 
-  return simulationCopy;
+  return newSimulation;
 };
 
 const calculateAnnualizedRates = (simulation: Simulation) => {
@@ -156,9 +154,12 @@ const calculateAnnualizedRates = (simulation: Simulation) => {
   );
 };
 
-const computePortfolioSnapshot = (simulation: Simulation, date: string, TQQQDelta: number, QQQDelta: number) => {
+const computePortfolioSnapshot = (simulation: Simulation, date: string, marketData: MarketData) => {
   const lastInvestmentsSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
   const newPortfolioSnapshot = { ...lastInvestmentsSnapshot };
+
+  const TQQQDelta = marketData.TQQQ[date] || 0;
+  const QQQDelta = marketData.QQQ[date] || 0;
 
   const newTQQQ = lastInvestmentsSnapshot.investments.TQQQ * (TQQQDelta / 100 + 1);
   const newCash = lastInvestmentsSnapshot.investments.cash * (1 + simulation.variables!.cashDayRate);
@@ -183,13 +184,13 @@ const computePortfolioSnapshot = (simulation: Simulation, date: string, TQQQDelt
   return newPortfolioSnapshot;
 };
 
-const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation) => {
+const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation, marketData: MarketData) => {
   const variables = simulation.variables!;
   const investments = portfolioSnapshot.investments;
   let rebalanceType: RebalanceType = RebalanceType.Excess;
-  let cumulativeLastRebalanceLogs = simulation.rebalanceLogs
-    .slice(-simulation.variables.lookBackRebalances)
-    .reduce((acc, log) => acc + log.cumulativeRateSinceLastRebalance, 0);
+  let cumulativeLastDays = simulation.portfolioSnapshots
+    .slice(-simulation.variables.lookBackDays)
+    .reduce((acc, log) => acc + marketData.TQQQ[log.date] || 0, 0);
   const targetRate = simulation.variables.targetRate;
   let reason = ``;
 
@@ -197,13 +198,11 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
   // investments.mockTotalQQQ += 2;
   // investments.mockTotalTQQQ += 2;
 
-  if (cumulativeLastRebalanceLogs < variables.lookBackEnterRate * simulation.variables.lookBackRebalances) {
+  if (cumulativeLastDays < variables.lookBackEnterRate * simulation.variables.lookBackDays) {
     if (DEBUG) console.log("still dropping");
     rebalanceType = RebalanceType.StillDropping;
     portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
-    reason += `Still dropping (${cumulativeLastRebalanceLogs.toFixed(3)} < ${(variables.lookBackEnterRate * 3).toFixed(
-      3
-    )})`;
+    reason += `Still dropping (${cumulativeLastDays.toFixed(3)} < ${(variables.lookBackEnterRate * 3).toFixed(3)})`;
   } else if (portfolioSnapshot.cumulativeRateSinceRebalance < variables.dropRate) {
     // DROP
     if (DEBUG) console.log("drop");
