@@ -37,7 +37,12 @@ const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) =
     MockTotalTQQQ: simulation.variables.initialMoney,
   };
 
-  const firstValidDate = Object.keys(marketData.TQQQ).find((date) => date >= simulation.variables.startDate)!;
+  const firstValidDate = Object.keys(marketData.TQQQ).find((date) => date >= simulation.variables.startDate);
+  
+  if (!firstValidDate) {
+    throw new Error(`No market data found for start date ${simulation.variables.startDate} or later`);
+  }
+  
   simulation.variables.startDate = firstValidDate;
 
   const portfolioSnapshot: PortfolioSnapshot = {
@@ -261,7 +266,21 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
 };
 
 const addDaysToDate = (date: string, days: number): string => {
-  const [year, month, day] = date.split("-").map(Number);
+  if (!date || typeof date !== 'string') {
+    throw new Error(`Invalid date provided to addDaysToDate: ${date}`);
+  }
+  
+  const dateParts = date.split("-");
+  if (dateParts.length !== 3) {
+    throw new Error(`Invalid date format. Expected YYYY-MM-DD, got: ${date}`);
+  }
+  
+  const [year, month, day] = dateParts.map(Number);
+  
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    throw new Error(`Invalid date components. Expected numbers, got: ${date}`);
+  }
+  
   const utcDate = new Date(Date.UTC(year, month - 1, day));
   utcDate.setUTCDate(utcDate.getUTCDate() + days);
   return utcDate.toISOString().split("T")[0];
