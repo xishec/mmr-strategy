@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import * as d3 from "d3";
 import { ChartData, MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core/models";
+import { el } from "date-fns/locale";
 
 interface ChartProps {
   chartData?: ChartData;
@@ -296,8 +297,32 @@ const Chart: React.FC<ChartProps> = ({
           .attr("cx", (d) => xScale(d.parsedTime))
           .attr("cy", (d) => yScale(d.value))
           .attr("r", 3)
+          .attr("stroke", (d) => {
+            let rebalanceSeriesColor = "none";
+            const dateKey = d3.timeFormat("%Y-%m-%d")(d.parsedTime);
+            const rebalanceType = rebalanceLogsMap![dateKey]?.rebalanceType;
+            if (rebalanceType === RebalanceType.Excess) {
+              rebalanceSeriesColor = seriesColor;
+            } else if (rebalanceType === RebalanceType.Shortfall) {
+              rebalanceSeriesColor = seriesColor;
+            } else if (rebalanceType === RebalanceType.Drop) {
+            } else if (rebalanceType === RebalanceType.Spike) {
+            } else if (rebalanceType === RebalanceType.StillDropping) {
+            }
+            return rebalanceSeriesColor;
+          })
           .attr("fill", (d) => {
-            return rebalanceLogsMap![d.parsedTime]?.rebalanceType === RebalanceType.Excess || seriesColor;
+            let rebalanceSeriesColor = "none";
+            const dateKey = d3.timeFormat("%Y-%m-%d")(d.parsedTime);
+            const rebalanceType = rebalanceLogsMap![dateKey]?.rebalanceType;
+            if (rebalanceType === RebalanceType.Excess) {
+            } else if (rebalanceType === RebalanceType.Shortfall) {
+            } else if (rebalanceType === RebalanceType.Drop) {
+            } else if (rebalanceType === RebalanceType.Spike) {
+              rebalanceSeriesColor = seriesColor;
+            } else if (rebalanceType === RebalanceType.StillDropping) {
+            }
+            return rebalanceSeriesColor;
           });
 
         if (!mainSeries || index === 0) {
