@@ -29,8 +29,8 @@ const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) =
     MockTotalTQQQ: simulation.initialMoney,
   };
 
-  const firstValidDate = Object.keys(marketData.TQQQ).find((date) => date >= simulation.startingDate)!;
-  simulation.startingDate = firstValidDate;
+  const firstValidDate = Object.keys(marketData.TQQQ).find((date) => date >= simulation.variables.startingDate)!;
+  simulation.variables.startingDate = firstValidDate;
 
   const portfolioSnapshot: PortfolioSnapshot = {
     date: firstValidDate,
@@ -86,7 +86,7 @@ export const startSimulation = (
 
   for (const [date, TQQQDelta] of Object.entries(marketData.TQQQ)) {
     const QQQDelta = marketData.QQQ[date];
-    if (date <= simulationCopy.startingDate) continue;
+    if (date <= simulationCopy.variables.startingDate) continue;
 
     const portfolioSnapshot = computePortfolioSnapshot(simulationCopy, date, TQQQDelta, QQQDelta);
 
@@ -95,7 +95,31 @@ export const startSimulation = (
     }
   }
   rebalance(simulationCopy.portfolioSnapshots[simulationCopy.portfolioSnapshots.length - 1], simulationCopy);
+  calculateAnnualizedRates(simulationCopy);
   setSimulation(simulationCopy);
+};
+
+const calculateAnnualizedRates = (simulation: Simulation) => {
+  const endDate = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].date;
+  
+  simulation.annualizedSig9lRate = calculateAnnualizedRate(
+    simulation.initialMoney,
+    simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.Total,
+    simulation.variables.startingDate,
+    endDate
+  );
+  simulation.annualizedQQQRate = calculateAnnualizedRate(
+    simulation.initialMoney,
+    simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.MockTotalQQQ,
+    simulation.variables.startingDate,
+    endDate
+  );
+  simulation.annualizedTQQQRate = calculateAnnualizedRate(
+    simulation.initialMoney,
+    simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.MockTotalTQQQ,
+    simulation.variables.startingDate,
+    endDate
+  );
 };
 
 const computePortfolioSnapshot = (simulation: Simulation, date: string, TQQQDelta: number, QQQDelta: number) => {
@@ -135,7 +159,6 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
   const targetRate = simulation.variables.targetRate * (portfolioSnapshot.pullback < -0.5 ? 2 : 1);
 
   if (cumulativeLast3RebalanceLogs < variables.BigDropRate * 3) {
-    console.log("still dropping");
     if (DEBUG) console.log("still dropping");
     rebalanceType = RebalanceType.StillDropping;
     portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
@@ -165,7 +188,6 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation)
     investments.TQQQ -= actualExcess;
     investments.Cash += actualExcess;
 
-    console.log(portfolioSnapshot.date, portfolioSnapshot.nextTarget, investments.Total);
     portfolioSnapshot.nextTarget = Math.min(portfolioSnapshot.nextTarget, investments.Total) * (1 + targetRate);
     portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
   } else if (investments.Total < portfolioSnapshot.nextTarget) {
@@ -215,4 +237,23 @@ const addDaysToDate = (date: string, days: number): string => {
   const utcDate = new Date(Date.UTC(year, month - 1, day));
   utcDate.setUTCDate(utcDate.getUTCDate() + days);
   return utcDate.toISOString().split("T")[0];
+};
+
+export const calculateAnnualizedRate = (
+  initial: number, 
+  end: number, 
+  initialDateString: string, 
+  endDateString: string
+): number => {
+  const initialDate = new Date(initialDateString);
+  const endDate = new Date(endDateString);
+  const nbYears = (endDate.getTime() - initialDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+  console.log('Annualized rate calculation:', { initial, end, initialDateString, endDateString, nbYears });
+  
+  // Ensure we have at least some time period to avoid division by zero
+  if (nbYears <= 0) {
+    return 0;
+  }
+  
+  return (end / initial) ** (1 / nbYears) - 1;
 };

@@ -1,7 +1,14 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Box, Typography, TextField, FormControlLabel, Switch, MenuItem } from "@mui/material";
 import { startSimulation } from "../core/functions";
-import { MarketData, Simulation, MultiSeriesChartData, Variables, RebalanceLog } from "../core/models";
+import {
+  MarketData,
+  Simulation,
+  MultiSeriesChartData,
+  Variables,
+  RebalanceLog,
+  PortfolioSnapshot,
+} from "../core/models";
 import Chart from "./Chart";
 
 // Helper function to format currency values
@@ -19,9 +26,7 @@ interface BoardProps {
 }
 
 const Board: React.FC<BoardProps> = ({ marketData }) => {
-  const [startingDate, setStartingDate] = useState<Date>(() => {
-    return new Date("2001-01-01");
-  });
+  const [startingDate, setStartingDate] = useState<string>(new Date("2001-01-01").toISOString().split("T")[0]);
   const [startingYear, setStartingYear] = useState<number>(2001);
   const [initialMoney, setInitialMoney] = useState<number>(100);
   const [rebalanceDays, setRebalanceDays] = useState<number>(92);
@@ -41,11 +46,11 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [rebalanceLogsMap, setRebalanceLogsMap] = useState<Record<string, RebalanceLog>>({});
 
   const [simulation, setSimulation] = useState<Simulation>({
-    startingDate: startingDate.toISOString().split("T")[0],
     initialMoney: initialMoney,
     portfolioSnapshots: [],
     rebalanceLogs: [],
     variables: {
+      startingDate: startingDate,
       rebalanceDays,
       targetRate,
       CashDayRate: cashDayRate,
@@ -70,9 +75,9 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   useEffect(() => {
     setSimulation((prevSimulation) => ({
       ...prevSimulation,
-      startingDate: startingDate.toISOString().split("T")[0],
       initialMoney: initialMoney,
       variables: {
+        startingDate: startingDate,
         rebalanceDays,
         targetRate,
         CashDayRate: cashDayRate,
@@ -148,7 +153,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     if (marketData && simulation) {
       // Create a key from the simulation parameters that affect the calculation
       const currentParams = JSON.stringify({
-        startingDate: simulation.startingDate,
+        startingDate: simulation.variables.startingDate,
         initialMoney: simulation.initialMoney,
         variables: simulation.variables,
       });
@@ -168,38 +173,41 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       simulation.rebalanceLogs.forEach((log) => {
         newRebalanceLogsMap[log.date] = log;
       });
-      console.log("newRebalanceLogsMap:", newRebalanceLogsMap);
       setRebalanceLogsMap(newRebalanceLogsMap);
       setSelectedDateToLastRebalance();
 
+      const portfolioSnapshotsMap: Record<string, PortfolioSnapshot> = {};
+      simulation.portfolioSnapshots.forEach((snapshot) => {
+        portfolioSnapshotsMap[snapshot.date] = snapshot;
+      });
       setPriceChart({
-        Sig9Total: simulation.portfolioSnapshots.map((snapshot) => ({
+        Sig9Total: simulation.rebalanceLogs.map((snapshot) => ({
           time: snapshot.date,
-          value: snapshot.investments.Total,
+          value: portfolioSnapshotsMap[snapshot.date].investments.Total,
         })),
         Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
           time: rebalanceLog.date,
           value: rebalanceLog.nextTarget,
         })),
-        MockTotalQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
+        MockTotalQQQ: simulation.rebalanceLogs.map((snapshot) => ({
           time: snapshot.date,
-          value: snapshot.investments.MockTotalQQQ,
+          value: portfolioSnapshotsMap[snapshot.date].investments.MockTotalQQQ,
         })),
-        MockTotalTQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
+        MockTotalTQQQ: simulation.rebalanceLogs.map((snapshot) => ({
           time: snapshot.date,
-          value: snapshot.investments.MockTotalTQQQ,
+          value: portfolioSnapshotsMap[snapshot.date].investments.MockTotalTQQQ,
         })),
       });
       setRatioChart({
-        Ratio: simulation.portfolioSnapshots.map((snapshot) => ({
+        Ratio: simulation.rebalanceLogs.map((snapshot) => ({
           time: snapshot.date,
-          value: snapshot.investments.Ratio,
+          value: portfolioSnapshotsMap[snapshot.date].investments.Ratio,
         })),
       });
       setPullbackChart({
-        pullback: simulation.portfolioSnapshots.map((snapshot) => ({
+        pullback: simulation.rebalanceLogs.map((snapshot) => ({
           time: snapshot.date,
-          value: snapshot.pullback,
+          value: portfolioSnapshotsMap[snapshot.date].pullback,
         })),
       });
     }
@@ -230,7 +238,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
             onChange={(e) => {
               const year = Number(e.target.value);
               setStartingYear(year);
-              setStartingDate(new Date(`${year}-01-01`));
+              setStartingDate(new Date(`${year}-01-01`).toISOString().split("T")[0]);
             }}
             variant="outlined"
           >
@@ -368,6 +376,15 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                 </Box>
                 <Box>
                   <strong>Rebalance Type:</strong> {rebalanceLogsMap[selectedDate].rebalanceType}
+                </Box>
+                <Box>
+                  <strong>Sig9 Rate:</strong> {simulation.annualizedSig9lRate! * 100}%
+                </Box>
+                <Box>
+                  <strong>QQQ Rate:</strong> {simulation.annualizedQQQRate! * 100}%
+                </Box>
+                <Box>
+                  <strong>TQQQ Rate:</strong> {simulation.annualizedTQQQRate! * 100}%
                 </Box>
               </Box>
             ) : (

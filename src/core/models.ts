@@ -1,12 +1,15 @@
 export interface Simulation {
-  startingDate: string;
   initialMoney: number;
   portfolioSnapshots: PortfolioSnapshot[];
   rebalanceLogs: RebalanceLog[];
   variables: Variables;
+  annualizedTQQQRate?: number;
+  annualizedQQQRate?: number;
+  annualizedSig9lRate?: number;
 }
 
 export interface Variables {
+  startingDate: string;
   rebalanceDays: number;
   targetRate: number;
   CashDayRate: number;
