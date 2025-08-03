@@ -17,8 +17,9 @@ export interface Variables {
   targetRatio: number;
   spikeRate: number;
   dropRate: number;
-  bigDropRate: number;
+  lookBackEnterRate: number;
   lookBackRebalances: number;
+  pullbackRate: number;
 }
 
 export interface PortfolioSnapshot {
@@ -38,14 +39,15 @@ export interface RebalanceLog {
   nextTarget: number;
   cumulativeRateSinceLastRebalance: number;
   rebalanceType: RebalanceType;
+  reason: string;
 }
 
 export enum RebalanceType {
-  Rebalance = "Rebalance",
-  Reset = "Reset",
-  Skip = "Skip",
+  Drop = "Drop",
+  Spike = "Spike",
+  Excess = "Excess",
+  Shortfall = "Shortfall",
   StillDropping = "Still Dropping",
-  BigPullback = "Big Pullback",
 }
 
 export interface Investments {

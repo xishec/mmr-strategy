@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import * as d3 from "d3";
-import { ChartData, MultiSeriesChartData, RebalanceLog } from "../core/models";
+import { ChartData, MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core/models";
 
 interface ChartProps {
   chartData?: ChartData;
@@ -8,7 +8,7 @@ interface ChartProps {
   onPointClick?: (date: string, value: number) => void;
   syncId?: string;
   onChartReady?: (chartId: string, chart: any, mainSeries: any) => void;
-  rebalanceLogs?: RebalanceLog[];
+  rebalanceLogsMap?: Record<string, RebalanceLog>;
   selectedDate: string | null;
   onCrosshairMove?: (date: string | null) => void;
   onCrosshairLeave?: () => void;
@@ -23,7 +23,7 @@ const Chart: React.FC<ChartProps> = ({
   onPointClick,
   syncId,
   onChartReady,
-  rebalanceLogs,
+  rebalanceLogsMap,
   selectedDate,
   onCrosshairMove,
   onCrosshairLeave,
@@ -296,7 +296,9 @@ const Chart: React.FC<ChartProps> = ({
           .attr("cx", (d) => xScale(d.parsedTime))
           .attr("cy", (d) => yScale(d.value))
           .attr("r", 3)
-          .attr("fill", seriesColor);
+          .attr("fill", (d) => {
+            return rebalanceLogsMap![d.parsedTime]?.rebalanceType === RebalanceType.Excess || seriesColor;
+          });
 
         if (!mainSeries || index === 0) {
           mainSeries = { data: processedData, element: pointsGroup };
@@ -420,6 +422,14 @@ const Chart: React.FC<ChartProps> = ({
       .attr("fill", "none")
       .attr("pointer-events", "all");
 
+    // Helper function to get valid rebalance dates
+    const getRebalanceDates = (): Date[] => {
+      if (!rebalanceLogsMap) return [];
+      return Object.keys(rebalanceLogsMap)
+        .map(parseTime)
+        .filter((d): d is Date => d !== null);
+    };
+
     // Mouse event handlers
     overlay
       .on("mousemove", (event) => {
@@ -428,35 +438,26 @@ const Chart: React.FC<ChartProps> = ({
 
         crosshair.style("display", null);
 
-        // Snap to closest rebalance date if rebalanceLogs exist
-        if (rebalanceLogs && rebalanceLogs.length > 0) {
-          const rebalanceDates = rebalanceLogs.map((log) => parseTime(log.date)).filter((d) => d !== null) as Date[];
+        // Snap to closest rebalance date if available
+        const rebalanceDates = getRebalanceDates();
+        if (rebalanceDates.length > 0) {
+          // Find closest rebalance date
+          const closestRebalanceDate = rebalanceDates.reduce((closest, current) => {
+            return Math.abs(current.getTime() - date.getTime()) < Math.abs(closest.getTime() - date.getTime())
+              ? current
+              : closest;
+          });
 
-          if (rebalanceDates.length > 0) {
-            // Find closest rebalance date
-            const closestRebalanceDate = rebalanceDates.reduce((closest, current) => {
-              return Math.abs(current.getTime() - date.getTime()) < Math.abs(closest.getTime() - date.getTime())
-                ? current
-                : closest;
-            });
+          // Snap crosshair to closest rebalance date
+          const snapX = xScale(closestRebalanceDate);
+          crosshairLine.attr("x1", snapX).attr("x2", snapX);
 
-            // Snap crosshair to closest rebalance date
-            const snapX = xScale(closestRebalanceDate);
-            crosshairLine.attr("x1", snapX).attr("x2", snapX);
-
-            // Notify parent for synchronization
-            if (onCrosshairMove) {
-              onCrosshairMove(d3.timeFormat("%Y-%m-%d")(closestRebalanceDate));
-            }
-          } else {
-            // Fallback to mouse position if no rebalance dates
-            crosshairLine.attr("x1", mouseX).attr("x2", mouseX);
-            if (onCrosshairMove) {
-              onCrosshairMove(d3.timeFormat("%Y-%m-%d")(date));
-            }
+          // Notify parent for synchronization
+          if (onCrosshairMove) {
+            onCrosshairMove(d3.timeFormat("%Y-%m-%d")(closestRebalanceDate));
           }
         } else {
-          // Fallback to mouse position if no rebalance logs
+          // Fallback to mouse position if no rebalance dates
           crosshairLine.attr("x1", mouseX).attr("x2", mouseX);
           if (onCrosshairMove) {
             onCrosshairMove(d3.timeFormat("%Y-%m-%d")(date));
@@ -589,8 +590,8 @@ const Chart: React.FC<ChartProps> = ({
     }
 
     const updateLegendWithValuesWithLastRebalance = () => {
-      if (rebalanceLogs) {
-        const lastRebalanceDate = rebalanceLogs[rebalanceLogs.length - 1].date;
+      if (rebalanceLogsMap) {
+        const lastRebalanceDate = Object.keys(rebalanceLogsMap).pop() || null;
         updateLegendWithValues(lastRebalanceDate);
       } else {
         updateLegendWithValues(null);
@@ -640,7 +641,7 @@ const Chart: React.FC<ChartProps> = ({
     onPointClick,
     chartData,
     multiSeriesData,
-    rebalanceLogs,
+    rebalanceLogsMap,
     onCrosshairMove,
     onCrosshairLeave,
     chartType,
@@ -693,7 +694,7 @@ const Chart: React.FC<ChartProps> = ({
     isLogScale,
     syncId,
     onChartReady,
-    rebalanceLogs,
+    rebalanceLogsMap,
     createD3Chart,
     chartType,
     selectedDate,

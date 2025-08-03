@@ -39,8 +39,9 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [targetRatio, setTargetRatio] = useState<number>(0.6);
   const [spikeRate, setSpikeRate] = useState<number>(0.18);
   const [dropRate, setDropRate] = useState<number>(-0.09);
-  const [bigDropRate, setBigDropRate] = useState<number>(0.04);
+  const [lookBackEnterRate, setLookBackEnterRate] = useState<number>(0.04);
   const [lookbackRebalances, setLookbackRebalances] = useState<number>(3);
+  const [pullbackRate, setPullbackRate] = useState<number>(-0.5);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
@@ -63,8 +64,9 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       targetRatio: targetRatio,
       spikeRate: spikeRate,
       dropRate: dropRate,
-      bigDropRate: bigDropRate,
+      lookBackEnterRate: lookBackEnterRate,
       lookBackRebalances: lookbackRebalances,
+      pullbackRate: pullbackRate,
     },
   });
 
@@ -100,8 +102,9 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         targetRatio: targetRatio,
         spikeRate: spikeRate,
         dropRate: dropRate,
-        bigDropRate: bigDropRate,
+        lookBackEnterRate: lookBackEnterRate,
         lookBackRebalances: lookbackRebalances,
+        pullbackRate: pullbackRate,
       },
     }));
   }, [
@@ -114,8 +117,9 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     targetRatio,
     spikeRate,
     dropRate,
-    bigDropRate,
+    lookBackEnterRate,
     lookbackRebalances,
+    pullbackRate,
   ]);
 
   // Chart synchronization functions
@@ -352,8 +356,8 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           <TextField
             label="Average last rebalance delta should be higher than this"
             type="number"
-            value={bigDropRate}
-            onChange={(e) => setBigDropRate(Number(e.target.value))}
+            value={lookBackEnterRate}
+            onChange={(e) => setLookBackEnterRate(Number(e.target.value))}
             variant="outlined"
             slotProps={{
               htmlInput: { step: 0.01 },
@@ -470,7 +474,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                 onPointClick={handlePointClick}
                 syncId="chart1"
                 onChartReady={handleChartReady}
-                rebalanceLogs={simulation.rebalanceLogs}
+                rebalanceLogsMap={rebalanceLogsMap}
                 selectedDate={selectedDate}
                 onCrosshairMove={handleCrosshairMove}
                 onCrosshairLeave={handleCrosshairLeave}
@@ -495,7 +499,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                 onPointClick={handlePointClick}
                 syncId="chart3"
                 onChartReady={handleChartReady}
-                rebalanceLogs={simulation.rebalanceLogs}
+                rebalanceLogsMap={rebalanceLogsMap}
                 selectedDate={selectedDate}
                 onCrosshairMove={handleCrosshairMove}
                 onCrosshairLeave={handleCrosshairLeave}
