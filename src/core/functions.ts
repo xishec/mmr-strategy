@@ -215,13 +215,13 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
     )})`;
   }
 
-  if (isBigDown ) {
+  if (isBigDown) {
     rebalanceType = RebalanceType.StillDropping;
     reason += `isBigDown (${lastLookBackDaysRate.toFixed(3)} < ${variables.lookBackEnterRate.toFixed(3)})`;
   } else if (isDrop) {
     rebalanceType = RebalanceType.Drop;
     reason += `Drop (${portfolioSnapshot.cumulativeRateSinceRebalance.toFixed(3)} < ${variables.dropRate.toFixed(3)})`;
-  } else if (isSpike && !isPullback) {
+  } else if (isSpike) {
     rebalanceType = RebalanceType.Spike;
     investments.TQQQ = investments.total * variables.targetRatio;
     investments.cash = investments.total * (1 - variables.targetRatio);
