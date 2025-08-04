@@ -21,6 +21,7 @@ interface ChartProps {
   chartType?: "price" | "ratio" | "pullback" | "ratio-pullback";
   isLogScale?: boolean;
   height?: string | number;
+  onLegendValuesChange?: (values: { [key: string]: number }) => void;
 }
 
 const Chart: React.FC<ChartProps> = ({
@@ -36,54 +37,11 @@ const Chart: React.FC<ChartProps> = ({
   chartType = "price",
   isLogScale = false,
   height = "400px",
+  onLegendValuesChange,
 }: ChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const chartInstanceRef = useRef<any>(null);
-
-  // Legend data configuration
-  const getLegendData = useCallback((chartType: string, seriesData: { [key: string]: any[] }) => {
-    const legendItems: Array<{
-      label: string;
-      color: string;
-      type: "line" | "circle";
-      dashed?: boolean;
-    }> = [];
-
-    if (chartType === "price") {
-      if (seriesData.StrategyTotal) {
-        legendItems.push({ label: "Strategy Total", color: yellow, type: "line" });
-      }
-      if (seriesData.StrategyTarget) {
-        legendItems.push({ label: "Strategy Target", color: black, type: "line", dashed: true });
-      }
-      // if (seriesData.Target) {
-      //   legendItems.push({ label: "Target", color: black, type: "circle" });
-      // }
-      if (seriesData.MockTotalQQQ) {
-        legendItems.push({ label: "Mock Total QQQ", color: blue, type: "line" });
-      }
-      if (seriesData.MockTotalTQQQ) {
-        legendItems.push({ label: "Mock Total TQQQ", color: red, type: "line" });
-      }
-    } else if (chartType === "ratio") {
-      if (seriesData.Ratio) {
-        legendItems.push({ label: "TQQQ Ratio", color: yellow, type: "line" });
-      }
-    } else if (chartType === "pullback") {
-      if (seriesData.pullback) {
-        legendItems.push({ label: "Portfolio Pullback", color: red, type: "line" });
-      }
-    } else if (chartType === "ratio-pullback") {
-      if (seriesData.Ratio) {
-        legendItems.push({ label: "TQQQ Ratio", color: blue, type: "line" });
-      }
-      if (seriesData.pullback) {
-        legendItems.push({ label: "Portfolio Pullback", color: red, type: "line" });
-      }
-    }
-    return legendItems;
-  }, []);
 
   const createD3Chart = useCallback(() => {
     if (!chartContainerRef.current || !svgRef.current) return null;
@@ -95,7 +53,7 @@ const Chart: React.FC<ChartProps> = ({
     svg.selectAll("*").remove();
 
     // Set up dimensions
-    const margin = { top: 60, right: 40, bottom: 40, left: 60 }; // Increased top margin for legend
+    const margin = { top: 20, right: 40, bottom: 40, left: 60 }; // Reduced top margin since no legend
     const width = container.clientWidth - margin.left - margin.right;
     const containerHeight: number = container.clientHeight;
     const chartHeight = containerHeight - margin.top - margin.bottom;
@@ -378,87 +336,6 @@ const Chart: React.FC<ChartProps> = ({
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", "3,3");
 
-    // Function to format value based on chart type
-    const formatValue = (value: number, chartType: string, useLogScale: boolean) => {
-      if (typeof value !== "number") return String(value);
-
-      if (chartType === "ratio") {
-        return (value * 100).toFixed(2) + "%";
-      } else if (chartType === "pullback") {
-        return (value * 100).toFixed(2) + "%";
-      } else if (chartType === "ratio-pullback") {
-        return (value * 100).toFixed(2) + "%";
-      }
-
-      return value.toFixed(2);
-    };
-
-    // Function to update legend with selected date values
-    const updateLegendWithValues = (selectedDate: string | null) => {
-      const legend = svg.select(".legend");
-      if (legend.empty()) return;
-
-      legend.selectAll(".legend-item").each(function (d: any, i: number) {
-        const item = d3.select(this);
-        const label = d.label;
-
-        // Map legend labels to data series keys
-        let seriesKey = label;
-        if (chartType === "price") {
-          // Direct mapping for price chart
-          if (label === "Strategy Total") seriesKey = "StrategyTotal";
-          else if (label === "Strategy Target") seriesKey = "StrategyTarget";
-          else if (label === "Target") seriesKey = "Target";
-          else if (label === "Mock Total QQQ") seriesKey = "MockTotalQQQ";
-          else if (label === "Mock Total TQQQ") seriesKey = "MockTotalTQQQ";
-        } else if (chartType === "ratio") {
-          if (label === "TQQQ Ratio") seriesKey = "Ratio";
-        } else if (chartType === "pullback") {
-          if (label === "Portfolio Pullback") seriesKey = "pullback";
-        } else if (chartType === "ratio-pullback") {
-          if (label === "TQQQ Ratio") seriesKey = "Ratio";
-          else if (label === "Portfolio Pullback") seriesKey = "pullback";
-        }
-
-        // Remove existing value text
-        item.select(".value-text").remove();
-
-        if (selectedDate) {
-          // Find the data point for this series and date
-          const data = seriesData[seriesKey];
-          if (data) {
-            const dataPoint = data.find((dp: any) => dp.time === selectedDate);
-            if (dataPoint) {
-              const formattedValue = formatValue(dataPoint.value, chartType, isLogScale);
-
-              // Add value text to the legend item
-              item
-                .append("text")
-                .attr("class", "value-text")
-                .attr("x", 20)
-                .attr("y", 25)
-                .attr("dy", "0.35em")
-                .style("font-size", "11px")
-                .style("font-family", "Arial, sans-serif")
-                .style("fill", d.color)
-                .style("font-weight", "bold")
-                .text(formattedValue);
-            }
-          }
-        }
-      });
-
-      // Update date display in legend
-      const dateDisplay = legend.select(".legend-date .date-text");
-      if (!dateDisplay.empty()) {
-        if (selectedDate) {
-          dateDisplay.text(selectedDate);
-        } else {
-          dateDisplay.text("");
-        }
-      }
-    };
-
     // Add invisible overlay for mouse events
     const overlay = g
       .append("rect")
@@ -558,93 +435,31 @@ const Chart: React.FC<ChartProps> = ({
 
     g.append("g").attr("class", "y-axis").call(yAxisConfig);
 
-    // Add legend
-    const legendData = getLegendData(chartType, seriesData);
-    if (legendData.length > 0) {
-      const legend = svg.append("g").attr("class", "legend").attr("transform", `translate(${margin.left}, 10)`);
-
-      const legendItemWidth = 140;
-      const legendItems = legend
-        .selectAll(".legend-item")
-        .data(legendData)
-        .enter()
-        .append("g")
-        .attr("class", "legend-item")
-        .attr("transform", (d, i) => `translate(${i * legendItemWidth}, 0)`);
-
-      // Add legend symbols
-      legendItems.each(function (d: any) {
-        const item = d3.select(this);
-
-        if (d.type === "line") {
-          // Line legend
-          item
-            .append("line")
-            .attr("x1", 0)
-            .attr("y1", 8)
-            .attr("x2", 16)
-            .attr("y2", 8)
-            .attr("stroke", d.color)
-            .attr("stroke-width", 2)
-            .attr("stroke-dasharray", d.dashed ? "3,3" : "none");
-        } else {
-          // Circle legend
-          item.append("circle").attr("cx", 8).attr("cy", 8).attr("r", 4).attr("fill", d.color);
+    // Function to send legend values to parent component
+    const sendLegendValues = (selectedDate: string | null) => {
+      if (!onLegendValuesChange || !selectedDate) return;
+      
+      const values: { [key: string]: number } = {};
+      Object.entries(seriesData).forEach(([seriesName, data]) => {
+        const dataPoint = data.find((dp: any) => dp.time === selectedDate);
+        if (dataPoint) {
+          values[seriesName] = dataPoint.value;
         }
-
-        // Add legend text
-        item
-          .append("text")
-          .attr("x", 20)
-          .attr("y", 8)
-          .attr("dy", "0.35em")
-          .style("font-size", "12px")
-          .style("font-family", "Arial, sans-serif")
-          .text(d.label);
       });
+      
+      onLegendValuesChange(values);
+    };
 
-      // Add date display to legend (positioned at the end of the chart)
-      const dateDisplay = legend.append("g").attr("class", "legend-date").attr("transform", `translate(${width}, 0)`);
-
-      // Add "Date" label (aligned with other legend labels)
-      dateDisplay
-        .append("text")
-        .attr("class", "date-label")
-        .attr("x", 0)
-        .attr("y", 8)
-        .attr("dy", "0.35em")
-        .attr("text-anchor", "end")
-        .style("font-size", "12px")
-        .style("font-family", "Arial, sans-serif")
-        .style("font-weight", "normal")
-        .style("fill", "black")
-        .text("Rebalance date");
-
-      // Add date value (below the label)
-      dateDisplay
-        .append("text")
-        .attr("class", "date-text")
-        .attr("x", 0)
-        .attr("y", 25)
-        .attr("dy", "0.35em")
-        .attr("text-anchor", "end")
-        .style("font-size", "11px")
-        .style("font-family", "Arial, sans-serif")
-        .style("font-weight", "bold")
-        .style("fill", "black")
-        .text("");
-    }
-
-    const updateLegendWithValuesWithLastRebalance = () => {
+    const sendLegendValuesWithLastRebalance = () => {
       if (rebalanceLogsMap) {
         const lastRebalanceDate = Object.keys(rebalanceLogsMap).pop() || null;
-        updateLegendWithValues(lastRebalanceDate);
+        sendLegendValues(lastRebalanceDate);
       } else {
-        updateLegendWithValues(null);
+        sendLegendValues(null);
       }
     };
 
-    updateLegendWithValuesWithLastRebalance();
+    sendLegendValuesWithLastRebalance();
 
     // Create chart-like object for compatibility
     const chartLikeObject = {
@@ -657,13 +472,13 @@ const Chart: React.FC<ChartProps> = ({
           const x = xScale(date);
           crosshair.style("display", null);
           crosshairLine.attr("x1", x).attr("x2", x);
-          // Update legend with selected date values
-          updateLegendWithValues(time);
+          // Send legend values to parent component
+          sendLegendValues(time);
         }
       },
       clearCrosshairPosition: () => {
         crosshair.style("display", "none");
-        updateLegendWithValuesWithLastRebalance();
+        sendLegendValuesWithLastRebalance();
       },
       timeScale: () => ({
         subscribeVisibleLogicalRangeChange: (callback: any) => {
@@ -691,7 +506,7 @@ const Chart: React.FC<ChartProps> = ({
     onCrosshairMove,
     onCrosshairLeave,
     chartType,
-    getLegendData,
+    onLegendValuesChange,
   ]);
 
   // Effect to handle selectedDate changes
@@ -744,6 +559,7 @@ const Chart: React.FC<ChartProps> = ({
     createD3Chart,
     chartType,
     selectedDate,
+    onLegendValuesChange,
   ]);
 
   return (

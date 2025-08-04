@@ -5,6 +5,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { convertAnnualRateToDaily, runMultipleSimulations, startSimulation } from "../core/functions";
 import { MarketData, Simulation, MultiSeriesChartData, RebalanceLog, PortfolioSnapshot } from "../core/models";
 import Chart from "./Chart";
+import UnifiedLegend from "./Legend";
 
 // Helper function to format currency values
 const formatCurrency = (value: number): string => {
@@ -48,6 +49,8 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const [rebalanceLogsMap, setRebalanceLogsMap] = useState<Record<string, RebalanceLog>>({});
+  const [priceLegendValues, setPriceLegendValues] = useState<{ [key: string]: number }>({});
+  const [ratioLegendValues, setRatioLegendValues] = useState<{ [key: string]: number }>({});
 
   const [simulation, setSimulation] = useState<Simulation>({
     portfolioSnapshots: [],
@@ -74,6 +77,15 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
   const handlePointClick = useCallback((date: string, value: number) => {
     // setSelectedDate(date);
+  }, []);
+
+  // Handle legend values changes
+  const handlePriceLegendValuesChange = useCallback((values: { [key: string]: number }) => {
+    setPriceLegendValues(values);
+  }, []);
+
+  const handleRatioLegendValuesChange = useCallback((values: { [key: string]: number }) => {
+    setRatioLegendValues(values);
   }, []);
 
   // Handle multiple simulations button click
@@ -391,7 +403,15 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         sx={{ height: "95vh", display: "grid", gridTemplateRows: "50px 3fr 1fr 1fr", gap: 0 }}
         onMouseLeave={handleCrosshairLeave}
       >
-        <Box>Date</Box>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <UnifiedLegend 
+            priceSeriesData={priceChart} 
+            ratioSeriesData={{ ...ratioChart, ...pullbackChart }} 
+            selectedDate={selectedDate}
+            priceValues={priceLegendValues}
+            ratioValues={ratioLegendValues}
+          />
+        </Box>
 
         {/* Chart Section */}
         {simulation && simulation.portfolioSnapshots.length > 0 && (
@@ -409,6 +429,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                 chartType="price"
                 isLogScale={isLogScale}
                 height="100%"
+                onLegendValuesChange={handlePriceLegendValuesChange}
               />
             </Box>
           </Box>
@@ -429,6 +450,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                 onCrosshairLeave={handleCrosshairLeave}
                 chartType="ratio-pullback"
                 height="100%"
+                onLegendValuesChange={handleRatioLegendValuesChange}
               />
             </Box>
           </Box>
