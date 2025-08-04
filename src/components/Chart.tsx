@@ -203,7 +203,7 @@ const Chart: React.FC<ChartProps> = ({
 
     // Render ratio series with areas and step lines
     Object.entries(ratioSeriesData).forEach(([name, data]) => {
-      const series = renderSeries(name, data, ratioYScale, true, true);
+      const series = renderSeries(name, data, ratioYScale, true, false);
       if (!mainSeries) mainSeries = series;
     });
 
