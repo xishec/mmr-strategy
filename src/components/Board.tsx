@@ -29,7 +29,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [targetRate, setTargetRate] = useState<number>(0.2);
   const [cashYearRate, setCashYearRate] = useState<number>(0.0);
   const [targetRatio, setTargetRatio] = useState<number>(0.5);
-  const [spikeRate, setSpikeRate] = useState<number>(0.2);
   const [dropRate, setDropRate] = useState<number>(-0.2);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
   const [monthlyNewCash, setMonthlyNewCash] = useState<number>(2000);
@@ -47,7 +46,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       targetRate,
       cashDayRate: convertAnnualRateToDaily(cashYearRate),
       targetRatio: targetRatio,
-      spikeRate: spikeRate,
       dropRate: dropRate,
       monthlyNewCash: monthlyNewCash,
     },
@@ -118,7 +116,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         targetRate,
         cashDayRate: convertAnnualRateToDaily(cashYearRate),
         targetRatio: targetRatio,
-        spikeRate: spikeRate,
         dropRate: dropRate,
         monthlyNewCash: monthlyNewCash,
       },
@@ -131,7 +128,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     targetRate,
     cashYearRate,
     targetRatio,
-    spikeRate,
     dropRate,
     monthlyNewCash,
   ]);
@@ -416,18 +412,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
           <TextField
             size="small"
-            label="Spike Rate"
-            type="number"
-            value={spikeRate}
-            onChange={(e) => setSpikeRate(Number(e.target.value))}
-            variant="outlined"
-            slotProps={{
-              htmlInput: { step: 0.01 },
-            }}
-          />
-
-          <TextField
-            size="small"
             label="Drop Rate"
             type="number"
             value={dropRate}
@@ -571,7 +555,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                   // Calculate slider values for better readability
                   const actualPercentage = currentRebalanceLog.cumulativeRateSinceLastRebalance * 100;
                   const minRange = simulation.variables.dropRate * 2 * 100; // Big Drop threshold
-                  const maxRange = simulation.variables.spikeRate * 2 * 100; // Big Spike threshold
+                  const maxRange = simulation.variables.targetRate * 2 * 100; // Big Spike threshold
                   const clampedPercentage = Math.max(minRange, Math.min(maxRange, actualPercentage));
 
                   // Mark positions for the slider
@@ -583,8 +567,8 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                     },
                     { value: 0, label: "0%" },
                     {
-                      value: simulation.variables.spikeRate * 100,
-                      label: `${simulation.variables.spikeRate * 100}% Spike`,
+                      value: simulation.variables.targetRate * 100,
+                      label: `${simulation.variables.targetRate * 100}% Spike`,
                     },
                     { value: maxRange, label: `${maxRange}% Big Spike` },
                   ];

@@ -15,7 +15,7 @@ export interface Variables {
   targetRate: number;
   cashDayRate: number;
   targetRatio: number;
-  spikeRate: number;
+  // spikeRate: number;
   dropRate: number;
   monthlyNewCash: number;
 }
