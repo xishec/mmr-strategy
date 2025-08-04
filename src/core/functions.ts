@@ -63,6 +63,8 @@ const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) =
     total: investments.total,
     currentTarget: simulation.variables.initialMoney,
     nextTarget: portfolioSnapshot.nextTarget,
+    currentRatio: investments.ratio,
+    nextRatio: investments.ratio,
     cumulativeRateSinceLastRebalance: 0,
     rebalanceType: RebalanceType.Excess,
     reason: "Initial setup",
@@ -248,6 +250,8 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
   investments.cash += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
   investments.mockTotalQQQ += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
   investments.mockTotalTQQQ += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
+
+  const originalRatio = investments.ratio;
   investments.ratio = investments.TQQQ / investments.total;
 
   portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
@@ -271,6 +275,8 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
     total: investments.total,
     currentTarget: currentTarget,
     nextTarget: portfolioSnapshot.nextTarget,
+    currentRatio: originalRatio,
+    nextRatio: investments.ratio,
     cumulativeRateSinceLastRebalance: cumulativeRate,
     rebalanceType: rebalanceType,
     reason: reason,

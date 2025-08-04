@@ -36,6 +36,8 @@ export interface RebalanceLog {
   total: number;
   currentTarget: number;
   nextTarget: number;
+  currentRatio: number;
+  nextRatio: number;
   cumulativeRateSinceLastRebalance: number;
   rebalanceType: RebalanceType;
   reason: string;

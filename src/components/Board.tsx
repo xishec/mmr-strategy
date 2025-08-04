@@ -252,11 +252,11 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     if (!currentRebalanceLog) return "grey.300";
     const { rebalanceType } = currentRebalanceLog;
     if (rebalanceType === RebalanceType.BigSpike || rebalanceType === RebalanceType.Spike) {
-      return green
+      return green;
     } else if (rebalanceType === RebalanceType.Excess || rebalanceType === RebalanceType.Shortfall) {
-      return yellow
+      return yellow;
     } else if (rebalanceType === RebalanceType.Drop || rebalanceType === RebalanceType.BigDrop) {
-      return red
+      return red;
     } else {
       return "grey.800"; // black/dark grey
     }
@@ -268,6 +268,51 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       setSelectedDateIndex(simulation.rebalanceLogs.length - 1);
     }
   }, [simulation.rebalanceLogs]);
+
+  const generateRatioBox = (ratio: number) => (
+    <Box
+      sx={{
+        border: "1px solid",
+        borderColor: "grey.300",
+        borderRadius: "0.25rem",
+        height: "100%",
+        aspectRatio: "1 / 1",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
+      {/* Cash section */}
+      <Box
+        sx={{
+          backgroundColor: "grey.100",
+          flex: 1 - ratio,
+        }}
+      />
+      {/* TQQQ section */}
+      <Box
+        sx={{
+          backgroundColor: yellow,
+          flex: ratio,
+        }}
+      />
+      {/* Ratio percentage overlay */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          color: "black",
+          fontWeight: "bold",
+          fontSize: "0.875rem",
+        }}
+      >
+        {(ratio * 100).toFixed(1)}%
+      </Box>
+    </Box>
+  );
 
   return (
     <Box width="100%" height="100vh" display="grid" gridTemplateColumns="1fr 4fr" gap={2} sx={{ p: 4 }}>
@@ -466,7 +511,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
             </IconButton>
 
             <Slider
-              color="primary"
+              color="secondary"
               value={selectedDateIndex}
               onChange={handleSliderChange}
               size="small"
@@ -492,46 +537,55 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
             borderColor: getBorderColor,
             padding: "1rem",
             marginTop: "1.5rem",
+            display: "grid",
+            gridTemplateColumns: "min-content min-content min-content",
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
-          <Typography variant="h6" component="h3" sx={{ mb: 2 }}>
-            Rebalance Log Details
-          </Typography>
-
-          {selectedDate ? (
-            currentRebalanceLog ? (
-              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 1, fontSize: "0.875rem" }}>
-                <Box>
-                  <strong>Rebalance Type:</strong> {currentRebalanceLog.rebalanceType}
-                </Box>
-                {/* <Box>
-                  <strong>Reason:</strong> {currentRebalanceLog.reason}
-                </Box> */}
-                <Box>
-                  <strong>Cumulative Rate:</strong>{" "}
-                  {(currentRebalanceLog.cumulativeRateSinceLastRebalance * 100).toFixed(2)}%
-                </Box>
-                <Box>
-                  <strong>Strategy Rate:</strong>{" "}
-                  {simulation.annualizedStrategyRate ? (simulation.annualizedStrategyRate * 100).toFixed(2) : "N/A"}%
-                </Box>
-                <Box>
-                  <strong>QQQ Rate:</strong>{" "}
-                  {simulation.annualizedQQQRate ? (simulation.annualizedQQQRate * 100).toFixed(2) : "N/A"}%
-                </Box>
-                <Box>
-                  <strong>TQQQ Rate:</strong>{" "}
-                  {simulation.annualizedTQQQRate ? (simulation.annualizedTQQQRate * 100).toFixed(2) : "N/A"}%
-                </Box>
+          {selectedDate &&
+          currentRebalanceLog &&
+          chartData.rebalanceLogsMap &&
+          typeof chartData.rebalanceLogsMap === "object" &&
+          (chartData.rebalanceLogsMap as Record<string, RebalanceLog>)[selectedDate] ? (
+            <>
+              {/* Circle with cumulative rate percentage */}
+              <Box
+                sx={{
+                  height: "100%",
+                  aspectRatio: "1 / 1",
+                  borderRadius: "50%",
+                  backgroundColor: getBorderColor,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  fontWeight: "bold",
+                  fontSize: "0.875rem",
+                }}
+              >
+                {(currentRebalanceLog.cumulativeRateSinceLastRebalance * 100).toFixed(2)}%
               </Box>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                No rebalance occurred on {selectedDate}
-              </Typography>
-            )
+
+              {/* Rectangle with cash and TQQQ amounts */}
+              {(() => {
+                const rebalanceLog = simulation.rebalanceLogs.find((snapshot) => snapshot.date === selectedDate);
+                if (!rebalanceLog) return null;
+
+                const currentRatio = rebalanceLog.currentRatio;
+                const nextRatio = rebalanceLog.nextRatio;
+
+                return (
+                  <>
+                    {generateRatioBox(currentRatio)}
+                    {generateRatioBox(nextRatio)}
+                  </>
+                );
+              })()}
+            </>
           ) : (
             <Typography variant="body2" color="text.secondary">
-              Hover over the chart to see rebalance details
+              {selectedDate ? "No rebalance data available" : "Select a date to see details"}
             </Typography>
           )}
         </Box>
