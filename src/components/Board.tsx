@@ -57,13 +57,16 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     return simulation.rebalanceLogs.map((log) => log.date).sort();
   }, [simulation]);
 
-  // Current selected date based on index
-  const selectedDate = availableDates[selectedDateIndex] || null;
+  // Current selected date string
+  const selectedDate = useMemo(() => {
+    if (availableDates.length === 0 || selectedDateIndex >= availableDates.length) return null;
+    return availableDates[selectedDateIndex];
+  }, [availableDates, selectedDateIndex]);
 
   // Handle slider-controlled date selection
   const handleSliderChange = useCallback((_: Event, value: number | number[]) => {
     const index = Array.isArray(value) ? value[0] : value;
-    setSelectedDateIndex(index);
+    setSelectedDateIndex(Math.round(index));
   }, []);
 
   // Handle keyboard navigation
@@ -518,6 +521,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
               min={0}
               max={availableDates.length - 1}
               step={1}
+              valueLabelDisplay="off"
             />
 
             <IconButton
