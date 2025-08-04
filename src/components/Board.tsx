@@ -26,7 +26,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [initialMoney, setInitialMoney] = useState<number>(100000);
   const [rebalanceDays, setRebalanceDays] = useState<number>(90);
-  const [targetRate, setTargetRate] = useState<number>(0.15);
+  const [targetRate, setTargetRate] = useState<number>(0.2);
   const [cashYearRate, setCashYearRate] = useState<number>(0.0);
   const [targetRatio, setTargetRatio] = useState<number>(0.5);
   const [spikeRate, setSpikeRate] = useState<number>(0.2);
