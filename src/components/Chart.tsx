@@ -51,7 +51,7 @@ const Chart: React.FC<ChartProps> = ({
     svg.selectAll("*").remove();
 
     // Setup dimensions and data
-    const margin = { top: 20, right: 40, bottom: 40, left: 60 };
+    const margin = { top: 20, right: 20, bottom: 40, left: 100 }; // More left margin for dual y-axes, less right margin
     const width = container.clientWidth - margin.left - margin.right;
     const totalChartHeight = container.clientHeight - margin.top - margin.bottom;
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
@@ -63,23 +63,24 @@ const Chart: React.FC<ChartProps> = ({
 
     // Parse dates
     const parseTime = d3.timeParse("%Y-%m-%d");
-    const parsedData = allData.map(d => ({
+    const parsedData = allData.map((d) => ({
       ...d,
-      parsedTime: parseTime(d.time)
+      parsedTime: parseTime(d.time),
     }));
 
     // Chart layout for combined view
     const isCombined = chartType === "combined";
-    const priceHeight = isCombined ? totalChartHeight * 0.75 : totalChartHeight;
-    const ratioHeight = isCombined ? totalChartHeight * 0.25 : 0;
-    const ratioTop = isCombined ? priceHeight : 0;
+    const spaceBetweenCharts = 20; // Smart spacing between price and ratio charts
+    const priceHeight = isCombined ? (totalChartHeight - spaceBetweenCharts) * 0.75 : totalChartHeight;
+    const ratioHeight = isCombined ? (totalChartHeight - spaceBetweenCharts) * 0.25 : 0;
+    const ratioTop = isCombined ? priceHeight + spaceBetweenCharts : 0;
 
     // Separate series by type
     const priceKeys = ["StrategyTotal", "Target", "MockTotalQQQ", "MockTotalTQQQ"];
     const ratioKeys = ["Ratio", "pullback"];
-    
-    const getSeriesByType = (type: 'price' | 'ratio') => {
-      const keys = type === 'price' ? priceKeys : ratioKeys;
+
+    const getSeriesByType = (type: "price" | "ratio") => {
+      const keys = type === "price" ? priceKeys : ratioKeys;
       const result: { [key: string]: any[] } = {};
       Object.entries(seriesData).forEach(([key, data]) => {
         if (keys.includes(key)) result[key] = data;
@@ -87,8 +88,8 @@ const Chart: React.FC<ChartProps> = ({
       return result;
     };
 
-    const priceSeriesData = isCombined ? getSeriesByType('price') : seriesData;
-    const ratioSeriesData = isCombined ? getSeriesByType('ratio') : {};
+    const priceSeriesData = isCombined ? getSeriesByType("price") : seriesData;
+    const ratioSeriesData = isCombined ? getSeriesByType("ratio") : {};
 
     // Create time scale
     const xScale = d3
@@ -99,12 +100,13 @@ const Chart: React.FC<ChartProps> = ({
     // Create Y scales
     const priceData = isCombined ? Object.values(priceSeriesData).flat() : allData;
     const priceExtent = d3.extent(priceData, (d) => d.value) as [number, number];
-    
-    const priceYScale = isLogScale 
+
+    const priceYScale = isLogScale
       ? d3.scaleLog().domain(priceExtent).range([priceHeight, 0])
       : d3.scaleLinear().domain(priceExtent).range([priceHeight, 0]);
 
-    const ratioYScale = d3.scaleLinear()
+    const ratioYScale = d3
+      .scaleLinear()
       .domain([-1, 1])
       .range([ratioTop + ratioHeight, ratioTop]);
 
@@ -139,12 +141,14 @@ const Chart: React.FC<ChartProps> = ({
           .attr("fill", color);
       } else {
         // Render as line/area
-        const line = d3.line<any>()
+        const line = d3
+          .line<any>()
           .x((d) => xScale(d.parsedTime))
           .y((d) => yScale(d.value));
 
         if (isArea) {
-          const area = d3.area<any>()
+          const area = d3
+            .area<any>()
             .x((d) => xScale(d.parsedTime))
             .y0(yScale(0))
             .y1((d) => yScale(d.value));
@@ -182,21 +186,24 @@ const Chart: React.FC<ChartProps> = ({
         .attr("stroke", "#666")
         .attr("stroke-width", 1)
         .attr("stroke-dasharray", "3,3");
+    }
 
-      // Add separator line
+    // Add center line for standalone ratio charts
+    if ((chartType === "ratio" || chartType === "pullback" || chartType === "ratio-pullback") && !isCombined) {
       g.append("line")
-        .attr("class", "separator-line")
+        .attr("class", "center-line")
         .attr("x1", 0)
         .attr("x2", width)
-        .attr("y1", priceHeight)
-        .attr("y2", priceHeight)
-        .attr("stroke", "#ccc")
-        .attr("stroke-width", 1);
+        .attr("y1", priceYScale(0))
+        .attr("y2", priceYScale(0))
+        .attr("stroke", "#666")
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "3,3");
     }
 
     // Render all series
     let mainSeries: any = null;
-    
+
     if (isCombined) {
       // Render price series
       Object.entries(priceSeriesData).forEach(([name, data]) => {
@@ -249,11 +256,12 @@ const Chart: React.FC<ChartProps> = ({
           const rebalanceDates = Object.keys(rebalanceLogsMap)
             .map(parseTime)
             .filter((d): d is Date => d !== null);
-          
+
           if (rebalanceDates.length > 0) {
             const closestRebalanceDate = rebalanceDates.reduce((closest, current) => {
               return Math.abs(current.getTime() - date.getTime()) < Math.abs(closest.getTime() - date.getTime())
-                ? current : closest;
+                ? current
+                : closest;
             });
             const snapX = xScale(closestRebalanceDate);
             crosshairLine.attr("x1", snapX).attr("x2", snapX);
@@ -292,9 +300,14 @@ const Chart: React.FC<ChartProps> = ({
     g.append("g")
       .attr("class", "x-axis")
       .attr("transform", `translate(0,${totalChartHeight})`)
-      .call(d3.axisBottom(xScale).ticks(5).tickFormat((domainValue) => {
-        return d3.timeFormat("%Y-%m-%d")(domainValue as Date);
-      }));
+      .call(
+        d3
+          .axisBottom(xScale)
+          .ticks(5)
+          .tickFormat((domainValue) => {
+            return d3.timeFormat("%Y-%m-%d")(domainValue as Date);
+          })
+      );
 
     // Add Y-axes
     if (isCombined || chartType === "price") {
@@ -303,10 +316,12 @@ const Chart: React.FC<ChartProps> = ({
     }
 
     if (isCombined) {
-      g.append("g")
-        .attr("class", "y-axis-ratio")
-        .attr("transform", `translate(${width}, 0)`)
-        .call(d3.axisRight(ratioYScale).ticks(3));
+      g.append("g").attr("class", "y-axis-ratio").call(d3.axisLeft(ratioYScale).ticks(3));
+    }
+
+    // Add y-axis for standalone ratio/pullback charts
+    if ((chartType === "ratio" || chartType === "pullback" || chartType === "ratio-pullback") && !isCombined) {
+      g.append("g").attr("class", "y-axis-ratio").call(d3.axisLeft(priceYScale).ticks(4));
     }
 
     // Legend value functions
@@ -380,9 +395,7 @@ const Chart: React.FC<ChartProps> = ({
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
-    const hasData = 
-      (chartData && chartData.length > 0) || 
-      (multiSeriesData && Object.keys(multiSeriesData).length > 0);
+    const hasData = (chartData && chartData.length > 0) || (multiSeriesData && Object.keys(multiSeriesData).length > 0);
 
     if (!hasData) return;
 
