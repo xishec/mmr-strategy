@@ -20,7 +20,7 @@ interface ChartProps {
   onCrosshairLeave?: () => void;
   chartType?: "price" | "ratio" | "pullback" | "ratio-pullback" | "combined";
   isLogScale?: boolean;
-  height?: string | number;
+  height: string | number;
   onLegendValuesChange?: (values: { [key: string]: number }) => void;
 }
 
@@ -36,7 +36,7 @@ const Chart: React.FC<ChartProps> = ({
   onCrosshairLeave,
   chartType = "price",
   isLogScale = false,
-  height = "400px",
+  height,
   onLegendValuesChange,
 }: ChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -51,7 +51,7 @@ const Chart: React.FC<ChartProps> = ({
     svg.selectAll("*").remove();
 
     // Setup dimensions and data
-    const margin = { top: 20, right: 20, bottom: 40, left: 100 }; // More left margin for dual y-axes, less right margin
+    const margin = { top: 20, right: 20, bottom: 40, left: 65 }; // Reduced left margin to move charts left
     const width = container.clientWidth - margin.left - margin.right;
     const totalChartHeight = container.clientHeight - margin.top - margin.bottom;
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);

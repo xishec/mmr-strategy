@@ -5,7 +5,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { convertAnnualRateToDaily, runMultipleSimulations, startSimulation } from "../core/functions";
 import { MarketData, Simulation, MultiSeriesChartData, RebalanceLog, PortfolioSnapshot } from "../core/models";
 import Chart from "./Chart";
-import UnifiedLegend from "./Legend";
+import Legend from "./Legend";
 
 // Helper function to format currency values
 const formatCurrency = (value: number): string => {
@@ -400,11 +400,11 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
       {/* Rebalance Log Details */}
       <Box
-        sx={{ height: "95vh", display: "grid", gridTemplateRows: "50px 4fr 200px", gap: 0 }}
+        sx={{ height: "95vh", display: "grid", gridTemplateRows: "min-content 4fr 200px", gap: 0 }}
         onMouseLeave={handleCrosshairLeave}
       >
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <UnifiedLegend
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pl: 4 }}>
+          <Legend
             priceSeriesData={priceChart}
             ratioSeriesData={{ ...ratioChart, ...pullbackChart }}
             selectedDate={selectedDate}
@@ -451,13 +451,13 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         )}
 
         <Box>
-          <Typography variant="h6" component="h3" sx={{ mb: 2 }}>
+          <Typography variant="h6" component="h3" sx={{ mb: 2, pl: 4 }}>
             Rebalance Log Details
           </Typography>
 
           {selectedDate ? (
             rebalanceLogsMap[selectedDate] ? (
-              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 1, fontSize: "0.875rem" }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 1, fontSize: "0.875rem", pl: 4 }}>
                 <Box>
                   <strong>Date:</strong> {selectedDate}
                 </Box>
