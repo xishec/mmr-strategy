@@ -197,9 +197,9 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           time: rebalanceLog.date,
           value: portfolioSnapshotsMap[rebalanceLog.date].investments.total,
         })),
-        Target: simulation.rebalanceLogs.map((rebalanceLog, i) => ({
+        Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
           time: rebalanceLog.date,
-          value: i > 0 ? simulation.rebalanceLogs[i - 1].nextTarget : rebalanceLog.total,
+          value: rebalanceLog.currentTarget,
         })),
         MockTotalQQQ: simulation.rebalanceLogs.map((rebalanceLog) => ({
           time: rebalanceLog.date,
