@@ -39,6 +39,18 @@ const Chart: React.FC<ChartProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
   const chartInstanceRef = useRef<any>(null);
 
+  // Stable callback references to prevent recreating chart
+  const stableOnCrosshairMove = useRef(onCrosshairMove);
+  const stableOnLegendValuesChange = useRef(onLegendValuesChange);
+  
+  useEffect(() => {
+    stableOnCrosshairMove.current = onCrosshairMove;
+  }, [onCrosshairMove]);
+  
+  useEffect(() => {
+    stableOnLegendValuesChange.current = onLegendValuesChange;
+  }, [onLegendValuesChange]);
+
   // Memoize expensive data processing to prevent unnecessary re-computations
   const chartDataMemo = useMemo(() => {
     return multiSeriesData || (chartData ? { default: chartData } : {});
@@ -63,6 +75,8 @@ const Chart: React.FC<ChartProps> = ({
     svg.selectAll("*").remove();
     svg.on(".zoom", null);
     svg.on(".drag", null);
+    svg.on(".mousemove", null);
+    svg.on(".mouseleave", null);
 
     // Setup dimensions and data
     const margin = { top: 30, left: 65, right: 20 };
@@ -310,36 +324,37 @@ const Chart: React.FC<ChartProps> = ({
       .attr("fill", "none")
       .attr("pointer-events", "all");
 
+    // Pre-create date formatter to avoid recreation on every mousemove
+    const dateFormatter = d3.timeFormat("%Y-%m-%d");
+
     // Simple mouse event handlers - rebuilt from scratch
     overlay
-      .on("mousemove", (event: any) => {
-        const [mouseX] = d3.pointer(event, svg.node());
-        const adjustedMouseX = mouseX - margin.left;
+      .on("mousemove", function(event: any) {
+        const [mouseX] = d3.pointer(event, g.node());
+        
+        // Bounds check to prevent invalid positions
+        if (mouseX < 0 || mouseX > width) return;
         
         // Show crosshair and position it at mouse location
         crosshair.style("display", null);
-        crosshairLine.attr("x1", adjustedMouseX).attr("x2", adjustedMouseX);
+        crosshairLine.attr("x1", mouseX).attr("x2", mouseX);
         
         // Find closest rebalance date for selected date
         if (rebalanceDatesArrayMemo.length > 0) {
-          const mouseDate = xScale.invert(adjustedMouseX);
+          const mouseDate = xScale.invert(mouseX);
           const closestDate = rebalanceDatesArrayMemo.reduce((closest, current) => {
             return Math.abs(current.getTime() - mouseDate.getTime()) < 
                    Math.abs(closest.getTime() - mouseDate.getTime()) ? current : closest;
           });
           
-          const dateFormatter = d3.timeFormat("%Y-%m-%d");
-          if (onCrosshairMove) {
-            onCrosshairMove(dateFormatter(closestDate));
+          if (stableOnCrosshairMove.current) {
+            stableOnCrosshairMove.current(dateFormatter(closestDate));
           }
         }
       })
-      
-      .on("mouseleave", () => {
+      .on("mouseleave", function() {
         crosshair.style("display", "none");
-      });
-
-    // Add axes
+      });    // Add axes
     g.append("g")
       .attr("class", "x-axis")
       .attr("transform", `translate(0,${timelineTop - 25})`)
@@ -360,13 +375,13 @@ const Chart: React.FC<ChartProps> = ({
 
     // Legend value functions
     const sendLegendValues = (selectedDate: string | null) => {
-      if (!onLegendValuesChange || !selectedDate) return;
+      if (!stableOnLegendValuesChange.current || !selectedDate) return;
       const values: { [key: string]: number } = {};
       Object.entries(seriesData).forEach(([seriesName, data]) => {
         const dataPoint = data.find((dp: any) => dp.time === selectedDate);
         if (dataPoint) values[seriesName] = dataPoint.value;
       });
-      onLegendValuesChange(values);
+      stableOnLegendValuesChange.current(values);
     };
 
     const sendLegendValuesWithLastRebalance = () => {
@@ -410,8 +425,6 @@ const Chart: React.FC<ChartProps> = ({
     chartDataMemo,
     rebalanceDatesArrayMemo,
     rebalanceLogsMap,
-    onCrosshairMove,
-    onLegendValuesChange,
   ]);
 
   // Handle selectedDate changes
@@ -442,24 +455,52 @@ const Chart: React.FC<ChartProps> = ({
     }
 
     const handleResize = () => {
+      // Cleanup existing chart before creating new one
+      if (chartInstanceRef.current && svgRef.current) {
+        const svg = d3.select(svgRef.current);
+        svg.selectAll("*").on(".mousemove", null);
+        svg.selectAll("*").on(".mouseleave", null);
+        svg.selectAll("*").remove();
+      }
       const newInstance = createD3Chart();
       chartInstanceRef.current = newInstance;
     };
 
+    // Capture ref values for cleanup
+    const currentSvgRef = svgRef.current;
+
+    // Cleanup function with more thorough removal
+    const cleanup = () => {
+      if (currentSvgRef) {
+        const svg = d3.select(currentSvgRef);
+        // Remove all event listeners first
+        svg.selectAll("*").on(".mousemove", null);
+        svg.selectAll("*").on(".mouseleave", null);
+        svg.selectAll("*").on(".click", null);
+        svg.on(".zoom", null);
+        svg.on(".drag", null);
+        svg.on(".mousemove", null);
+        svg.on(".mouseleave", null);
+        svg.on(".click", null);
+        // Then remove all elements
+        svg.selectAll("*").remove();
+      }
+      chartInstanceRef.current = null;
+    };
+
     window.addEventListener("resize", handleResize);
     return () => {
+      // Proper cleanup to prevent memory leaks
       window.removeEventListener("resize", handleResize);
+      cleanup();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    createD3Chart,
     chartData,
     multiSeriesData,
-    isLogScale,
-    syncId,
     onChartReady,
-    rebalanceLogsMap,
+    syncId,
     selectedDate,
-    onLegendValuesChange,
   ]);
 
   return (
@@ -469,11 +510,6 @@ const Chart: React.FC<ChartProps> = ({
         width: "100%",
         height: height,
         backgroundColor: "white",
-      }}
-      onMouseLeave={() => {
-        if (chartInstanceRef.current) {
-          chartInstanceRef.current.chart.clearCrosshairPosition();
-        }
       }}
     >
       <svg ref={svgRef} width="100%" height="100%" style={{ display: "block" }} />
