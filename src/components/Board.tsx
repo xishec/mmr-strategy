@@ -538,56 +538,117 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
             padding: "1rem",
             marginTop: "1.5rem",
             display: "grid",
-            gridTemplateColumns: "min-content min-content min-content",
+            gridTemplateColumns: "200px min-content 1fr min-content",
+            gap: "2rem",
             justifyContent: "center",
             alignItems: "center",
           }}
         >
           {selectedDate &&
-          currentRebalanceLog &&
-          chartData.rebalanceLogsMap &&
-          typeof chartData.rebalanceLogsMap === "object" &&
-          (chartData.rebalanceLogsMap as Record<string, RebalanceLog>)[selectedDate] ? (
-            <>
-              {/* Circle with cumulative rate percentage */}
-              <Box
-                sx={{
-                  height: "100%",
-                  aspectRatio: "1 / 1",
-                  borderRadius: "50%",
-                  backgroundColor: getBorderColor,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "white",
-                  fontWeight: "bold",
-                  fontSize: "0.875rem",
-                }}
-              >
-                {(currentRebalanceLog.cumulativeRateSinceLastRebalance * 100).toFixed(2)}%
-              </Box>
+            currentRebalanceLog &&
+            chartData.rebalanceLogsMap &&
+            typeof chartData.rebalanceLogsMap === "object" &&
+            (chartData.rebalanceLogsMap as Record<string, RebalanceLog>)[selectedDate] && (
+              <>
+                {(() => {
+                  // Calculate slider values for better readability
+                  const actualPercentage = currentRebalanceLog.cumulativeRateSinceLastRebalance * 100;
+                  const minRange = simulation.variables.dropRate * 2 * 100; // Big Drop threshold
+                  const maxRange = simulation.variables.spikeRate * 2 * 100; // Big Spike threshold
+                  const clampedPercentage = Math.max(minRange, Math.min(maxRange, actualPercentage));
 
-              {/* Rectangle with cash and TQQQ amounts */}
-              {(() => {
-                const rebalanceLog = simulation.rebalanceLogs.find((snapshot) => snapshot.date === selectedDate);
-                if (!rebalanceLog) return null;
+                  // Mark positions for the slider
+                  const sliderMarks = [
+                    { value: minRange, label: `${minRange}% Big Drop` },
+                    {
+                      value: simulation.variables.dropRate * 100,
+                      label: `${simulation.variables.dropRate * 100}% Drop`,
+                    },
+                    { value: 0, label: "0%" },
+                    {
+                      value: simulation.variables.spikeRate * 100,
+                      label: `${simulation.variables.spikeRate * 100}% Spike`,
+                    },
+                    { value: maxRange, label: `${maxRange}% Big Spike` },
+                  ];
 
-                const currentRatio = rebalanceLog.currentRatio;
-                const nextRatio = rebalanceLog.nextRatio;
+                  return (
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        position: "relative",
+                        overflow: "visible",
+                      }}
+                    >
+                      <Slider
+                        orientation="vertical"
+                        valueLabelDisplay="on"
+                        valueLabelFormat={() => `${actualPercentage.toFixed(2)}%`}
+                        track={false}
+                        value={clampedPercentage}
+                        min={minRange}
+                        max={maxRange}
+                        marks={sliderMarks}
+                        sx={{
+                          height: "80%",
+                          "& .MuiSlider-thumb": {
+                            backgroundColor: getBorderColor,
+                            width: 16,
+                            height: 16,
+                            "&:hover": {
+                              boxShadow: "none",
+                            },
+                          },
+                          "& .MuiSlider-mark": {
+                            backgroundColor: "grey.400",
+                            width: 2,
+                            height: 2,
+                          },
+                          "& .MuiSlider-markLabel": {
+                            fontSize: "0.65rem",
+                            color: "text.secondary",
+                            whiteSpace: "nowrap",
+                          },
+                          "& .MuiSlider-valueLabel": {
+                            backgroundColor: getBorderColor,
+                            color: "white",
+                            fontWeight: "bold",
+                            fontSize: "0.75rem",
+                            borderRadius: "4px",
+                            padding: "2px 6px",
+                            "&:before": {
+                              borderColor: getBorderColor,
+                            },
+                          },
+                        }}
+                        disabled
+                      />
+                    </Box>
+                  );
+                })()}
 
-                return (
-                  <>
-                    {generateRatioBox(currentRatio)}
-                    {generateRatioBox(nextRatio)}
-                  </>
-                );
-              })()}
-            </>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              {selectedDate ? "No rebalance data available" : "Select a date to see details"}
-            </Typography>
-          )}
+                {/* Rectangle with cash and TQQQ amounts */}
+                {(() => {
+                  const rebalanceLog = simulation.rebalanceLogs.find((snapshot) => snapshot.date === selectedDate);
+                  if (!rebalanceLog) return null;
+
+                  const currentRatio = rebalanceLog.currentRatio;
+                  const nextRatio = rebalanceLog.nextRatio;
+
+                  return (
+                    <>
+                      {generateRatioBox(currentRatio)}
+                      <Box>hi</Box>
+                      {generateRatioBox(nextRatio)}
+                    </>
+                  );
+                })()}
+              </>
+            )}
         </Box>
       </Box>
     </Box>
