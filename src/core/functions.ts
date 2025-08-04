@@ -109,8 +109,8 @@ const runSingleSimulation = (simulation: Simulation, marketData: MarketData): Si
 
   // Final rebalance and calculate rates
   if (newSimulation.portfolioSnapshots.length > 0) {
-    // const lastSnapshot = newSimulation.portfolioSnapshots[newSimulation.portfolioSnapshots.length - 1];
-    // rebalance(lastSnapshot, newSimulation, marketData);
+    const lastSnapshot = newSimulation.portfolioSnapshots[newSimulation.portfolioSnapshots.length - 1];
+    rebalance(lastSnapshot, newSimulation, marketData);
     calculateAnnualizedRates(newSimulation);
   }
 
@@ -245,7 +245,7 @@ const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData
   after.investments.cash += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
   after.investments.mockTotalQQQ += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
   after.investments.mockTotalTQQQ += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
-  after.investments.total += after.investments.cash + after.investments.TQQQ;
+  after.investments.total = after.investments.cash + after.investments.TQQQ;
   after.investments.ratio = after.investments.TQQQ / after.investments.total;
 
   reason += `
@@ -266,7 +266,7 @@ const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData
     rebalanceType: rebalanceType,
     reason: reason,
   };
-  console.log(rebalanceLog);
+  // console.log(rebalanceLog);
   simulation.rebalanceLogs.push(rebalanceLog);
   
   return after;

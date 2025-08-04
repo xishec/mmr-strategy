@@ -23,7 +23,7 @@ interface BoardProps {
 const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [simulationYears, setSimulationYears] = useState<number>(5);
   const [startDate, setStartDate] = useState<Date>(new Date(2000, 0, 1)); // Year, Month (0-based), Day
-  const [endDate, setEndDate] = useState<Date>(new Date(2001, 0, 1));
+  const [endDate, setEndDate] = useState<Date>(new Date());
   const [initialMoney, setInitialMoney] = useState<number>(100000);
   const [rebalanceDays, setRebalanceDays] = useState<number>(90);
   const [targetRate, setTargetRate] = useState<number>(0.2);
@@ -31,7 +31,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [targetRatio, setTargetRatio] = useState<number>(0.5);
   const [dropRate, setDropRate] = useState<number>(-0.2);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
-  const [monthlyNewCash, setMonthlyNewCash] = useState<number>(0);
+  const [monthlyNewCash, setMonthlyNewCash] = useState<number>(2000);
 
   const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
 
@@ -203,8 +203,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         value: snapshot.pullback,
       })),
     };
-
-    console.log(ratioChart);
 
     return {
       priceChart,
