@@ -4,8 +4,8 @@ import { KeyboardArrowLeft, KeyboardArrowRight } from "@mui/icons-material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { convertAnnualRateToDaily, runMultipleSimulations, startSimulation } from "../core/functions";
-import { MarketData, Simulation, RebalanceLog, PortfolioSnapshot } from "../core/models";
-import Chart from "./Chart";
+import { MarketData, Simulation, RebalanceLog, PortfolioSnapshot, RebalanceType } from "../core/models";
+import Chart, { green, red, yellow } from "./Chart";
 import Legend from "./Legend";
 
 // Helper function to format date as YYYY-MM-DD in local timezone
@@ -247,6 +247,21 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     return (chartData.rebalanceLogsMap as Record<string, RebalanceLog>)[selectedDate] || null;
   }, [selectedDate, chartData.rebalanceLogsMap]);
 
+  // Get border color based on rebalance type
+  const getBorderColor = useMemo(() => {
+    if (!currentRebalanceLog) return "grey.300";
+    const { rebalanceType } = currentRebalanceLog;
+    if (rebalanceType === RebalanceType.BigSpike || rebalanceType === RebalanceType.Spike) {
+      return green
+    } else if (rebalanceType === RebalanceType.Excess || rebalanceType === RebalanceType.Shortfall) {
+      return yellow
+    } else if (rebalanceType === RebalanceType.Drop || rebalanceType === RebalanceType.BigDrop) {
+      return red
+    } else {
+      return "grey.800"; // black/dark grey
+    }
+  }, [currentRebalanceLog]);
+
   // Update selected date index when simulation data changes
   useEffect(() => {
     if (simulation.rebalanceLogs.length > 0) {
@@ -451,7 +466,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
             </IconButton>
 
             <Slider
-              color="secondary"
+              color="primary"
               value={selectedDateIndex}
               onChange={handleSliderChange}
               size="small"
@@ -470,7 +485,15 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           </Box>
         )}
 
-        <Box>
+        <Box
+          sx={{
+            borderRadius: "0.5rem",
+            border: "2px solid",
+            borderColor: getBorderColor,
+            padding: "1rem",
+            marginTop: "1.5rem",
+          }}
+        >
           <Typography variant="h6" component="h3" sx={{ mb: 2 }}>
             Rebalance Log Details
           </Typography>

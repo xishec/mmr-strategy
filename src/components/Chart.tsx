@@ -2,11 +2,11 @@ import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import * as d3 from "d3";
 import { ChartData, MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core/models";
 
-const black = "#202124";
-const yellow = "#FBBC04";
-const blue = "#4285F4";
-const red = "#EA4335";
-const green = "#34A853";
+export const black = "#202124";
+export const yellow = "#FBBC04";
+export const blue = "#4285F4";
+export const red = "#EA4335";
+export const green = "#34A853";
 
 interface ChartProps {
   chartData?: ChartData;
@@ -113,9 +113,9 @@ const Chart: React.FC<ChartProps> = ({
     const colorMap = {
       StrategyTotal: yellow,
       Target: black,
-      MockTotalQQQ: blue,
+      MockTotalQQQ: green,
       MockTotalTQQQ: red,
-      Ratio: blue,
+      Ratio: yellow,
       pullback: red,
       default: "#2962FF",
     };
