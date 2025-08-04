@@ -154,7 +154,7 @@ const Chart: React.FC<ChartProps> = ({
     };
 
     // Helper function to render a series
-    const renderSeries = (seriesName: string, data: any[], yScale: any, isArea = false) => {
+    const renderSeries = (seriesName: string, data: any[], yScale: any, isArea = false, isStepLine = false) => {
       const color = colorMap[seriesName as keyof typeof colorMap] || colorMap.default;
       const processedData = data.map((d) => ({ ...d, parsedTime: parseTime(d.time) }));
 
@@ -171,11 +171,16 @@ const Chart: React.FC<ChartProps> = ({
           .attr("r", 2.5)
           .attr("fill", black);
       } else {
-        // Render as line/area
+        // Render as line/area with optional step interpolation
         const line = d3
           .line<any>()
           .x((d) => xScale(d.parsedTime))
           .y((d) => yScale(d.value));
+          
+        // Use step interpolation for ratio charts
+        if (isStepLine) {
+          line.curve(d3.curveStepAfter);
+        }
 
         if (isArea) {
           const area = d3
@@ -183,6 +188,11 @@ const Chart: React.FC<ChartProps> = ({
             .x((d) => xScale(d.parsedTime))
             .y0(yScale(0))
             .y1((d) => yScale(d.value));
+            
+          // Use step interpolation for ratio areas
+          if (isStepLine) {
+            area.curve(d3.curveStepAfter);
+          }
 
           g.append("path")
             .datum(processedData)
@@ -220,13 +230,13 @@ const Chart: React.FC<ChartProps> = ({
 
     // Render price series
     Object.entries(priceSeriesData).forEach(([name, data]) => {
-      const series = renderSeries(name, data, priceYScale);
+      const series = renderSeries(name, data, priceYScale, false, false);
       if (!mainSeries) mainSeries = series;
     });
 
-    // Render ratio series with areas
+    // Render ratio series with areas and step lines
     Object.entries(ratioSeriesData).forEach(([name, data]) => {
-      const series = renderSeries(name, data, ratioYScale, true);
+      const series = renderSeries(name, data, ratioYScale, true, true);
       if (!mainSeries) mainSeries = series;
     });
 
