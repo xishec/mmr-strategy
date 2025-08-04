@@ -306,7 +306,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           transform: "translate(-50%, -50%)",
           color: "black",
           fontWeight: "bold",
-          fontSize: "0.875rem",
+          fontSize: "1rem",
         }}
       >
         {(ratio * 100).toFixed(1)}%
@@ -538,7 +538,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
             padding: "1rem",
             marginTop: "1.5rem",
             display: "grid",
-            gridTemplateColumns: "200px min-content 1fr min-content",
+            gridTemplateColumns: "225px min-content 1fr min-content",
             gap: "2rem",
             justifyContent: "center",
             alignItems: "center",
@@ -609,7 +609,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                             height: 2,
                           },
                           "& .MuiSlider-markLabel": {
-                            fontSize: "0.65rem",
+                            fontSize: "1rem",
                             color: "text.secondary",
                             whiteSpace: "nowrap",
                           },
@@ -617,7 +617,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                             backgroundColor: getBorderColor,
                             color: "white",
                             fontWeight: "bold",
-                            fontSize: "0.75rem",
+                            fontSize: "1rem",
                             borderRadius: "4px",
                             padding: "2px 6px",
                             "&:before": {
