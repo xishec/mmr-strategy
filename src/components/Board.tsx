@@ -32,16 +32,15 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [simulationYears, setSimulationYears] = useState<number>(5);
   const [startDate, setStartDate] = useState<Date>(new Date(2000, 0, 1)); // Year, Month (0-based), Day
   const [endDate, setEndDate] = useState<Date>(new Date());
-  const [initialMoney, setInitialMoney] = useState<number>(100);
+  const [initialMoney, setInitialMoney] = useState<number>(100000);
   const [rebalanceDays, setRebalanceDays] = useState<number>(90);
   const [targetRate, setTargetRate] = useState<number>(0.15);
   const [cashYearRate, setCashYearRate] = useState<number>(0.0);
   const [targetRatio, setTargetRatio] = useState<number>(0.5);
   const [spikeRate, setSpikeRate] = useState<number>(0.2);
   const [dropRate, setDropRate] = useState<number>(-0.2);
-  const [lookBackEnterRate, setLookBackEnterRate] = useState<number>(-0);
-  const [lookBackDays, setLookBackDays] = useState<number>(300);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
+  const [monthlyNewCash, setMonthlyNewCash] = useState<number>(2000);
 
   const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
   const [ratioChart, setRatioChart] = useState<MultiSeriesChartData>({});
@@ -63,6 +62,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       targetRatio: targetRatio,
       spikeRate: spikeRate,
       dropRate: dropRate,
+      monthlyNewCash: monthlyNewCash,
     },
   });
 
@@ -98,8 +98,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         targetRatio: targetRatio,
         spikeRate: spikeRate,
         dropRate: dropRate,
-        lookBackEnterRate: lookBackEnterRate,
-        lookBackDays: lookBackDays,
+        monthlyNewCash: monthlyNewCash,
       },
     }));
   }, [
@@ -112,8 +111,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     targetRatio,
     spikeRate,
     dropRate,
-    lookBackEnterRate,
-    lookBackDays,
+    monthlyNewCash,
   ]);
 
   // Chart synchronization functions
@@ -345,6 +343,17 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
             variant="outlined"
             slotProps={{
               htmlInput: { step: 0.01 },
+            }}
+          />
+
+          <TextField
+            label="Monthly new cash"
+            type="number"
+            value={monthlyNewCash}
+            onChange={(e) => setMonthlyNewCash(Number(e.target.value))}
+            variant="outlined"
+            slotProps={{
+              htmlInput: { step: 500 },
             }}
           />
 

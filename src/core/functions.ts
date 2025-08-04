@@ -187,7 +187,7 @@ const computePortfolioSnapshot = (simulation: Simulation, date: string, marketDa
 const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation, marketData: MarketData) => {
   const variables = simulation.variables!;
   const investments = portfolioSnapshot.investments;
-  const targetRate = simulation.variables.targetRate;
+  const targetRate = variables.targetRate;
 
   let rebalanceType: RebalanceType = RebalanceType.Excess;
 
@@ -242,9 +242,9 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
     console.log("bug");
   }
 
-  // investments.cash += (2 / 30) * simulation.variables.rebalanceDays;
-  // investments.mockTotalQQQ += (2 / 30) * simulation.variables.rebalanceDays;
-  // investments.mockTotalTQQQ += (2 / 30) * simulation.variables.rebalanceDays;
+  investments.cash += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
+  investments.mockTotalQQQ += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
+  investments.mockTotalTQQQ += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
 
   portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
 
