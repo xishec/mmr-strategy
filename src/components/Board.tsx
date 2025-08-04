@@ -63,7 +63,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const chartInstancesRef = useRef<{
     [key: string]: { chart: any; mainSeries: any };
   }>({});
-  const crosshairTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handlePointClick = useCallback((date: string, value: number) => {
     // setSelectedDate(date);
@@ -133,15 +132,8 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
   const handleCrosshairMove = useCallback(
     (date: string | null) => {
-      // Throttle crosshair updates to prevent excessive re-renders
-      if (crosshairTimeoutRef.current) {
-        clearTimeout(crosshairTimeoutRef.current);
-      }
-
-      crosshairTimeoutRef.current = setTimeout(() => {
-        setSelectedDate(date);
-        syncCrosshairToAll(date);
-      }, 16); // ~60fps throttling
+      setSelectedDate(date);
+      syncCrosshairToAll(date);
     },
     [syncCrosshairToAll]
   );
@@ -150,25 +142,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     const lastRebalanceLog = simulation.rebalanceLogs;
     setSelectedDate(lastRebalanceLog[lastRebalanceLog.length - 1]?.date || null);
   }, [simulation]);
-
-  const clearAllCrosshairs = useCallback(() => {
-    Object.values(chartInstancesRef.current).forEach(({ chart }) => {
-      chart.clearCrosshairPosition();
-    });
-  }, []);
-
-  const handleCrosshairLeave = useCallback(() => {
-    // Clear any existing timeout
-    if (crosshairTimeoutRef.current) {
-      clearTimeout(crosshairTimeoutRef.current);
-    }
-
-    // Add a small delay to ensure the crosshair is properly cleared
-    crosshairTimeoutRef.current = setTimeout(() => {
-      clearAllCrosshairs();
-      setSelectedDateToLastRebalance();
-    }, 50);
-  }, [clearAllCrosshairs, setSelectedDateToLastRebalance]);
 
   // Track when simulation needs to be run
   const lastSimulationParams = useRef<string>("");
@@ -258,15 +231,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     setRebalanceLogsMap(chartData.rebalanceLogsMap);
     setSelectedDateToLastRebalance();
   }, [chartData, setSelectedDateToLastRebalance]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (crosshairTimeoutRef.current) {
-        clearTimeout(crosshairTimeoutRef.current);
-      }
-    };
-  }, []);
 
   return (
     <Box width="100%" height="100vh" display="grid" gridTemplateColumns="1fr 4fr" gap={2} sx={{ p: 4 }}>
@@ -423,7 +387,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       {/* Rebalance Log Details */}
       <Box
         sx={{ height: "95vh", display: "grid", gridTemplateRows: "min-content 4fr 200px", gap: 0 }}
-        onMouseLeave={handleCrosshairLeave}
       >
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pl: 4 }}>
           <Legend
@@ -447,7 +410,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                 rebalanceLogsMap={rebalanceLogsMap}
                 selectedDate={selectedDate}
                 onCrosshairMove={handleCrosshairMove}
-                onCrosshairLeave={handleCrosshairLeave}
                 isLogScale={isLogScale}
                 height="100%"
                 onLegendValuesChange={(values: { [key: string]: number }) => {
