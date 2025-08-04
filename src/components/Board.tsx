@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { Box, Typography, TextField, FormControlLabel, Switch, Button } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -6,16 +6,6 @@ import { convertAnnualRateToDaily, runMultipleSimulations, startSimulation } fro
 import { MarketData, Simulation, MultiSeriesChartData, RebalanceLog, PortfolioSnapshot } from "../core/models";
 import Chart from "./Chart";
 import Legend from "./Legend";
-
-// Helper function to format currency values
-const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-};
 
 // Helper function to format date as YYYY-MM-DD in local timezone
 const formatDateToString = (date: Date): string => {
@@ -143,8 +133,15 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
   const handleCrosshairMove = useCallback(
     (date: string | null) => {
-      setSelectedDate(date);
-      syncCrosshairToAll(date);
+      // Throttle crosshair updates to prevent excessive re-renders
+      if (crosshairTimeoutRef.current) {
+        clearTimeout(crosshairTimeoutRef.current);
+      }
+
+      crosshairTimeoutRef.current = setTimeout(() => {
+        setSelectedDate(date);
+        syncCrosshairToAll(date);
+      }, 16); // ~60fps throttling
     },
     [syncCrosshairToAll]
   );
@@ -189,53 +186,78 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     }
   }, [marketData, simulation, setSimulation]);
 
-  useEffect(() => {
-    if (simulation) {
-      // Create rebalance logs map for quick lookup by date
-      const newRebalanceLogsMap: Record<string, RebalanceLog> = {};
-      simulation.rebalanceLogs.forEach((log) => {
-        newRebalanceLogsMap[log.date] = log;
-      });
-      setRebalanceLogsMap(newRebalanceLogsMap);
-      setSelectedDateToLastRebalance();
-
-      const portfolioSnapshotsMap: Record<string, PortfolioSnapshot> = {};
-      simulation.portfolioSnapshots.forEach((snapshot) => {
-        portfolioSnapshotsMap[snapshot.date] = snapshot;
-      });
-
-      setPriceChart({
-        StrategyTotal: simulation.rebalanceLogs.map((rebalanceLog) => ({
-          time: rebalanceLog.date,
-          value: portfolioSnapshotsMap[rebalanceLog.date].investments.total,
-        })),
-        Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
-          time: rebalanceLog.date,
-          value: rebalanceLog.currentTarget,
-        })),
-        MockTotalQQQ: simulation.rebalanceLogs.map((rebalanceLog) => ({
-          time: rebalanceLog.date,
-          value: portfolioSnapshotsMap[rebalanceLog.date].investments.mockTotalQQQ,
-        })),
-        MockTotalTQQQ: simulation.rebalanceLogs.map((rebalanceLog) => ({
-          time: rebalanceLog.date,
-          value: portfolioSnapshotsMap[rebalanceLog.date].investments.mockTotalTQQQ,
-        })),
-      });
-      setRatioChart({
-        Ratio: simulation.rebalanceLogs.map((rebalanceLog) => ({
-          time: rebalanceLog.date,
-          value: portfolioSnapshotsMap[rebalanceLog.date].investments.ratio,
-        })),
-      });
-      setPullbackChart({
-        pullback: simulation.rebalanceLogs.map((rebalanceLog) => ({
-          time: rebalanceLog.date,
-          value: portfolioSnapshotsMap[rebalanceLog.date].pullback,
-        })),
-      });
+  // Memoize expensive chart data calculations
+  const chartData = useMemo(() => {
+    if (!simulation || simulation.rebalanceLogs.length === 0) {
+      return {
+        priceChart: {},
+        ratioChart: {},
+        pullbackChart: {},
+        rebalanceLogsMap: {},
+      };
     }
-  }, [simulation, setSelectedDateToLastRebalance]);
+
+    // Create portfolio snapshots map for quick lookup
+    const portfolioSnapshotsMap: Record<string, PortfolioSnapshot> = {};
+    simulation.portfolioSnapshots.forEach((snapshot) => {
+      portfolioSnapshotsMap[snapshot.date] = snapshot;
+    });
+
+    // Create rebalance logs map for quick lookup by date
+    const newRebalanceLogsMap: Record<string, RebalanceLog> = {};
+    simulation.rebalanceLogs.forEach((log) => {
+      newRebalanceLogsMap[log.date] = log;
+    });
+
+    const priceChart = {
+      StrategyTotal: simulation.rebalanceLogs.map((rebalanceLog) => ({
+        time: rebalanceLog.date,
+        value: portfolioSnapshotsMap[rebalanceLog.date].investments.total,
+      })),
+      Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
+        time: rebalanceLog.date,
+        value: rebalanceLog.currentTarget,
+      })),
+      MockTotalQQQ: simulation.rebalanceLogs.map((rebalanceLog) => ({
+        time: rebalanceLog.date,
+        value: portfolioSnapshotsMap[rebalanceLog.date].investments.mockTotalQQQ,
+      })),
+      MockTotalTQQQ: simulation.rebalanceLogs.map((rebalanceLog) => ({
+        time: rebalanceLog.date,
+        value: portfolioSnapshotsMap[rebalanceLog.date].investments.mockTotalTQQQ,
+      })),
+    };
+
+    const ratioChart = {
+      Ratio: simulation.rebalanceLogs.map((rebalanceLog) => ({
+        time: rebalanceLog.date,
+        value: portfolioSnapshotsMap[rebalanceLog.date].investments.ratio,
+      })),
+    };
+
+    const pullbackChart = {
+      pullback: simulation.rebalanceLogs.map((rebalanceLog) => ({
+        time: rebalanceLog.date,
+        value: portfolioSnapshotsMap[rebalanceLog.date].pullback,
+      })),
+    };
+
+    return {
+      priceChart,
+      ratioChart,
+      pullbackChart,
+      rebalanceLogsMap: newRebalanceLogsMap,
+    };
+  }, [simulation]);
+
+  // Update state when memoized data changes
+  useEffect(() => {
+    setPriceChart(chartData.priceChart);
+    setRatioChart(chartData.ratioChart);
+    setPullbackChart(chartData.pullbackChart);
+    setRebalanceLogsMap(chartData.rebalanceLogsMap);
+    setSelectedDateToLastRebalance();
+  }, [chartData, setSelectedDateToLastRebalance]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -457,18 +479,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           {selectedDate ? (
             rebalanceLogsMap[selectedDate] ? (
               <Box sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 1, fontSize: "0.875rem", pl: 4 }}>
-                <Box>
-                  <strong>Date:</strong> {selectedDate}
-                </Box>
-                <Box>
-                  <strong>Total:</strong> {formatCurrency(rebalanceLogsMap[selectedDate].total)}
-                </Box>
-                <Box>
-                  <strong>Next Target:</strong>{" "}
-                  {rebalanceLogsMap[selectedDate].nextTarget
-                    ? formatCurrency(rebalanceLogsMap[selectedDate].nextTarget!)
-                    : "N/A"}
-                </Box>
                 <Box>
                   <strong>Rebalance Type:</strong> {rebalanceLogsMap[selectedDate].rebalanceType}
                 </Box>

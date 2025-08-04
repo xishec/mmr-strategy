@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import * as d3 from "d3";
 import { ChartData, MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core/models";
 
@@ -42,12 +42,30 @@ const Chart: React.FC<ChartProps> = ({
   const chartInstanceRef = useRef<any>(null);
   const animationFrameRef = useRef<number | null>(null);
 
+  // Memoize expensive data processing to prevent unnecessary re-computations
+  const chartDataMemo = useMemo(() => {
+    return multiSeriesData || (chartData ? { default: chartData } : {});
+  }, [multiSeriesData, chartData]);
+
+  const rebalanceDatesArrayMemo = useMemo(() => {
+    if (!rebalanceLogsMap) return [];
+    const parseTime = d3.timeParse("%Y-%m-%d");
+    return Object.keys(rebalanceLogsMap)
+      .map(parseTime)
+      .filter((d): d is Date => d !== null)
+      .sort((a, b) => a.getTime() - b.getTime());
+  }, [rebalanceLogsMap]);
+
   const createD3Chart = useCallback(() => {
     if (!chartContainerRef.current || !svgRef.current) return null;
 
     const container = chartContainerRef.current;
     const svg = d3.select(svgRef.current);
+    
+    // Clean up any existing D3 selections and event listeners
     svg.selectAll("*").remove();
+    svg.on(".zoom", null);
+    svg.on(".drag", null);
 
     // Setup dimensions and data
     const margin = { top: 30, left: 65, right: 20 };
@@ -56,7 +74,7 @@ const Chart: React.FC<ChartProps> = ({
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Prepare data
-    const seriesData = multiSeriesData || (chartData ? { default: chartData } : {});
+    const seriesData = chartDataMemo;
     const allData = Object.values(seriesData).flat();
     if (allData.length === 0) return null;
 
@@ -296,12 +314,7 @@ const Chart: React.FC<ChartProps> = ({
       .attr("pointer-events", "all");
 
     // Pre-compute rebalance dates for performance
-    const precomputedRebalanceDates = rebalanceLogsMap
-      ? Object.keys(rebalanceLogsMap)
-          .map(parseTime)
-          .filter((d): d is Date => d !== null)
-          .sort((a, b) => a.getTime() - b.getTime())
-      : [];
+    const precomputedRebalanceDates = rebalanceDatesArrayMemo;
 
     // Memoize date formatter to avoid recreating on every mousemove
     const dateFormatter = d3.timeFormat("%Y-%m-%d");
@@ -482,8 +495,8 @@ const Chart: React.FC<ChartProps> = ({
   }, [
     isLogScale,
     onPointClick,
-    chartData,
-    multiSeriesData,
+    chartDataMemo,
+    rebalanceDatesArrayMemo,
     rebalanceLogsMap,
     onCrosshairMove,
     onCrosshairLeave,
@@ -536,6 +549,7 @@ const Chart: React.FC<ChartProps> = ({
       }
       window.removeEventListener("resize", handleResize);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     chartData,
     multiSeriesData,
@@ -543,7 +557,6 @@ const Chart: React.FC<ChartProps> = ({
     syncId,
     onChartReady,
     rebalanceLogsMap,
-    createD3Chart,
     selectedDate,
     onLegendValuesChange,
   ]);
