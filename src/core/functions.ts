@@ -190,54 +190,57 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
   const investments = portfolioSnapshot.investments;
   const targetRate = variables.targetRate;
   const currentTarget = portfolioSnapshot.nextTarget;
+  const cumulativeRate = portfolioSnapshot.cumulativeRateSinceRebalance;
 
   let rebalanceType: RebalanceType = RebalanceType.Excess;
 
-  const isBigDrop = portfolioSnapshot.cumulativeRateSinceRebalance < variables.dropRate * 2;
-  const isDrop = portfolioSnapshot.cumulativeRateSinceRebalance < variables.dropRate;
-  const isSpike = portfolioSnapshot.cumulativeRateSinceRebalance > variables.spikeRate;
+  const isBigSpike = cumulativeRate >= variables.spikeRate * 2;
+  const isSpike = cumulativeRate < variables.spikeRate * 2 && cumulativeRate >= variables.spikeRate;
+  const isExcess = cumulativeRate < variables.spikeRate && investments.total >= portfolioSnapshot.nextTarget;
+  const isShortfall = investments.total < portfolioSnapshot.nextTarget && cumulativeRate >= variables.dropRate;
+  const isDrop = cumulativeRate < variables.dropRate && cumulativeRate >= variables.dropRate * 2;
+  const isBigDrop = cumulativeRate < variables.dropRate * 2;
 
-  let reason = `isDrop: ${isDrop}, isBigDrop: ${isBigDrop}, isSpike: ${isSpike}`;
+  let reason = `Rebalance on ${portfolioSnapshot.date}: `;
 
-  if (isBigDrop) {
+  if (isBigSpike) {
+    const smallerTargetRate = targetRate * 2;
+    rebalanceType = RebalanceType.Spike;
+    investments.TQQQ = investments.total * variables.targetRatio;
+    investments.cash = investments.total * (1 - variables.targetRatio);
+    portfolioSnapshot.nextTarget = investments.total * (1 + smallerTargetRate);
+    reason += `Spike (${cumulativeRate.toFixed(3)} > ${variables.spikeRate.toFixed(3)})`;
+  } else if (isBigDrop) {
     rebalanceType = RebalanceType.BigDrop;
     investments.TQQQ = investments.total * variables.targetRatio;
     investments.cash = investments.total * (1 - variables.targetRatio);
     portfolioSnapshot.nextTarget = investments.total * (1 + targetRate);
-    reason += `Big Drop ${portfolioSnapshot.cumulativeRateSinceRebalance.toFixed(3)} < ${variables.dropRate.toFixed(
-      3
-    )}`;
+    reason += `Big Drop ${cumulativeRate.toFixed(3)} < ${variables.dropRate.toFixed(3)}`;
   } else if (isDrop) {
     rebalanceType = RebalanceType.Drop;
-    reason += `Drop ${portfolioSnapshot.cumulativeRateSinceRebalance.toFixed(3)} < ${variables.dropRate.toFixed(3)}`;
+    reason += `Drop ${cumulativeRate.toFixed(3)} < ${variables.dropRate.toFixed(3)}`;
   } else if (isSpike) {
     rebalanceType = RebalanceType.Spike;
     investments.TQQQ = investments.total * variables.targetRatio;
     investments.cash = investments.total * (1 - variables.targetRatio);
     portfolioSnapshot.nextTarget = investments.total * (1 + targetRate);
-    reason += `Spike (${portfolioSnapshot.cumulativeRateSinceRebalance.toFixed(3)} > ${variables.spikeRate.toFixed(
-      3
-    )})`;
-  } else if (investments.total >= portfolioSnapshot.nextTarget) {
+    reason += `Spike (${cumulativeRate.toFixed(3)} > ${variables.spikeRate.toFixed(3)})`;
+  } else if (isExcess) {
     rebalanceType = RebalanceType.Excess;
     const excess = investments.total - portfolioSnapshot.nextTarget;
     const actualExcess = Math.min(excess, investments.TQQQ);
     investments.TQQQ -= actualExcess;
     investments.cash += actualExcess;
     portfolioSnapshot.nextTarget = portfolioSnapshot.nextTarget * (1 + targetRate);
-    reason += `Excess (${portfolioSnapshot.cumulativeRateSinceRebalance.toFixed(3)} >= ${variables.targetRate.toFixed(
-      3
-    )})`;
-  } else if (investments.total < portfolioSnapshot.nextTarget) {
+    reason += `Excess (${cumulativeRate.toFixed(3)} >= ${variables.targetRate.toFixed(3)})`;
+  } else if (isShortfall) {
     rebalanceType = RebalanceType.Shortfall;
     const shortfall = portfolioSnapshot.nextTarget - investments.total;
     const actualShortfall = Math.min(shortfall, investments.cash);
     investments.TQQQ += actualShortfall;
     investments.cash -= actualShortfall;
     portfolioSnapshot.nextTarget = portfolioSnapshot.nextTarget * (1 + targetRate);
-    reason += `Shortfall (${portfolioSnapshot.cumulativeRateSinceRebalance.toFixed(3)} < ${variables.targetRate.toFixed(
-      3
-    )})`;
+    reason += `Shortfall (${cumulativeRate.toFixed(3)} < ${variables.targetRate.toFixed(3)})`;
   } else {
     console.log("bug");
   }
@@ -259,7 +262,7 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
       "TQQQ",
       portfolioSnapshot.investments.TQQQ?.toFixed(3),
       "Rate",
-      (portfolioSnapshot.cumulativeRateSinceRebalance * 100)?.toFixed(3)
+      (cumulativeRate * 100)?.toFixed(3)
     );
 
   const rebalanceLog: RebalanceLog = {
@@ -267,7 +270,7 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
     total: investments.total,
     currentTarget: currentTarget,
     nextTarget: portfolioSnapshot.nextTarget,
-    cumulativeRateSinceLastRebalance: portfolioSnapshot.cumulativeRateSinceRebalance,
+    cumulativeRateSinceLastRebalance: cumulativeRate,
     rebalanceType: rebalanceType,
     reason: reason,
   };
