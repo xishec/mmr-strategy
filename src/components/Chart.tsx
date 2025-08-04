@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import * as d3 from "d3";
-import { ChartData, MultiSeriesChartData, RebalanceLog } from "../core/models";
+import { ChartData, MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core/models";
 
 const black = "#202124";
 const yellow = "#FBBC04";
 const blue = "#4285F4";
 const red = "#EA4335";
-// const green = "#34A853";
+const green = "#34A853";
 
 interface ChartProps {
   chartData?: ChartData;
@@ -69,7 +69,7 @@ const Chart: React.FC<ChartProps> = ({
     // Chart layout - always combined view with 3 sections
     const spaceBetweenCharts = 20; // Smart spacing between sections
     const totalSpacing = spaceBetweenCharts * 2; // Two gaps: price-ratio and ratio-timeline
-    const rebalanceTimelineHeight = 30; // Height for rebalance timeline
+    const rebalanceTimelineHeight = 40; // Height for rebalance timeline
 
     const availableHeight = totalChartHeight - totalSpacing - rebalanceTimelineHeight;
     const priceHeight = availableHeight * 0.65;
@@ -138,9 +138,9 @@ const Chart: React.FC<ChartProps> = ({
           .append("circle")
           .attr("cx", (d) => xScale(d.parsedTime))
           .attr("cy", (d) => yScale(d.value))
-          .attr("r", 2)
-          .attr("stroke", color)
-          .attr("fill", color);
+          .attr("r", 3)
+          .attr("fill", yellow)
+          // .attr("stroke", yellow);
       } else {
         // Render as line/area
         const line = d3
@@ -169,7 +169,6 @@ const Chart: React.FC<ChartProps> = ({
           .attr("fill", "none")
           .attr("stroke", color)
           .attr("stroke-width", 2)
-          .attr("stroke-dasharray", seriesName === "Target" ? "5,5" : "none")
           .attr("d", line);
       }
 
@@ -214,8 +213,9 @@ const Chart: React.FC<ChartProps> = ({
         .attr("x2", width)
         .attr("y1", timelineY)
         .attr("y2", timelineY)
-        .attr("stroke", "#ddd")
-        .attr("stroke-width", 2);
+        .attr("stroke", "#666")
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "3,3");
 
       // Add rebalance markers
       rebalanceDates.forEach((dateStr) => {
@@ -224,26 +224,52 @@ const Chart: React.FC<ChartProps> = ({
           const x = xScale(date);
           const rebalanceLog = rebalanceLogsMap[dateStr];
 
-          // Color based on rebalance type
-          const markerColor =
-            rebalanceLog?.rebalanceType === "Drop"
+          const strokeColor =
+            rebalanceLog?.rebalanceType === RebalanceType.BigDrop
               ? red
-              : rebalanceLog?.rebalanceType === "Spike"
-              ? blue
-              : rebalanceLog?.rebalanceType === "Excess"
+              : rebalanceLog?.rebalanceType === RebalanceType.Drop
+              ? red
+              : rebalanceLog?.rebalanceType === RebalanceType.Spike
+              ? green
+              : rebalanceLog?.rebalanceType === RebalanceType.Excess
               ? yellow
-              : rebalanceLog?.rebalanceType === "Shortfall"
-              ? "#FF9800"
-              : "#666";
+              : rebalanceLog?.rebalanceType === RebalanceType.Shortfall
+              ? yellow
+              : black;
+
+          const fillColor =
+            rebalanceLog?.rebalanceType === RebalanceType.BigDrop
+              ? red
+              : rebalanceLog?.rebalanceType === RebalanceType.Drop
+              ? red
+              : rebalanceLog?.rebalanceType === RebalanceType.Spike
+              ? green
+              : rebalanceLog?.rebalanceType === RebalanceType.Excess
+              ? yellow
+              : rebalanceLog?.rebalanceType === RebalanceType.Shortfall
+              ? yellow
+              : black;
+
+          const markerY =
+            rebalanceLog?.rebalanceType === RebalanceType.BigDrop
+              ? timelineY + 16
+              : rebalanceLog?.rebalanceType === RebalanceType.Drop
+              ? timelineY + 8
+              : rebalanceLog?.rebalanceType === RebalanceType.Spike
+              ? timelineY - 8
+              : rebalanceLog?.rebalanceType === RebalanceType.Excess
+              ? timelineY
+              : rebalanceLog?.rebalanceType === RebalanceType.Shortfall
+              ? timelineY
+              : black;
 
           g.append("circle")
             .attr("class", "rebalance-marker")
             .attr("cx", x)
-            .attr("cy", timelineY)
-            .attr("r", 4)
-            .attr("fill", markerColor)
-            .attr("stroke", "white")
-            .attr("stroke-width", 1);
+            .attr("cy", markerY)
+            .attr("r", 3)
+            .attr("fill", fillColor)
+            .attr("stroke", strokeColor);
         }
       });
     }
