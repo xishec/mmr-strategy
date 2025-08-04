@@ -186,7 +186,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       })),
       Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
         time: rebalanceLog.date,
-        value: rebalanceLog.currentTarget,
+        value: rebalanceLog.before.nextTarget,
       })),
     };
 
@@ -637,8 +637,8 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                   const rebalanceLog = simulation.rebalanceLogs.find((snapshot) => snapshot.date === selectedDate);
                   if (!rebalanceLog) return null;
 
-                  const currentRatio = rebalanceLog.currentRatio;
-                  const nextRatio = rebalanceLog.nextRatio;
+                  const currentRatio = rebalanceLog.before.investments.ratio;
+                  const nextRatio = rebalanceLog.after.investments.ratio;
 
                   return (
                     <>

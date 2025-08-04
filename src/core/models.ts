@@ -15,7 +15,6 @@ export interface Variables {
   targetRate: number;
   cashDayRate: number;
   targetRatio: number;
-  // spikeRate: number;
   dropRate: number;
   monthlyNewCash: number;
 }
@@ -33,11 +32,8 @@ export interface PortfolioSnapshot {
 
 export interface RebalanceLog {
   date: string;
-  total: number;
-  currentTarget: number;
-  nextTarget: number;
-  currentRatio: number;
-  nextRatio: number;
+  before: PortfolioSnapshot;
+  after: PortfolioSnapshot;
   cumulativeRateSinceLastRebalance: number;
   rebalanceType: RebalanceType;
   reason: string;
