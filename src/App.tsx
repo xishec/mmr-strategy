@@ -5,7 +5,16 @@ import { MarketData } from "./core/models";
 import Board from "./components/Board";
 import { loadData } from "./core/functions";
 
-const theme = createTheme();
+const theme = createTheme({
+  palette: {
+    secondary: {
+      main: "#fabb00ff",
+      light: "#ffe990ff",
+      dark: "#C79200ff",
+      contrastText: "#1a1a1aff",
+    },
+  },
+});
 
 function App() {
   // State for market data

@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import { Box, Typography, TextField, FormControlLabel, Switch, Button } from "@mui/material";
+import { Box, Typography, TextField, FormControlLabel, Switch, Button, Slider, IconButton } from "@mui/material";
+import { KeyboardArrowLeft, KeyboardArrowRight } from "@mui/icons-material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { convertAnnualRateToDaily, runMultipleSimulations, startSimulation } from "../core/functions";
-import { MarketData, Simulation, MultiSeriesChartData, RebalanceLog, PortfolioSnapshot } from "../core/models";
+import { MarketData, Simulation, RebalanceLog, PortfolioSnapshot } from "../core/models";
 import Chart from "./Chart";
 import Legend from "./Legend";
 
@@ -33,14 +34,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
   const [monthlyNewCash, setMonthlyNewCash] = useState<number>(2000);
 
-  const [priceChart, setPriceChart] = useState<MultiSeriesChartData>({});
-  const [ratioChart, setRatioChart] = useState<MultiSeriesChartData>({});
-  const [pullbackChart, setPullbackChart] = useState<MultiSeriesChartData>({});
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-
-  const [rebalanceLogsMap, setRebalanceLogsMap] = useState<Record<string, RebalanceLog>>({});
-  const [priceLegendValues, setPriceLegendValues] = useState<{ [key: string]: number }>({});
-  const [ratioLegendValues, setRatioLegendValues] = useState<{ [key: string]: number }>({});
+  const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
 
   const [simulation, setSimulation] = useState<Simulation>({
     portfolioSnapshots: [],
@@ -59,23 +53,45 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     },
   });
 
-  // Chart synchronization state
-  const chartInstancesRef = useRef<{
-    [key: string]: { chart: any; mainSeries: any };
-  }>({});
+  // Available dates for slider navigation
+  const availableDates = useMemo(() => {
+    if (!simulation || simulation.rebalanceLogs.length === 0) return [];
+    return simulation.rebalanceLogs.map((log) => log.date).sort();
+  }, [simulation]);
 
-  const handlePointClick = useCallback((date: string, value: number) => {
-    // setSelectedDate(date);
+  // Current selected date based on index
+  const selectedDate = availableDates[selectedDateIndex] || null;
+
+  // Handle slider-controlled date selection
+  const handleSliderChange = useCallback((_: Event, value: number | number[]) => {
+    const index = Array.isArray(value) ? value[0] : value;
+    setSelectedDateIndex(index);
   }, []);
 
-  // Handle legend values changes
-  const handlePriceLegendValuesChange = useCallback((values: { [key: string]: number }) => {
-    setPriceLegendValues(values);
+  // Handle keyboard navigation
+  const handlePreviousDate = useCallback(() => {
+    setSelectedDateIndex((prev) => Math.max(0, prev - 1));
   }, []);
 
-  const handleRatioLegendValuesChange = useCallback((values: { [key: string]: number }) => {
-    setRatioLegendValues(values);
-  }, []);
+  const handleNextDate = useCallback(() => {
+    setSelectedDateIndex((prev) => Math.min(availableDates.length - 1, prev + 1));
+  }, [availableDates.length]);
+
+  // Keyboard event handler
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        handlePreviousDate();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        handleNextDate();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [handlePreviousDate, handleNextDate]);
 
   // Handle multiple simulations button click
   const handleRunMultipleSimulations = useCallback(() => {
@@ -114,34 +130,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     dropRate,
     monthlyNewCash,
   ]);
-
-  // Chart synchronization functions
-  const handleChartReady = useCallback((chartId: string, chart: any, mainSeries: any) => {
-    chartInstancesRef.current[chartId] = { chart, mainSeries };
-  }, []);
-
-  const syncCrosshairToAll = useCallback((date: string | null) => {
-    Object.values(chartInstancesRef.current).forEach(({ chart }) => {
-      if (date) {
-        chart.setCrosshairPosition(0, date);
-      } else {
-        chart.clearCrosshairPosition();
-      }
-    });
-  }, []);
-
-  const handleCrosshairMove = useCallback(
-    (date: string | null) => {
-      setSelectedDate(date);
-      syncCrosshairToAll(date);
-    },
-    [syncCrosshairToAll]
-  );
-
-  const setSelectedDateToLastRebalance = useCallback(() => {
-    const lastRebalanceLog = simulation.rebalanceLogs;
-    setSelectedDate(lastRebalanceLog[lastRebalanceLog.length - 1]?.date || null);
-  }, [simulation]);
 
   // Track when simulation needs to be run
   const lastSimulationParams = useRef<string>("");
@@ -223,14 +211,48 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     };
   }, [simulation]);
 
-  // Update state when memoized data changes
+  // Calculate legend values for the selected date
+  const legendValues = useMemo(() => {
+    if (!selectedDate || !chartData) {
+      return { priceValues: {}, ratioValues: {} };
+    }
+
+    const priceValues: { [key: string]: number } = {};
+    const ratioValues: { [key: string]: number } = {};
+
+    // Get values for each series at the selected date
+    Object.entries({
+      ...chartData.priceChart,
+      ...chartData.ratioChart,
+      ...chartData.pullbackChart,
+    }).forEach(([seriesName, data]) => {
+      const dataPoint = data.find((dp: any) => dp.time === selectedDate);
+      if (dataPoint) {
+        if (["StrategyTotal", "Target", "MockTotalQQQ", "MockTotalTQQQ"].includes(seriesName)) {
+          priceValues[seriesName] = dataPoint.value;
+        } else {
+          ratioValues[seriesName] = dataPoint.value;
+        }
+      }
+    });
+
+    return { priceValues, ratioValues };
+  }, [selectedDate, chartData]);
+
+  // Get current rebalance log safely
+  const currentRebalanceLog = useMemo(() => {
+    if (!selectedDate || !chartData.rebalanceLogsMap || typeof chartData.rebalanceLogsMap !== "object") {
+      return null;
+    }
+    return (chartData.rebalanceLogsMap as Record<string, RebalanceLog>)[selectedDate] || null;
+  }, [selectedDate, chartData.rebalanceLogsMap]);
+
+  // Update selected date index when simulation data changes
   useEffect(() => {
-    setPriceChart(chartData.priceChart);
-    setRatioChart(chartData.ratioChart);
-    setPullbackChart(chartData.pullbackChart);
-    setRebalanceLogsMap(chartData.rebalanceLogsMap);
-    setSelectedDateToLastRebalance();
-  }, [chartData, setSelectedDateToLastRebalance]);
+    if (simulation.rebalanceLogs.length > 0) {
+      setSelectedDateIndex(simulation.rebalanceLogs.length - 1);
+    }
+  }, [simulation.rebalanceLogs]);
 
   return (
     <Box width="100%" height="100vh" display="grid" gridTemplateColumns="1fr 4fr" gap={2} sx={{ p: 4 }}>
@@ -386,70 +408,85 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
       {/* Rebalance Log Details */}
       <Box
-        sx={{ height: "95vh", display: "grid", gridTemplateRows: "min-content 4fr 200px", gap: 0 }}
+        sx={{
+          height: "95vh",
+          display: "grid",
+          gridTemplateRows: "min-content 4fr min-content 1fr",
+          gap: "0",
+          padding: "1rem",
+        }}
       >
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pl: 4 }}>
-          <Legend
-            priceSeriesData={priceChart}
-            ratioSeriesData={{ ...ratioChart, ...pullbackChart }}
-            selectedDate={selectedDate}
-            priceValues={priceLegendValues}
-            ratioValues={ratioLegendValues}
-          />
-        </Box>
+        <Legend
+          priceSeriesData={chartData.priceChart}
+          ratioSeriesData={{ ...chartData.ratioChart, ...chartData.pullbackChart }}
+          selectedDate={selectedDate}
+          priceValues={legendValues.priceValues}
+          ratioValues={legendValues.ratioValues}
+        />
 
         {/* Combined Chart Section */}
         {simulation && simulation.portfolioSnapshots.length > 0 && (
           <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-            <Box sx={{ flex: 1, minHeight: 0 }}>
-              <Chart
-                multiSeriesData={{ ...priceChart, ...ratioChart, ...pullbackChart }}
-                onPointClick={handlePointClick}
-                syncId="combinedChart"
-                onChartReady={handleChartReady}
-                rebalanceLogsMap={rebalanceLogsMap}
-                selectedDate={selectedDate}
-                onCrosshairMove={handleCrosshairMove}
-                isLogScale={isLogScale}
-                height="100%"
-                onLegendValuesChange={(values: { [key: string]: number }) => {
-                  // Split the values between price and ratio series
-                  const priceValues: { [key: string]: number } = {};
-                  const ratioValues: { [key: string]: number } = {};
+            <Chart
+              multiSeriesData={{ ...chartData.priceChart, ...chartData.ratioChart, ...chartData.pullbackChart }}
+              rebalanceLogsMap={chartData.rebalanceLogsMap}
+              selectedDate={selectedDate}
+              isLogScale={isLogScale}
+              height="100%"
+            />
+          </Box>
+        )}
 
-                  Object.entries(values).forEach(([key, value]) => {
-                    if (["StrategyTotal", "Target", "MockTotalQQQ", "MockTotalTQQQ"].includes(key)) {
-                      priceValues[key] = value;
-                    } else {
-                      ratioValues[key] = value;
-                    }
-                  });
+        {/* Date Navigation Slider */}
+        {availableDates.length > 0 && (
+          <Box
+            display={"grid"}
+            alignItems="center"
+            gridTemplateColumns={"min-content 1fr min-content"}
+            gap={2}
+            sx={{ marginTop: "-3.5rem" }}
+          >
+            <IconButton onClick={handlePreviousDate} disabled={selectedDateIndex === 0} size="small">
+              <KeyboardArrowLeft />
+            </IconButton>
 
-                  handlePriceLegendValuesChange(priceValues);
-                  handleRatioLegendValuesChange(ratioValues);
-                }}
-              />
-            </Box>
+            <Slider
+              color="secondary"
+              value={selectedDateIndex}
+              onChange={handleSliderChange}
+              size="small"
+              min={0}
+              max={availableDates.length - 1}
+              step={1}
+            />
+
+            <IconButton
+              onClick={handleNextDate}
+              disabled={selectedDateIndex === availableDates.length - 1}
+              size="small"
+            >
+              <KeyboardArrowRight />
+            </IconButton>
           </Box>
         )}
 
         <Box>
-          <Typography variant="h6" component="h3" sx={{ mb: 2, pl: 4 }}>
+          <Typography variant="h6" component="h3" sx={{ mb: 2 }}>
             Rebalance Log Details
           </Typography>
 
           {selectedDate ? (
-            rebalanceLogsMap[selectedDate] ? (
-              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 1, fontSize: "0.875rem", pl: 4 }}>
+            currentRebalanceLog ? (
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 1, fontSize: "0.875rem" }}>
                 <Box>
-                  <strong>Rebalance Type:</strong> {rebalanceLogsMap[selectedDate].rebalanceType}
+                  <strong>Rebalance Type:</strong> {currentRebalanceLog.rebalanceType}
                 </Box>
-                <Box>
-                  <strong>Reason:</strong> {rebalanceLogsMap[selectedDate].reason}
-                </Box>
+                {/* <Box>
+                  <strong>Reason:</strong> {currentRebalanceLog.reason}
+                </Box> */}
                 <Box>
                   <strong>Cumulative Rate:</strong>{" "}
-                  {(rebalanceLogsMap[selectedDate].cumulativeRateSinceLastRebalance * 100).toFixed(2)}%
+                  {(currentRebalanceLog.cumulativeRateSinceLastRebalance * 100).toFixed(2)}%
                 </Box>
                 <Box>
                   <strong>Strategy Rate:</strong>{" "}

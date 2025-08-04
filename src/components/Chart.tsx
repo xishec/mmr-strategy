@@ -11,59 +11,28 @@ const green = "#34A853";
 interface ChartProps {
   chartData?: ChartData;
   multiSeriesData?: MultiSeriesChartData;
-  onPointClick?: (date: string, value: number) => void;
-  syncId?: string;
-  onChartReady?: (chartId: string, chart: any, mainSeries: any) => void;
   rebalanceLogsMap?: Record<string, RebalanceLog>;
   selectedDate: string | null;
-  onCrosshairMove?: (date: string | null) => void;
   isLogScale?: boolean;
   height: string | number;
-  onLegendValuesChange?: (values: { [key: string]: number }) => void;
 }
 
 const Chart: React.FC<ChartProps> = ({
   chartData,
   multiSeriesData,
-  onPointClick,
-  syncId,
-  onChartReady,
   rebalanceLogsMap,
   selectedDate,
-  onCrosshairMove,
   isLogScale = false,
   height,
-  onLegendValuesChange,
 }: ChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const chartInstanceRef = useRef<any>(null);
 
-  // Stable callback references to prevent recreating chart
-  const stableOnCrosshairMove = useRef(onCrosshairMove);
-  const stableOnLegendValuesChange = useRef(onLegendValuesChange);
-
-  useEffect(() => {
-    stableOnCrosshairMove.current = onCrosshairMove;
-  }, [onCrosshairMove]);
-
-  useEffect(() => {
-    stableOnLegendValuesChange.current = onLegendValuesChange;
-  }, [onLegendValuesChange]);
-
   // Memoize expensive data processing to prevent unnecessary re-computations
   const chartDataMemo = useMemo(() => {
     return multiSeriesData || (chartData ? { default: chartData } : {});
   }, [multiSeriesData, chartData]);
-
-  const rebalanceDatesArrayMemo = useMemo(() => {
-    if (!rebalanceLogsMap) return [];
-    const parseTime = d3.timeParse("%Y-%m-%d");
-    return Object.keys(rebalanceLogsMap)
-      .map(parseTime)
-      .filter((d): d is Date => d !== null)
-      .sort((a, b) => a.getTime() - b.getTime());
-  }, [rebalanceLogsMap]);
 
   const createD3Chart = useCallback(() => {
     if (!chartContainerRef.current || !svgRef.current) return null;
@@ -75,11 +44,9 @@ const Chart: React.FC<ChartProps> = ({
     svg.selectAll("*").remove();
     svg.on(".zoom", null);
     svg.on(".drag", null);
-    svg.on(".mousemove", null);
-    svg.on(".mouseleave", null);
 
     // Setup dimensions and data
-    const margin = { top: 30, left: 65, right: 20 };
+    const margin = { top: 20, left: 50, right: 55 };
     const width = container.clientWidth - margin.left - margin.right;
     const totalChartHeight = container.clientHeight;
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
@@ -176,7 +143,7 @@ const Chart: React.FC<ChartProps> = ({
           .line<any>()
           .x((d) => xScale(d.parsedTime))
           .y((d) => yScale(d.value));
-          
+
         // Use step interpolation for ratio charts
         if (isStepLine) {
           line.curve(d3.curveStepAfter);
@@ -188,7 +155,7 @@ const Chart: React.FC<ChartProps> = ({
             .x((d) => xScale(d.parsedTime))
             .y0(yScale(0))
             .y1((d) => yScale(d.value));
-            
+
           // Use step interpolation for ratio areas
           if (isStepLine) {
             area.curve(d3.curveStepAfter);
@@ -330,48 +297,7 @@ const Chart: React.FC<ChartProps> = ({
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", "3,3");
 
-    // Add overlay for mouse events
-    const overlayHeight = timelineTop + rebalanceTimelineHeight;
-    const overlay = g
-      .append("rect")
-      .attr("class", "overlay")
-      .attr("width", width)
-      .attr("height", overlayHeight)
-      .attr("fill", "none")
-      .attr("pointer-events", "all");
-
-    // Pre-create date formatter to avoid recreation on every mousemove
-    const dateFormatter = d3.timeFormat("%Y-%m-%d");
-
-    // Simple mouse event handlers - rebuilt from scratch
-    overlay
-      .on("mousemove", function (event: any) {
-        const [mouseX] = d3.pointer(event, g.node());
-
-        // Bounds check to prevent invalid positions
-        if (mouseX < 0 || mouseX > width) return;
-
-        // Show crosshair and position it at mouse location
-        crosshair.style("display", null);
-        crosshairLine.attr("x1", mouseX).attr("x2", mouseX);
-
-        // Find closest rebalance date for selected date
-        if (rebalanceDatesArrayMemo.length > 0) {
-          const mouseDate = xScale.invert(mouseX);
-          const closestDate = rebalanceDatesArrayMemo.reduce((closest, current) => {
-            return Math.abs(current.getTime() - mouseDate.getTime()) < Math.abs(closest.getTime() - mouseDate.getTime())
-              ? current
-              : closest;
-          });
-
-          if (stableOnCrosshairMove.current) {
-            stableOnCrosshairMove.current(dateFormatter(closestDate));
-          }
-        }
-      })
-      .on("mouseleave", function () {
-        crosshair.style("display", "none");
-      }); // Add axes
+    // Add axes
     g.append("g")
       .attr("class", "x-axis")
       .attr("transform", `translate(0,${timelineTop - 25})`)
@@ -390,26 +316,6 @@ const Chart: React.FC<ChartProps> = ({
 
     g.append("g").attr("class", "y-axis-ratio").call(d3.axisLeft(ratioYScale).ticks(3));
 
-    // Legend value functions
-    const sendLegendValues = (selectedDate: string | null) => {
-      if (!stableOnLegendValuesChange.current || !selectedDate) return;
-      const values: { [key: string]: number } = {};
-      Object.entries(seriesData).forEach(([seriesName, data]) => {
-        const dataPoint = data.find((dp: any) => dp.time === selectedDate);
-        if (dataPoint) values[seriesName] = dataPoint.value;
-      });
-      stableOnLegendValuesChange.current(values);
-    };
-
-    const sendLegendValuesWithLastRebalance = () => {
-      if (rebalanceLogsMap) {
-        const lastRebalanceDate = Object.keys(rebalanceLogsMap).pop() || null;
-        sendLegendValues(lastRebalanceDate);
-      }
-    };
-
-    sendLegendValuesWithLastRebalance();
-
     // Chart object for compatibility
     const chartLikeObject = {
       svg: svgRef.current,
@@ -421,12 +327,10 @@ const Chart: React.FC<ChartProps> = ({
           const x = xScale(date);
           crosshair.style("display", null);
           crosshairLine.attr("x1", x).attr("x2", x);
-          sendLegendValues(time);
         }
       },
       clearCrosshairPosition: () => {
         crosshair.style("display", "none");
-        sendLegendValuesWithLastRebalance();
       },
       timeScale: () => ({
         subscribeVisibleLogicalRangeChange: () => {},
@@ -437,7 +341,7 @@ const Chart: React.FC<ChartProps> = ({
     };
 
     return { chart: chartLikeObject, mainSeries };
-  }, [isLogScale, chartDataMemo, rebalanceDatesArrayMemo, rebalanceLogsMap]);
+  }, [isLogScale, chartDataMemo, rebalanceLogsMap]);
 
   // Handle selectedDate changes
   useEffect(() => {
@@ -458,10 +362,6 @@ const Chart: React.FC<ChartProps> = ({
     const chartInstance = createD3Chart();
     chartInstanceRef.current = chartInstance;
 
-    if (onChartReady && syncId && chartInstance) {
-      onChartReady(syncId, chartInstance.chart, chartInstance.mainSeries);
-    }
-
     if (selectedDate && chartInstance) {
       chartInstance.chart.setCrosshairPosition(0, selectedDate);
     }
@@ -470,8 +370,6 @@ const Chart: React.FC<ChartProps> = ({
       // Cleanup existing chart before creating new one
       if (chartInstanceRef.current && svgRef.current) {
         const svg = d3.select(svgRef.current);
-        svg.selectAll("*").on(".mousemove", null);
-        svg.selectAll("*").on(".mouseleave", null);
         svg.selectAll("*").remove();
       }
       const newInstance = createD3Chart();
@@ -485,16 +383,7 @@ const Chart: React.FC<ChartProps> = ({
     const cleanup = () => {
       if (currentSvgRef) {
         const svg = d3.select(currentSvgRef);
-        // Remove all event listeners first
-        svg.selectAll("*").on(".mousemove", null);
-        svg.selectAll("*").on(".mouseleave", null);
-        svg.selectAll("*").on(".click", null);
-        svg.on(".zoom", null);
-        svg.on(".drag", null);
-        svg.on(".mousemove", null);
-        svg.on(".mouseleave", null);
-        svg.on(".click", null);
-        // Then remove all elements
+        // Remove all elements
         svg.selectAll("*").remove();
       }
       chartInstanceRef.current = null;
@@ -506,7 +395,7 @@ const Chart: React.FC<ChartProps> = ({
       window.removeEventListener("resize", handleResize);
       cleanup();
     };
-  }, [createD3Chart, chartData, multiSeriesData, onChartReady, syncId, selectedDate]);
+  }, [createD3Chart, chartData, multiSeriesData, selectedDate]);
 
   return (
     <div
