@@ -40,6 +40,7 @@ const Chart: React.FC<ChartProps> = ({
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const chartInstanceRef = useRef<any>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   const createD3Chart = useCallback(() => {
     if (!chartContainerRef.current || !svgRef.current) return null;
@@ -138,9 +139,8 @@ const Chart: React.FC<ChartProps> = ({
           .append("circle")
           .attr("cx", (d) => xScale(d.parsedTime))
           .attr("cy", (d) => yScale(d.value))
-          .attr("r", 3)
-          .attr("fill", yellow)
-          // .attr("stroke", yellow);
+          .attr("r", 2)
+          .attr("fill", black);
       } else {
         // Render as line/area
         const line = d3
@@ -295,45 +295,112 @@ const Chart: React.FC<ChartProps> = ({
       .attr("fill", "none")
       .attr("pointer-events", "all");
 
-    // Mouse event handlers
+    // Pre-compute rebalance dates for performance
+    const precomputedRebalanceDates = rebalanceLogsMap
+      ? Object.keys(rebalanceLogsMap)
+          .map(parseTime)
+          .filter((d): d is Date => d !== null)
+          .sort((a, b) => a.getTime() - b.getTime())
+      : [];
+
+    // Memoize date formatter to avoid recreating on every mousemove
+    const dateFormatter = d3.timeFormat("%Y-%m-%d");
+
+    // Throttling variables
+    let lastMouseMoveTime = 0;
+    const throttleDelay = 16; // ~60fps
+
+    // Mouse event handlers with optimizations
     overlay
       .on("mousemove", (event: any) => {
-        const [mouseX] = d3.pointer(event);
-        const date = xScale.invert(mouseX);
-        crosshair.style("display", null);
+        const now = Date.now();
+        if (now - lastMouseMoveTime < throttleDelay) return;
+        lastMouseMoveTime = now;
 
-        if (rebalanceLogsMap) {
-          const rebalanceDates = Object.keys(rebalanceLogsMap)
-            .map(parseTime)
-            .filter((d): d is Date => d !== null);
-
-          if (rebalanceDates.length > 0) {
-            const closestRebalanceDate = rebalanceDates.reduce((closest, current) => {
-              return Math.abs(current.getTime() - date.getTime()) < Math.abs(closest.getTime() - date.getTime())
-                ? current
-                : closest;
-            });
-            const snapX = xScale(closestRebalanceDate);
-            crosshairLine.attr("x1", snapX).attr("x2", snapX);
-            if (onCrosshairMove) {
-              onCrosshairMove(d3.timeFormat("%Y-%m-%d")(closestRebalanceDate));
-            }
-          } else {
-            crosshairLine.attr("x1", mouseX).attr("x2", mouseX);
-            if (onCrosshairMove) {
-              onCrosshairMove(d3.timeFormat("%Y-%m-%d")(date));
-            }
-          }
+        // Cancel previous animation frame if pending
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
         }
+
+        animationFrameRef.current = requestAnimationFrame(() => {
+          // Get pointer relative to the SVG element, then adjust for margin
+          const [mouseX] = d3.pointer(event, svg.node());
+          const adjustedMouseX = mouseX - margin.left;
+          const date = xScale.invert(adjustedMouseX);
+          crosshair.style("display", null);
+
+          let finalX = adjustedMouseX;
+          let finalDate = date;
+
+          if (precomputedRebalanceDates.length > 0) {
+            // Use binary search for better performance
+            const targetTime = date.getTime();
+            let left = 0;
+            let right = precomputedRebalanceDates.length - 1;
+            let closestIndex = 0;
+            let minDistance = Infinity;
+
+            while (left <= right) {
+              const mid = Math.floor((left + right) / 2);
+              const distance = Math.abs(precomputedRebalanceDates[mid].getTime() - targetTime);
+
+              if (distance < minDistance) {
+                minDistance = distance;
+                closestIndex = mid;
+              }
+
+              if (precomputedRebalanceDates[mid].getTime() < targetTime) {
+                left = mid + 1;
+              } else {
+                right = mid - 1;
+              }
+            }
+
+            // Check adjacent dates for the closest match
+            if (closestIndex > 0) {
+              const prevDistance = Math.abs(precomputedRebalanceDates[closestIndex - 1].getTime() - targetTime);
+              if (prevDistance < minDistance) {
+                closestIndex = closestIndex - 1;
+              }
+            }
+            if (closestIndex < precomputedRebalanceDates.length - 1) {
+              const nextDistance = Math.abs(precomputedRebalanceDates[closestIndex + 1].getTime() - targetTime);
+              if (nextDistance < minDistance) {
+                closestIndex = closestIndex + 1;
+              }
+            }
+
+            const closestRebalanceDate = precomputedRebalanceDates[closestIndex];
+            finalX = xScale(closestRebalanceDate);
+            finalDate = closestRebalanceDate;
+          }
+
+          // Batch DOM updates
+          crosshairLine.attr("x1", finalX).attr("x2", finalX);
+
+          if (onCrosshairMove) {
+            onCrosshairMove(dateFormatter(finalDate));
+          }
+
+          animationFrameRef.current = null;
+        });
       })
       .on("mouseout", () => {
+        // Cancel any pending animation frame
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+
         crosshair.style("display", "none");
         if (onCrosshairLeave) onCrosshairLeave();
       })
       .on("click", (event: any) => {
         if (onPointClick && mainSeries) {
-          const [mouseX] = d3.pointer(event);
-          const date = xScale.invert(mouseX);
+          // Get pointer relative to the SVG element, then adjust for margin
+          const [mouseX] = d3.pointer(event, svg.node());
+          const adjustedMouseX = mouseX - margin.left;
+          const date = xScale.invert(adjustedMouseX);
           const bisect = d3.bisector((d: any) => d.parsedTime).left;
           const i = bisect(mainSeries.data, date, 1);
           const d0 = mainSeries.data[i - 1];
@@ -451,12 +518,24 @@ const Chart: React.FC<ChartProps> = ({
     }
 
     const handleResize = () => {
+      // Cancel any pending animation frame before creating new chart
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
       const newInstance = createD3Chart();
       chartInstanceRef.current = newInstance;
     };
 
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      // Cleanup animation frame and event listener
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      window.removeEventListener("resize", handleResize);
+    };
   }, [
     chartData,
     multiSeriesData,
@@ -478,6 +557,11 @@ const Chart: React.FC<ChartProps> = ({
         backgroundColor: "white",
       }}
       onMouseLeave={() => {
+        // Cancel any pending animation frame when mouse leaves the chart
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
         if (onCrosshairLeave) onCrosshairLeave();
         if (chartInstanceRef.current) {
           chartInstanceRef.current.chart.clearCrosshairPosition();
