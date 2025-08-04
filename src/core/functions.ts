@@ -509,6 +509,29 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
       );
     });
 
+  console.log("Absolute worst 10 TQQQ");
+  resultsWithRates
+    .sort((a, b) => a.tqqqRate - b.tqqqRate)
+    .slice(0, 10)
+    .forEach((result, index) => {
+      console.log(
+        `${index + 1}. ${result.startDate}: Strategy= ${(result.strategyRate * 100)?.toFixed(2)}%, QQQ= ${(
+          result.qqqRate * 100
+        )?.toFixed(2)}%, TQQQ= ${(result.tqqqRate * 100)?.toFixed(2)}%`
+      );
+    });
+  console.log("Relative worst 10 TQQQ");
+  resultsWithRates
+    .sort((a, b) => a.tqqqRate - a.qqqRate - (b.tqqqRate - b.qqqRate))
+    .slice(0, 10)
+    .forEach((result, index) => {
+      console.log(
+        `${index + 1}. ${result.startDate}: Strategy= ${(result.strategyRate * 100)?.toFixed(2)}%, QQQ= ${(
+          result.qqqRate * 100
+        )?.toFixed(2)}%, TQQQ= ${(result.tqqqRate * 100)?.toFixed(2)}%`
+      );
+    });
+
   console.log(
     "\naverageStrategyRate\t\t\t\t",
     `${(averageStrategyRate * 100).toFixed(3)}%`,
