@@ -231,7 +231,7 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
     after.investments.TQQQ = before.investments.total * targetRatio * 1;
     after.investments.cash = before.investments.total * (1 - targetRatio * 1);
     after.investments.total = before.investments.total;
-    after.nextTarget = before.nextTarget * (1 + targetRate);
+    after.nextTarget = before.investments.total * (1 + targetRate * 1);
     reason += `Big Drop ${cumulativeRate.toFixed(3)} < ${variables.dropRate.toFixed(3)}`;
   } else {
     console.log("bug");
