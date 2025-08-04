@@ -170,18 +170,19 @@ const computePortfolioSnapshot = (simulation: Simulation, date: string, marketDa
 };
 
 const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData: MarketData) => {
-  // Create a true deep copy of the portfolio snapshot for the "before" state
+  const { monthlyNewCash, rebalanceDays, targetRatio, targetRate, dropRate } = simulation.variables;
+
+  before.investments.cash += (monthlyNewCash / 30) * rebalanceDays;
+  before.investments.mockTotalQQQ += (monthlyNewCash / 30) * rebalanceDays;
+  before.investments.mockTotalTQQQ += (monthlyNewCash / 30) * rebalanceDays;
+  before.investments.total = before.investments.cash + before.investments.TQQQ;
+  before.investments.ratio = before.investments.TQQQ / before.investments.total;
+
   const after = deepCopyPortfolioSnapshot(before);
 
-  const variables = simulation.variables!;
-  const targetRatio = variables.targetRatio;
-  const targetRate = variables.targetRate;
   const doubleTargetRate = targetRate * 2;
-  const dropRate = variables.dropRate;
   const doubleDropRate = dropRate * 2;
   const cumulativeRate = before.cumulativeRateSinceRebalance;
-
-  let rebalanceType: RebalanceType = RebalanceType.Excess;
 
   const isBigSpike = cumulativeRate >= doubleTargetRate;
   const isSpike = cumulativeRate < doubleTargetRate && cumulativeRate >= targetRate;
@@ -191,6 +192,7 @@ const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData
   const isBigDrop = cumulativeRate < doubleDropRate;
 
   let reason = ``;
+  let rebalanceType: RebalanceType = RebalanceType.Excess;
 
   if (isBigSpike) {
     rebalanceType = RebalanceType.BigSpike;
@@ -215,7 +217,7 @@ const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
     after.nextTarget = before.nextTarget * (1 + targetRate);
-    reason += `Excess (${cumulativeRate.toFixed(3)} >= ${variables.targetRate.toFixed(3)})`;
+    reason += `Excess (${cumulativeRate.toFixed(3)} >= ${targetRate.toFixed(3)})`;
   } else if (isShortfall) {
     rebalanceType = RebalanceType.Shortfall;
     const shortfall = before.nextTarget - before.investments.total;
@@ -225,27 +227,21 @@ const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
     after.nextTarget = before.nextTarget * (1 + targetRate);
-    reason += `Shortfall (${cumulativeRate.toFixed(3)} < ${variables.targetRate.toFixed(3)})`;
+    reason += `Shortfall (${cumulativeRate.toFixed(3)} < ${targetRate.toFixed(3)})`;
   } else if (isDrop) {
     rebalanceType = RebalanceType.Drop;
-    reason += `Drop ${cumulativeRate.toFixed(3)} < ${variables.dropRate.toFixed(3)}`;
+    reason += `Drop ${cumulativeRate.toFixed(3)} < ${dropRate.toFixed(3)}`;
   } else if (isBigDrop) {
     rebalanceType = RebalanceType.BigDrop;
-    after.investments.TQQQ = before.investments.total * targetRatio * 0.544 ;
-    after.investments.cash = before.investments.total * (1 - targetRatio * 0.544 );
+    after.investments.TQQQ = before.investments.total * targetRatio * 0.544;
+    after.investments.cash = before.investments.total * (1 - targetRatio * 0.544);
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    after.nextTarget = before.investments.total * (1 + targetRate * 0.544 );
-    reason += `Big Drop ${cumulativeRate.toFixed(3)} < ${variables.dropRate.toFixed(3)}`;
+    after.nextTarget = before.investments.total * (1 + targetRate * 0.544);
+    reason += `Big Drop ${cumulativeRate.toFixed(3)} < ${dropRate.toFixed(3)}`;
   } else {
     console.log("bug");
   }
-
-  after.investments.cash += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
-  after.investments.mockTotalQQQ += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
-  after.investments.mockTotalTQQQ += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
-  after.investments.total = after.investments.cash + after.investments.TQQQ;
-  after.investments.ratio = after.investments.TQQQ / after.investments.total;
 
   reason += `
     before.investments.TQQQ : ${before.investments.TQQQ.toFixed(2)} \n
@@ -254,7 +250,7 @@ const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData
     after.investments.cash : ${after.investments.cash.toFixed(2)} \n
     `;
 
-  after.nextRebalanceDate = addDaysToDate(before.date, variables.rebalanceDays);
+  after.nextRebalanceDate = addDaysToDate(before.date, rebalanceDays);
   after.cumulativeRateSinceRebalance = 0;
 
   const rebalanceLog: RebalanceLog = {
