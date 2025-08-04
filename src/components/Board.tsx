@@ -80,10 +80,15 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   // Keyboard event handler
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.key === "ArrowLeft") {
+      // Only handle if no input elements are focused
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      if (event.key === "ArrowLeft" && !event.repeat) {
         event.preventDefault();
         handlePreviousDate();
-      } else if (event.key === "ArrowRight") {
+      } else if (event.key === "ArrowRight" && !event.repeat) {
         event.preventDefault();
         handleNextDate();
       }
