@@ -400,7 +400,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
       {/* Rebalance Log Details */}
       <Box
-        sx={{ height: "95vh", display: "grid", gridTemplateRows: "50px 3fr 1fr 1fr", gap: 0 }}
+        sx={{ height: "95vh", display: "grid", gridTemplateRows: "50px 4fr 200px", gap: 0 }}
         onMouseLeave={handleCrosshairLeave}
       >
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -413,44 +413,39 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
         </Box>
 
-        {/* Chart Section */}
+        {/* Combined Chart Section */}
         {simulation && simulation.portfolioSnapshots.length > 0 && (
           <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
             <Box sx={{ flex: 1, minHeight: 0 }}>
               <Chart
-                multiSeriesData={priceChart}
+                priceData={priceChart}
+                ratioData={{ ...ratioChart, ...pullbackChart }}
                 onPointClick={handlePointClick}
-                syncId="chart1"
+                syncId="combinedChart"
                 onChartReady={handleChartReady}
                 rebalanceLogsMap={rebalanceLogsMap}
                 selectedDate={selectedDate}
                 onCrosshairMove={handleCrosshairMove}
                 onCrosshairLeave={handleCrosshairLeave}
-                chartType="price"
+                chartType="combined"
                 isLogScale={isLogScale}
                 height="100%"
-                onLegendValuesChange={handlePriceLegendValuesChange}
-              />
-            </Box>
-          </Box>
-        )}
-
-        {/* Ratio Chart Section */}
-        {simulation && simulation.portfolioSnapshots.length > 0 && (
-          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-            <Box sx={{ flex: 1, minHeight: 0 }}>
-              <Chart
-                multiSeriesData={{ ...ratioChart, ...pullbackChart }}
-                onPointClick={handlePointClick}
-                syncId="chart3"
-                onChartReady={handleChartReady}
-                rebalanceLogsMap={rebalanceLogsMap}
-                selectedDate={selectedDate}
-                onCrosshairMove={handleCrosshairMove}
-                onCrosshairLeave={handleCrosshairLeave}
-                chartType="ratio-pullback"
-                height="100%"
-                onLegendValuesChange={handleRatioLegendValuesChange}
+                onLegendValuesChange={(values) => {
+                  // Split the values between price and ratio series
+                  const priceValues: { [key: string]: number } = {};
+                  const ratioValues: { [key: string]: number } = {};
+                  
+                  Object.entries(values).forEach(([key, value]) => {
+                    if (['StrategyTotal', 'Target', 'MockTotalQQQ', 'MockTotalTQQQ'].includes(key)) {
+                      priceValues[key] = value;
+                    } else {
+                      ratioValues[key] = value;
+                    }
+                  });
+                  
+                  handlePriceLegendValuesChange(priceValues);
+                  handleRatioLegendValuesChange(ratioValues);
+                }}
               />
             </Box>
           </Box>
