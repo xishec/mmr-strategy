@@ -18,7 +18,6 @@ interface ChartProps {
   selectedDate: string | null;
   onCrosshairMove?: (date: string | null) => void;
   onCrosshairLeave?: () => void;
-  chartType?: "price" | "ratio" | "pullback" | "ratio-pullback" | "combined";
   isLogScale?: boolean;
   height: string | number;
   onLegendValuesChange?: (values: { [key: string]: number }) => void;
@@ -34,7 +33,6 @@ const Chart: React.FC<ChartProps> = ({
   selectedDate,
   onCrosshairMove,
   onCrosshairLeave,
-  chartType = "price",
   isLogScale = false,
   height,
   onLegendValuesChange,
@@ -51,9 +49,9 @@ const Chart: React.FC<ChartProps> = ({
     svg.selectAll("*").remove();
 
     // Setup dimensions and data
-    const margin = { top: 20, right: 20, bottom: 40, left: 65 }; // Reduced left margin to move charts left
+    const margin = { top: 30, left: 65, right: 20 };
     const width = container.clientWidth - margin.left - margin.right;
-    const totalChartHeight = container.clientHeight - margin.top - margin.bottom;
+    const totalChartHeight = container.clientHeight;
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Prepare data
@@ -68,12 +66,16 @@ const Chart: React.FC<ChartProps> = ({
       parsedTime: parseTime(d.time),
     }));
 
-    // Chart layout for combined view
-    const isCombined = chartType === "combined";
-    const spaceBetweenCharts = 20; // Smart spacing between price and ratio charts
-    const priceHeight = isCombined ? (totalChartHeight - spaceBetweenCharts) * 0.75 : totalChartHeight;
-    const ratioHeight = isCombined ? (totalChartHeight - spaceBetweenCharts) * 0.25 : 0;
-    const ratioTop = isCombined ? priceHeight + spaceBetweenCharts : 0;
+    // Chart layout - always combined view with 3 sections
+    const spaceBetweenCharts = 20; // Smart spacing between sections
+    const totalSpacing = spaceBetweenCharts * 2; // Two gaps: price-ratio and ratio-timeline
+    const rebalanceTimelineHeight = 30; // Height for rebalance timeline
+
+    const availableHeight = totalChartHeight - totalSpacing - rebalanceTimelineHeight;
+    const priceHeight = availableHeight * 0.65;
+    const ratioHeight = availableHeight * 0.25;
+    const ratioTop = priceHeight + spaceBetweenCharts;
+    const timelineTop = ratioTop + ratioHeight + spaceBetweenCharts;
 
     // Separate series by type
     const priceKeys = ["StrategyTotal", "Target", "MockTotalQQQ", "MockTotalTQQQ"];
@@ -88,8 +90,8 @@ const Chart: React.FC<ChartProps> = ({
       return result;
     };
 
-    const priceSeriesData = isCombined ? getSeriesByType("price") : seriesData;
-    const ratioSeriesData = isCombined ? getSeriesByType("ratio") : {};
+    const priceSeriesData = getSeriesByType("price");
+    const ratioSeriesData = getSeriesByType("ratio");
 
     // Create time scale
     const xScale = d3
@@ -98,7 +100,7 @@ const Chart: React.FC<ChartProps> = ({
       .range([0, width]);
 
     // Create Y scales
-    const priceData = isCombined ? Object.values(priceSeriesData).flat() : allData;
+    const priceData = Object.values(priceSeriesData).flat();
     const priceExtent = d3.extent(priceData, (d) => d.value) as [number, number];
 
     const priceYScale = isLogScale
@@ -174,74 +176,96 @@ const Chart: React.FC<ChartProps> = ({
       return { data: processedData, name: seriesName };
     };
 
-    // Add layout elements
-    if (isCombined) {
-      // Add center line at y=0 for ratio section
-      g.append("line")
-        .attr("class", "center-line")
-        .attr("x1", 0)
-        .attr("x2", width)
-        .attr("y1", ratioYScale(0))
-        .attr("y2", ratioYScale(0))
-        .attr("stroke", "#666")
-        .attr("stroke-width", 1)
-        .attr("stroke-dasharray", "3,3");
-    }
-
-    // Add center line for standalone ratio charts
-    if ((chartType === "ratio" || chartType === "pullback" || chartType === "ratio-pullback") && !isCombined) {
-      g.append("line")
-        .attr("class", "center-line")
-        .attr("x1", 0)
-        .attr("x2", width)
-        .attr("y1", priceYScale(0))
-        .attr("y2", priceYScale(0))
-        .attr("stroke", "#666")
-        .attr("stroke-width", 1)
-        .attr("stroke-dasharray", "3,3");
-    }
+    // Add center line at y=0 for ratio section
+    g.append("line")
+      .attr("class", "center-line")
+      .attr("x1", 0)
+      .attr("x2", width)
+      .attr("y1", ratioYScale(0))
+      .attr("y2", ratioYScale(0))
+      .attr("stroke", "#666")
+      .attr("stroke-width", 1)
+      .attr("stroke-dasharray", "3,3");
 
     // Render all series
     let mainSeries: any = null;
 
-    if (isCombined) {
-      // Render price series
-      Object.entries(priceSeriesData).forEach(([name, data]) => {
-        const series = renderSeries(name, data, priceYScale);
-        if (!mainSeries) mainSeries = series;
-      });
+    // Render price series
+    Object.entries(priceSeriesData).forEach(([name, data]) => {
+      const series = renderSeries(name, data, priceYScale);
+      if (!mainSeries) mainSeries = series;
+    });
 
-      // Render ratio series with areas
-      Object.entries(ratioSeriesData).forEach(([name, data]) => {
-        const series = renderSeries(name, data, ratioYScale, true);
-        if (!mainSeries) mainSeries = series;
-      });
-    } else {
-      // Single chart mode
-      Object.entries(seriesData).forEach(([name, data]) => {
-        const yScale = priceYScale;
-        const isAreaChart = ["Ratio", "pullback"].includes(name);
-        const series = renderSeries(name, data, yScale, isAreaChart);
-        if (!mainSeries) mainSeries = series;
+    // Render ratio series with areas
+    Object.entries(ratioSeriesData).forEach(([name, data]) => {
+      const series = renderSeries(name, data, ratioYScale, true);
+      if (!mainSeries) mainSeries = series;
+    });
+
+    // Render rebalance timeline
+    if (rebalanceLogsMap) {
+      const rebalanceDates = Object.keys(rebalanceLogsMap);
+      const timelineY = timelineTop + rebalanceTimelineHeight / 2;
+
+      // Add timeline base line
+      g.append("line")
+        .attr("class", "timeline-base")
+        .attr("x1", 0)
+        .attr("x2", width)
+        .attr("y1", timelineY)
+        .attr("y2", timelineY)
+        .attr("stroke", "#ddd")
+        .attr("stroke-width", 2);
+
+      // Add rebalance markers
+      rebalanceDates.forEach((dateStr) => {
+        const date = parseTime(dateStr);
+        if (date) {
+          const x = xScale(date);
+          const rebalanceLog = rebalanceLogsMap[dateStr];
+
+          // Color based on rebalance type
+          const markerColor =
+            rebalanceLog?.rebalanceType === "Drop"
+              ? red
+              : rebalanceLog?.rebalanceType === "Spike"
+              ? blue
+              : rebalanceLog?.rebalanceType === "Excess"
+              ? yellow
+              : rebalanceLog?.rebalanceType === "Shortfall"
+              ? "#FF9800"
+              : "#666";
+
+          g.append("circle")
+            .attr("class", "rebalance-marker")
+            .attr("cx", x)
+            .attr("cy", timelineY)
+            .attr("r", 4)
+            .attr("fill", markerColor)
+            .attr("stroke", "white")
+            .attr("stroke-width", 1);
+        }
       });
     }
 
     // Add crosshair
     const crosshair = g.append("g").attr("class", "crosshair").style("display", "none");
+    const crosshairHeight = timelineTop + rebalanceTimelineHeight;
     const crosshairLine = crosshair
       .append("line")
       .attr("y1", 0)
-      .attr("y2", totalChartHeight)
+      .attr("y2", crosshairHeight)
       .attr("stroke", "#666")
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", "3,3");
 
     // Add overlay for mouse events
+    const overlayHeight = timelineTop + rebalanceTimelineHeight;
     const overlay = g
       .append("rect")
       .attr("class", "overlay")
       .attr("width", width)
-      .attr("height", totalChartHeight)
+      .attr("height", overlayHeight)
       .attr("fill", "none")
       .attr("pointer-events", "all");
 
@@ -299,7 +323,7 @@ const Chart: React.FC<ChartProps> = ({
     // Add axes
     g.append("g")
       .attr("class", "x-axis")
-      .attr("transform", `translate(0,${totalChartHeight})`)
+      .attr("transform", `translate(0,${timelineTop - 25})`)
       .call(
         d3
           .axisBottom(xScale)
@@ -310,19 +334,10 @@ const Chart: React.FC<ChartProps> = ({
       );
 
     // Add Y-axes
-    if (isCombined || chartType === "price") {
-      const yAxisConfig = isLogScale ? d3.axisLeft(priceYScale).ticks(4, "~g") : d3.axisLeft(priceYScale);
-      g.append("g").attr("class", "y-axis-price").call(yAxisConfig);
-    }
+    const yAxisConfig = isLogScale ? d3.axisLeft(priceYScale).ticks(4, "~g") : d3.axisLeft(priceYScale);
+    g.append("g").attr("class", "y-axis-price").call(yAxisConfig);
 
-    if (isCombined) {
-      g.append("g").attr("class", "y-axis-ratio").call(d3.axisLeft(ratioYScale).ticks(3));
-    }
-
-    // Add y-axis for standalone ratio/pullback charts
-    if ((chartType === "ratio" || chartType === "pullback" || chartType === "ratio-pullback") && !isCombined) {
-      g.append("g").attr("class", "y-axis-ratio").call(d3.axisLeft(priceYScale).ticks(4));
-    }
+    g.append("g").attr("class", "y-axis-ratio").call(d3.axisLeft(ratioYScale).ticks(3));
 
     // Legend value functions
     const sendLegendValues = (selectedDate: string | null) => {
@@ -379,7 +394,6 @@ const Chart: React.FC<ChartProps> = ({
     rebalanceLogsMap,
     onCrosshairMove,
     onCrosshairLeave,
-    chartType,
     onLegendValuesChange,
   ]);
 
@@ -425,7 +439,6 @@ const Chart: React.FC<ChartProps> = ({
     onChartReady,
     rebalanceLogsMap,
     createD3Chart,
-    chartType,
     selectedDate,
     onLegendValuesChange,
   ]);

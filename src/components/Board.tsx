@@ -426,7 +426,6 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                 selectedDate={selectedDate}
                 onCrosshairMove={handleCrosshairMove}
                 onCrosshairLeave={handleCrosshairLeave}
-                chartType="combined"
                 isLogScale={isLogScale}
                 height="100%"
                 onLegendValuesChange={(values: { [key: string]: number }) => {
