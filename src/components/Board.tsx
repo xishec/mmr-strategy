@@ -84,7 +84,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
         return;
       }
-      
+
       if (event.key === "ArrowLeft" && !event.repeat) {
         event.preventDefault();
         handlePreviousDate();
@@ -176,35 +176,35 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     });
 
     const priceChart = {
-      StrategyTotal: simulation.rebalanceLogs.map((rebalanceLog) => ({
-        time: rebalanceLog.date,
-        value: portfolioSnapshotsMap[rebalanceLog.date].investments.total,
+      MockTotalQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
+        time: snapshot.date,
+        value: snapshot.investments.mockTotalQQQ,
+      })),
+      MockTotalTQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
+        time: snapshot.date,
+        value: snapshot.investments.mockTotalTQQQ,
+      })),
+      StrategyTotal: simulation.portfolioSnapshots.map((snapshot) => ({
+        time: snapshot.date,
+        value: snapshot.investments.total,
       })),
       Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
         time: rebalanceLog.date,
         value: rebalanceLog.currentTarget,
       })),
-      MockTotalQQQ: simulation.rebalanceLogs.map((rebalanceLog) => ({
-        time: rebalanceLog.date,
-        value: portfolioSnapshotsMap[rebalanceLog.date].investments.mockTotalQQQ,
-      })),
-      MockTotalTQQQ: simulation.rebalanceLogs.map((rebalanceLog) => ({
-        time: rebalanceLog.date,
-        value: portfolioSnapshotsMap[rebalanceLog.date].investments.mockTotalTQQQ,
-      })),
     };
 
     const ratioChart = {
-      Ratio: simulation.rebalanceLogs.map((rebalanceLog) => ({
-        time: rebalanceLog.date,
-        value: portfolioSnapshotsMap[rebalanceLog.date].investments.ratio,
+      Ratio: simulation.portfolioSnapshots.map((snapshot) => ({
+        time: snapshot.date,
+        value: snapshot.investments.ratio,
       })),
     };
 
     const pullbackChart = {
-      pullback: simulation.rebalanceLogs.map((rebalanceLog) => ({
-        time: rebalanceLog.date,
-        value: portfolioSnapshotsMap[rebalanceLog.date].pullback,
+      pullback: simulation.portfolioSnapshots.map((snapshot) => ({
+        time: snapshot.date,
+        value: snapshot.pullback,
       })),
     };
 
@@ -252,8 +252,8 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
     return (chartData.rebalanceLogsMap as Record<string, RebalanceLog>)[selectedDate] || null;
   }, [selectedDate, chartData.rebalanceLogsMap]);
 
-  // Get border color based on rebalance type
-  const getBorderColor = useMemo(() => {
+  // Get rebalance color based on rebalance type
+  const getRebalanceColor = useMemo(() => {
     if (!currentRebalanceLog) return "grey.300";
     const { rebalanceType } = currentRebalanceLog;
     if (rebalanceType === RebalanceType.BigSpike || rebalanceType === RebalanceType.Spike) {
@@ -291,14 +291,14 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       {/* Cash section */}
       <Box
         sx={{
-          backgroundColor: "grey.100",
+          backgroundColor: "grey.400",
           flex: 1 - ratio,
         }}
       />
       {/* TQQQ section */}
       <Box
         sx={{
-          backgroundColor: yellow,
+          backgroundColor: getRebalanceColor,
           flex: ratio,
         }}
       />
@@ -309,12 +309,12 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          color: "black",
+          color: "white",
           fontWeight: "bold",
           fontSize: "1rem",
         }}
       >
-        {(ratio * 100).toFixed(1)}%
+        {(ratio * 100).toFixed(2)}%
       </Box>
     </Box>
   );
@@ -481,13 +481,15 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           padding: "1rem",
         }}
       >
-        <Legend
-          priceSeriesData={chartData.priceChart}
-          ratioSeriesData={{ ...chartData.ratioChart, ...chartData.pullbackChart }}
-          selectedDate={selectedDate}
-          priceValues={legendValues.priceValues}
-          ratioValues={legendValues.ratioValues}
-        />
+        <Box sx={{ margin: "0 3rem" }}>
+          <Legend
+            priceSeriesData={chartData.priceChart}
+            ratioSeriesData={{ ...chartData.ratioChart, ...chartData.pullbackChart }}
+            selectedDate={selectedDate}
+            priceValues={legendValues.priceValues}
+            ratioValues={legendValues.ratioValues}
+          />
+        </Box>
 
         {/* Combined Chart Section */}
         {simulation && simulation.portfolioSnapshots.length > 0 && (
@@ -539,8 +541,9 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           sx={{
             borderRadius: "0.5rem",
             border: "2px solid",
-            borderColor: getBorderColor,
+            borderColor: getRebalanceColor,
             padding: "1rem",
+            margin: "0 3rem",
             marginTop: "1.5rem",
             display: "grid",
             gridTemplateColumns: "225px min-content 1fr min-content",
@@ -601,7 +604,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                         sx={{
                           height: "80%",
                           "& .MuiSlider-thumb": {
-                            backgroundColor: getBorderColor,
+                            backgroundColor: getRebalanceColor,
                             width: 16,
                             height: 16,
                             "&:hover": {
@@ -619,14 +622,14 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                             whiteSpace: "nowrap",
                           },
                           "& .MuiSlider-valueLabel": {
-                            backgroundColor: getBorderColor,
+                            backgroundColor: getRebalanceColor,
                             color: "white",
                             fontWeight: "bold",
                             fontSize: "1rem",
                             borderRadius: "4px",
                             padding: "2px 6px",
                             "&:before": {
-                              borderColor: getBorderColor,
+                              borderColor: getRebalanceColor,
                             },
                           },
                         }}

@@ -174,7 +174,7 @@ const Chart: React.FC<ChartProps> = ({
           .attr("class", `line series-${seriesName}`)
           .attr("fill", "none")
           .attr("stroke", color)
-          .attr("stroke-width", 2)
+          .attr("stroke-width", 1)
           .attr("d", line);
       }
 

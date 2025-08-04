@@ -190,7 +190,7 @@ const computePortfolioSnapshot = (simulation: Simulation, date: string, marketDa
 const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation, marketData: MarketData) => {
   const variables = simulation.variables!;
   const investments = portfolioSnapshot.investments;
-  const targetRate = variables.targetRate;
+  const targetRate = variables.targetRatio;
   const currentTarget = portfolioSnapshot.nextTarget;
   const cumulativeRate = portfolioSnapshot.cumulativeRateSinceRebalance;
 
@@ -208,14 +208,14 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
   if (isBigSpike) {
     rebalanceType = RebalanceType.BigSpike;
     // 1.5 -> 44 35 89
-    investments.TQQQ = investments.total * (variables.targetRatio * 1.5);
-    investments.cash = investments.total * (1 - variables.targetRatio * 1.5);
+    investments.TQQQ = investments.total * (targetRate * 1.5);
+    investments.cash = investments.total * (1 - targetRate * 1.5);
     portfolioSnapshot.nextTarget = investments.total * (1 + targetRate * 1.5);
     reason += `Spike (${cumulativeRate.toFixed(3)} > ${variables.spikeRate.toFixed(3)})`;
   } else if (isSpike) {
     rebalanceType = RebalanceType.Spike;
-    investments.TQQQ = investments.total * variables.targetRatio * 1;
-    investments.cash = investments.total * (1 - variables.targetRatio * 1);
+    investments.TQQQ = investments.total * targetRate * 1;
+    investments.cash = investments.total * (1 - targetRate * 1);
     portfolioSnapshot.nextTarget = investments.total * (1 + targetRate * 1);
     reason += `Spike (${cumulativeRate.toFixed(3)} > ${variables.spikeRate.toFixed(3)})`;
   } else if (isExcess) {
@@ -239,8 +239,8 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
     reason += `Drop ${cumulativeRate.toFixed(3)} < ${variables.dropRate.toFixed(3)}`;
   } else if (isBigDrop) {
     rebalanceType = RebalanceType.BigDrop;
-    investments.TQQQ = investments.total * variables.targetRatio * 1;
-    investments.cash = investments.total * (1 - variables.targetRatio * 1);
+    investments.TQQQ = investments.total * targetRate * 1;
+    investments.cash = investments.total * (1 - targetRate * 1);
     portfolioSnapshot.nextTarget = investments.total * (1 + targetRate * 1);
     reason += `Big Drop ${cumulativeRate.toFixed(3)} < ${variables.dropRate.toFixed(3)}`;
   } else {
