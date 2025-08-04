@@ -139,7 +139,7 @@ const Chart: React.FC<ChartProps> = ({
           .append("circle")
           .attr("cx", (d) => xScale(d.parsedTime))
           .attr("cy", (d) => yScale(d.value))
-          .attr("r", 2)
+          .attr("r", 2.5)
           .attr("fill", black);
       } else {
         // Render as line/area
@@ -267,7 +267,7 @@ const Chart: React.FC<ChartProps> = ({
             .attr("class", "rebalance-marker")
             .attr("cx", x)
             .attr("cy", markerY)
-            .attr("r", 3)
+            .attr("r", 2.5)
             .attr("fill", fillColor)
             .attr("stroke", strokeColor);
         }
