@@ -42,11 +42,11 @@ const Chart: React.FC<ChartProps> = ({
   // Stable callback references to prevent recreating chart
   const stableOnCrosshairMove = useRef(onCrosshairMove);
   const stableOnLegendValuesChange = useRef(onLegendValuesChange);
-  
+
   useEffect(() => {
     stableOnCrosshairMove.current = onCrosshairMove;
   }, [onCrosshairMove]);
-  
+
   useEffect(() => {
     stableOnLegendValuesChange.current = onLegendValuesChange;
   }, [onLegendValuesChange]);
@@ -70,7 +70,7 @@ const Chart: React.FC<ChartProps> = ({
 
     const container = chartContainerRef.current;
     const svg = d3.select(svgRef.current);
-    
+
     // Clean up any existing D3 selections and event listeners
     svg.selectAll("*").remove();
     svg.on(".zoom", null);
@@ -254,42 +254,48 @@ const Chart: React.FC<ChartProps> = ({
           const rebalanceLog = rebalanceLogsMap[dateStr];
 
           const strokeColor =
-            rebalanceLog?.rebalanceType === RebalanceType.BigDrop
-              ? red
-              : rebalanceLog?.rebalanceType === RebalanceType.Drop
-              ? red
+            rebalanceLog?.rebalanceType === RebalanceType.BigSpike
+              ? green
               : rebalanceLog?.rebalanceType === RebalanceType.Spike
               ? green
               : rebalanceLog?.rebalanceType === RebalanceType.Excess
               ? yellow
               : rebalanceLog?.rebalanceType === RebalanceType.Shortfall
               ? yellow
+              : rebalanceLog?.rebalanceType === RebalanceType.Drop
+              ? red
+              : rebalanceLog?.rebalanceType === RebalanceType.BigDrop
+              ? red
               : black;
 
           const fillColor =
-            rebalanceLog?.rebalanceType === RebalanceType.BigDrop
-              ? red
-              : rebalanceLog?.rebalanceType === RebalanceType.Drop
-              ? red
+            rebalanceLog?.rebalanceType === RebalanceType.BigSpike
+              ? green
               : rebalanceLog?.rebalanceType === RebalanceType.Spike
               ? green
               : rebalanceLog?.rebalanceType === RebalanceType.Excess
               ? yellow
               : rebalanceLog?.rebalanceType === RebalanceType.Shortfall
               ? yellow
+              : rebalanceLog?.rebalanceType === RebalanceType.Drop
+              ? red
+              : rebalanceLog?.rebalanceType === RebalanceType.BigDrop
+              ? red
               : black;
 
           const markerY =
-            rebalanceLog?.rebalanceType === RebalanceType.BigDrop
-              ? timelineY + 16
-              : rebalanceLog?.rebalanceType === RebalanceType.Drop
-              ? timelineY + 8
+            rebalanceLog?.rebalanceType === RebalanceType.BigSpike
+              ? timelineY - 16
               : rebalanceLog?.rebalanceType === RebalanceType.Spike
               ? timelineY - 8
               : rebalanceLog?.rebalanceType === RebalanceType.Excess
               ? timelineY
               : rebalanceLog?.rebalanceType === RebalanceType.Shortfall
               ? timelineY
+              : rebalanceLog?.rebalanceType === RebalanceType.Drop
+              ? timelineY + 8
+              : rebalanceLog?.rebalanceType === RebalanceType.BigDrop
+              ? timelineY + 16
               : black;
 
           g.append("circle")
@@ -329,32 +335,33 @@ const Chart: React.FC<ChartProps> = ({
 
     // Simple mouse event handlers - rebuilt from scratch
     overlay
-      .on("mousemove", function(event: any) {
+      .on("mousemove", function (event: any) {
         const [mouseX] = d3.pointer(event, g.node());
-        
+
         // Bounds check to prevent invalid positions
         if (mouseX < 0 || mouseX > width) return;
-        
+
         // Show crosshair and position it at mouse location
         crosshair.style("display", null);
         crosshairLine.attr("x1", mouseX).attr("x2", mouseX);
-        
+
         // Find closest rebalance date for selected date
         if (rebalanceDatesArrayMemo.length > 0) {
           const mouseDate = xScale.invert(mouseX);
           const closestDate = rebalanceDatesArrayMemo.reduce((closest, current) => {
-            return Math.abs(current.getTime() - mouseDate.getTime()) < 
-                   Math.abs(closest.getTime() - mouseDate.getTime()) ? current : closest;
+            return Math.abs(current.getTime() - mouseDate.getTime()) < Math.abs(closest.getTime() - mouseDate.getTime())
+              ? current
+              : closest;
           });
-          
+
           if (stableOnCrosshairMove.current) {
             stableOnCrosshairMove.current(dateFormatter(closestDate));
           }
         }
       })
-      .on("mouseleave", function() {
+      .on("mouseleave", function () {
         crosshair.style("display", "none");
-      });    // Add axes
+      }); // Add axes
     g.append("g")
       .attr("class", "x-axis")
       .attr("transform", `translate(0,${timelineTop - 25})`)
@@ -420,12 +427,7 @@ const Chart: React.FC<ChartProps> = ({
     };
 
     return { chart: chartLikeObject, mainSeries };
-  }, [
-    isLogScale,
-    chartDataMemo,
-    rebalanceDatesArrayMemo,
-    rebalanceLogsMap,
-  ]);
+  }, [isLogScale, chartDataMemo, rebalanceDatesArrayMemo, rebalanceLogsMap]);
 
   // Handle selectedDate changes
   useEffect(() => {
@@ -494,14 +496,7 @@ const Chart: React.FC<ChartProps> = ({
       window.removeEventListener("resize", handleResize);
       cleanup();
     };
-  }, [
-    createD3Chart,
-    chartData,
-    multiSeriesData,
-    onChartReady,
-    syncId,
-    selectedDate,
-  ]);
+  }, [createD3Chart, chartData, multiSeriesData, onChartReady, syncId, selectedDate]);
 
   return (
     <div

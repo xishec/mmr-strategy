@@ -42,11 +42,12 @@ export interface RebalanceLog {
 }
 
 export enum RebalanceType {
-  BigDrop = "Big Drop",
-  Drop = "Drop",
+  BigSpike = "Big Spike",
   Spike = "Spike",
   Excess = "Excess",
   Shortfall = "Shortfall",
+  Drop = "Drop",
+  BigDrop = "Big Drop",
 }
 
 export interface Investments {
