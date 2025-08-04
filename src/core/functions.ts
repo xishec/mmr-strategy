@@ -212,9 +212,9 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
     reason += `Spike (${cumulativeRate.toFixed(3)} > ${variables.spikeRate.toFixed(3)})`;
   } else if (isSpike) {
     rebalanceType = RebalanceType.Spike;
-    investments.TQQQ = investments.total * variables.targetRatio;
-    investments.cash = investments.total * (1 - variables.targetRatio);
-    portfolioSnapshot.nextTarget = investments.total * (1 + targetRate);
+    investments.TQQQ = investments.total * variables.targetRatio * 1;
+    investments.cash = investments.total * (1 - variables.targetRatio * 1);
+    portfolioSnapshot.nextTarget = investments.total * (1 + targetRate * 1);
     reason += `Spike (${cumulativeRate.toFixed(3)} > ${variables.spikeRate.toFixed(3)})`;
   } else if (isExcess) {
     rebalanceType = RebalanceType.Excess;
@@ -248,6 +248,7 @@ const rebalance = (portfolioSnapshot: PortfolioSnapshot, simulation: Simulation,
   investments.cash += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
   investments.mockTotalQQQ += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
   investments.mockTotalTQQQ += (variables.monthlyNewCash / 30) * variables.rebalanceDays;
+  investments.ratio = investments.TQQQ / investments.total;
 
   portfolioSnapshot.nextRebalanceDate = addDaysToDate(portfolioSnapshot.date, variables.rebalanceDays);
 
