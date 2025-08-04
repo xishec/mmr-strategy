@@ -404,9 +404,9 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         onMouseLeave={handleCrosshairLeave}
       >
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <UnifiedLegend 
-            priceSeriesData={priceChart} 
-            ratioSeriesData={{ ...ratioChart, ...pullbackChart }} 
+          <UnifiedLegend
+            priceSeriesData={priceChart}
+            ratioSeriesData={{ ...ratioChart, ...pullbackChart }}
             selectedDate={selectedDate}
             priceValues={priceLegendValues}
             ratioValues={ratioLegendValues}
@@ -418,8 +418,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
             <Box sx={{ flex: 1, minHeight: 0 }}>
               <Chart
-                priceData={priceChart}
-                ratioData={{ ...ratioChart, ...pullbackChart }}
+                multiSeriesData={{ ...priceChart, ...ratioChart, ...pullbackChart }}
                 onPointClick={handlePointClick}
                 syncId="combinedChart"
                 onChartReady={handleChartReady}
@@ -430,19 +429,19 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                 chartType="combined"
                 isLogScale={isLogScale}
                 height="100%"
-                onLegendValuesChange={(values) => {
+                onLegendValuesChange={(values: { [key: string]: number }) => {
                   // Split the values between price and ratio series
                   const priceValues: { [key: string]: number } = {};
                   const ratioValues: { [key: string]: number } = {};
-                  
+
                   Object.entries(values).forEach(([key, value]) => {
-                    if (['StrategyTotal', 'Target', 'MockTotalQQQ', 'MockTotalTQQQ'].includes(key)) {
+                    if (["StrategyTotal", "Target", "MockTotalQQQ", "MockTotalTQQQ"].includes(key)) {
                       priceValues[key] = value;
                     } else {
                       ratioValues[key] = value;
                     }
                   });
-                  
+
                   handlePriceLegendValuesChange(priceValues);
                   handleRatioLegendValuesChange(ratioValues);
                 }}
