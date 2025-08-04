@@ -355,6 +355,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           </LocalizationProvider>
 
           <TextField
+            size="small"
             label="Initial Money ($)"
             type="number"
             value={initialMoney}
@@ -366,6 +367,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
 
           <TextField
+            size="small"
             label="Rebalance Days"
             type="number"
             value={rebalanceDays}
@@ -377,6 +379,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
 
           <TextField
+            size="small"
             label="Target Rate"
             type="number"
             value={targetRate}
@@ -388,6 +391,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
 
           <TextField
+            size="small"
             label="Cash Year Rate"
             type="number"
             value={cashYearRate}
@@ -399,6 +403,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
 
           <TextField
+            size="small"
             label="Target Ratio"
             type="number"
             value={targetRatio}
@@ -410,6 +415,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
 
           <TextField
+            size="small"
             label="Spike Rate"
             type="number"
             value={spikeRate}
@@ -421,6 +427,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
 
           <TextField
+            size="small"
             label="Drop Rate"
             type="number"
             value={dropRate}
@@ -432,6 +439,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
 
           <TextField
+            size="small"
             label="Monthly new cash"
             type="number"
             value={monthlyNewCash}
@@ -443,6 +451,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
 
           <TextField
+            size="small"
             label="Simulation Years (for Multiple Simulations)"
             type="number"
             value={simulationYears}
