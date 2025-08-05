@@ -85,19 +85,22 @@ export const startSimulation = (
  * @returns The completed simulation
  */
 export const runSingleSimulation = (simulation: Simulation, marketData: MarketData): Simulation => {
-  // Create a deep copy of the simulation to avoid mutations
+  // Create a shallow copy of the simulation to avoid mutations
   const newSimulation: Simulation = {
     ...simulation,
     portfolioSnapshots: [],
     rebalanceLogs: [],
+    variables: { ...simulation.variables },
   };
 
   setupInitialPortfolio(newSimulation, marketData);
 
-  for (const [date] of Object.entries(marketData.TQQQ)) {
-    if (date <= newSimulation.variables.startDate) continue;
-    if (date > newSimulation.variables.endDate) break;
+  // Get sorted dates within our range for better performance
+  const marketDates = Object.keys(marketData.TQQQ).filter(
+    date => date > newSimulation.variables.startDate && date <= newSimulation.variables.endDate
+  );
 
+  for (const date of marketDates) {
     const portfolioSnapshot = computePortfolioSnapshot(newSimulation, date, marketData);
 
     if (date >= portfolioSnapshot.nextRebalanceDate) {
@@ -179,6 +182,7 @@ export const convertAnnualRateToDaily = (annualRate: number): number => {
 
 /**
  * Runs multiple simulations starting every 10 days from 2000-01-01 to today
+ * Memory-efficient version that only keeps essential rate data
  * @param variables - The simulation variables (including initialMoney and all required fields)
  * @param marketData - The market data containing QQQ and TQQQ prices
  * @param nbYear - Number of years to run each simulation (default: 5)
@@ -194,7 +198,11 @@ export const runMultipleSimulations = async (
   results: Array<{ startDate: string; simulation: Simulation }>;
   analysisResults: any;
 }> => {
-  const results: Array<{ startDate: string; simulation: Simulation }> = [];
+  // Only store essential data to minimize memory usage
+  const strategyRates: number[] = [];
+  const qqqRates: number[] = [];
+  const tqqqRates: number[] = [];
+  const startDates: string[] = [];
 
   // Get all available dates from market data (sorted)
   const availableDates = Object.keys(marketData.TQQQ).sort();
@@ -248,12 +256,17 @@ export const runMultipleSimulations = async (
           const completedSimulation = runSingleSimulation(simulation, marketData);
 
           if (completedSimulation.portfolioSnapshots.length > 0) {
-            results.push({
-              startDate: nextAvailableDate,
-              simulation: completedSimulation,
-            });
+            // Extract only the essential data we need
+            strategyRates.push(completedSimulation.annualizedStrategyRate || 0);
+            qqqRates.push(completedSimulation.annualizedQQQRate || 0);
+            tqqqRates.push(completedSimulation.annualizedTQQQRate || 0);
+            startDates.push(nextAvailableDate);
 
             simulationCount++;
+
+            // Immediately clear simulation data to free memory
+            completedSimulation.portfolioSnapshots = [];
+            completedSimulation.rebalanceLogs = [];
           }
         }
       } catch (error) {
@@ -261,7 +274,7 @@ export const runMultipleSimulations = async (
       }
     }
 
-    // Move to next date (3 days later)
+    // Move to next date (1 days later)
     currentDateString = addDays(currentDateString, 1);
     
     // Report progress and yield control back to the browser frequently to keep UI responsive
@@ -272,26 +285,27 @@ export const runMultipleSimulations = async (
     }
   }
 
-  console.log(
-    `Completed ${simulationCount} simulations from ${results[0]?.startDate} to ${
-      results[results.length - 1]?.startDate
-    }`
-  );
+  console.log(`Completed ${simulationCount} simulations`);
 
   // Report 100% completion
   onProgress?.(100);
 
-  const analysisResults = analyzeSimulationResults(results);
+  const analysisResults = calculateSummaryStats(strategyRates, qqqRates, tqqqRates, startDates);
 
-  return { results, analysisResults };
+  return { results: [], analysisResults };
 };
+
 /**
- * Analyzes multiple simulation results to get statistics
- * @param results - Array of simulation results from runMultipleSimulations
- * @returns Statistics about the simulation results and the detailed results data
+ * Calculate summary statistics from arrays of rates
+ * Memory-efficient approach that doesn't store full simulation objects
  */
-export const analyzeSimulationResults = (results: Array<{ startDate: string; simulation: Simulation }>) => {
-  if (results.length === 0) {
+const calculateSummaryStats = (
+  strategyRates: number[],
+  qqqRates: number[],
+  tqqqRates: number[],
+  startDates: string[]
+) => {
+  if (strategyRates.length === 0) {
     return {
       totalSimulations: 0,
       averageStrategyRate: 0,
@@ -304,10 +318,6 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
     };
   }
 
-  const strategyRates = results.map((r) => r.simulation.annualizedStrategyRate || 0);
-  const qqqRates = results.map((r) => r.simulation.annualizedQQQRate || 0);
-  const tqqqRates = results.map((r) => r.simulation.annualizedTQQQRate || 0);
-
   const averageStrategyRate = strategyRates.reduce((sum, rate) => sum + rate, 0) / strategyRates.length;
   const averageQQQRate = qqqRates.reduce((sum, rate) => sum + rate, 0) / qqqRates.length;
   const averageTQQQRate = tqqqRates.reduce((sum, rate) => sum + rate, 0) / tqqqRates.length;
@@ -317,77 +327,35 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
 
   // Calculate how much better strategy is than QQQ
   const strategyVsQQQPercentageImprovement = (averageStrategyRate / averageQQQRate - 1) * 100;
+
   // Count how many times strategy beats QQQ
-  const strategyWinsOverQQQ = results.filter(
-    (r) => (r.simulation.annualizedStrategyRate || 0) > (r.simulation.annualizedQQQRate || 0)
-  ).length;
-  const winRateVsQQQ = (strategyWinsOverQQQ / results.length) * 100;
+  const strategyWinsOverQQQ = strategyRates.filter((rate, index) => rate > qqqRates[index]).length;
+  const winRateVsQQQ = (strategyWinsOverQQQ / strategyRates.length) * 100;
 
-  // // Calculate how much better strategy is than QQQ
-  // const TQQQVsQQQPercentageImprovement = (averageTQQQRate / averageQQQRate - 1) * 100;
-  // // Count how many times strategy beats QQQ
-  // const TQQQWinsOverQQQ = results.filter(
-  //   (r) => (r.simulation.annualizedTQQQRate || 0) > (r.simulation.annualizedQQQRate || 0)
-  // ).length;
-  // const winRateTQQQVsQQQ = (TQQQWinsOverQQQ / results.length) * 100;
-
-  const resultsWithRates = results.map((r) => ({
-    startDate: r.startDate,
-    strategyRate: r.simulation.annualizedStrategyRate || 0,
-    qqqRate: r.simulation.annualizedQQQRate || 0,
-    tqqqRate: r.simulation.annualizedTQQQRate || 0,
+  // Create results array for display - only keep what's needed
+  const resultsWithRates = strategyRates.map((strategyRate, index) => ({
+    startDate: startDates[index],
+    strategyRate,
+    qqqRate: qqqRates[index],
+    tqqqRate: tqqqRates[index],
   }));
 
-  console.log("Absolute worst 10");
-  resultsWithRates
-    .sort((a, b) => a.strategyRate - b.strategyRate)
-    .slice(0, 10)
-    .forEach((result, index) => {
-      console.log(
-        `${index + 1}. ${result.startDate}: Strategy= ${(result.strategyRate * 100)?.toFixed(2)}%, QQQ= ${(
-          result.qqqRate * 100
-        )?.toFixed(2)}%, TQQQ= ${(result.tqqqRate * 100)?.toFixed(2)}%`
-      );
-    });
-
-  console.log("Relative worst 10");
-  resultsWithRates
-    .sort((a, b) => a.strategyRate - a.qqqRate - (b.strategyRate - b.qqqRate))
-    .slice(0, 10)
-    .forEach((result, index) => {
-      console.log(
-        `${index + 1}. ${result.startDate}: Strategy= ${(result.strategyRate * 100)?.toFixed(2)}%, QQQ= ${(
-          result.qqqRate * 100
-        )?.toFixed(2)}%, TQQQ= ${(result.tqqqRate * 100)?.toFixed(2)}%`
-      );
-    });
-
-  console.log(
-    "\naverageStrategyRate\t\t\t\t",
-    `${(averageStrategyRate * 100).toFixed(2)}%`,
-    "\nstrategyVsQQQImprovement\t\t\t\t",
-    `${strategyVsQQQPercentageImprovement.toFixed(2)}%`,
-    "\nwinRateVsQQQ\t\t\t\t",
-    `${winRateVsQQQ.toFixed(2)}%`,
-    `absoluteWorst`,
-    resultsWithRates.sort((a, b) => a.strategyRate - b.strategyRate)[0].strategyRate.toFixed(2) + "%",
-    `relativeWorst`,
-    resultsWithRates
-      .sort((a, b) => a.strategyRate - a.qqqRate - (b.strategyRate - b.qqqRate))[0]
-      .strategyRate.toFixed(2) + "%"
-  );
+  console.log(`✅ Analysis complete:`);
+  console.log(`📊 Total simulations: ${strategyRates.length}`);
+  console.log(`📈 Average strategy rate: ${(averageStrategyRate * 100).toFixed(2)}%`);
+  console.log(`📈 Average QQQ rate: ${(averageQQQRate * 100).toFixed(2)}%`);
+  console.log(`🚀 Strategy vs QQQ improvement: ${strategyVsQQQPercentageImprovement.toFixed(2)}%`);
+  console.log(`🎯 Win rate vs QQQ: ${winRateVsQQQ.toFixed(1)}%`);
 
   return {
-    totalSimulations: results.length,
+    totalSimulations: strategyRates.length,
     averageStrategyRate,
     averageQQQRate,
     averageTQQQRate,
     bestStrategyRate,
     worstStrategyRate,
-    dateRange: {
-      start: results[0]?.startDate,
-      end: results[results.length - 1]?.startDate,
-    },
+    winRate: winRateVsQQQ,
+    strategyVsQQQPercentageImprovement,
     resultsWithRates,
   };
 };
