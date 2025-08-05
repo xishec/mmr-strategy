@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import { Box, Typography, TextField, FormControlLabel, Switch, Button, Slider, IconButton } from "@mui/material";
+import { Box, Typography, TextField, FormControlLabel, Switch, Button, Slider, IconButton, useTheme } from "@mui/material";
 import { KeyboardArrowLeft, KeyboardArrowRight } from "@mui/icons-material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -29,6 +29,7 @@ interface BoardProps {
 }
 
 const Board: React.FC<BoardProps> = ({ marketData }) => {
+  const theme = useTheme();
   const [simulationYears, setSimulationYears] = useState<number>(5);
   const [startDate, setStartDate] = useState<Date>(new Date(2000, 0, 1)); // Year, Month (0-based), Day
   const [endDate, setEndDate] = useState<Date>(new Date());
@@ -43,12 +44,14 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
   const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
-  const [simulationResults, setSimulationResults] = useState<Array<{
-    startDate: string;
-    strategyRate: number;
-    qqqRate: number;
-    tqqqRate: number;
-  }>>([]);
+  const [simulationResults, setSimulationResults] = useState<
+    Array<{
+      startDate: string;
+      strategyRate: number;
+      qqqRate: number;
+      tqqqRate: number;
+    }>
+  >([]);
 
   const [simulation, setSimulation] = useState<Simulation>({
     portfolioSnapshots: [],
@@ -307,7 +310,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
       {/* Cash section */}
       <Box
         sx={{
-          backgroundColor: "grey.400",
+          backgroundColor: theme.palette.primary.main,
           flex: 1 - ratio,
         }}
       />
@@ -738,7 +741,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           )}
         </Box>
       </Box>
-      
+
       <SimulationResultsDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
