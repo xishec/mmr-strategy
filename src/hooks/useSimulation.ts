@@ -1,14 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Simulation, MarketData } from '../core/models';
 import { convertAnnualRateToDaily, startSimulation, runMultipleSimulations } from '../core/functions';
-
-// Helper function to format date as YYYY-MM-DD in local timezone
-const formatDateToString = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+import { formatDate } from '../core/date-utils';
 
 export interface SimulationVariables {
   startDate: Date;
@@ -67,8 +60,8 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     rebalanceLogs: [],
     variables: {
       initialMoney: variables.initialMoney,
-      startDate: formatDateToString(variables.startDate),
-      endDate: formatDateToString(variables.endDate),
+      startDate: formatDate(variables.startDate),
+      endDate: formatDate(variables.endDate),
       rebalanceDays: variables.rebalanceDays,
       targetRate: variables.targetRate,
       cashDayRate: convertAnnualRateToDaily(variables.cashYearRate),
@@ -104,8 +97,8 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
       ...prevSimulation,
       variables: {
         initialMoney: variables.initialMoney,
-        startDate: formatDateToString(variables.startDate),
-        endDate: formatDateToString(variables.endDate),
+        startDate: formatDate(variables.startDate),
+        endDate: formatDate(variables.endDate),
         rebalanceDays: variables.rebalanceDays,
         targetRate: variables.targetRate,
         cashDayRate: convertAnnualRateToDaily(variables.cashYearRate),
