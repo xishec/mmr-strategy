@@ -204,7 +204,7 @@ export const runMultipleSimulations = (
   const todayString = today();
 
   // End 3 years before the last available date to ensure we have enough data
-  const endDate = addYears(lastAvailableDate, -3);
+  const endDate = addYears(lastAvailableDate, -1);
   const finalDate = endDate < todayString ? endDate : todayString;
 
   let currentDateString = startDate;
@@ -255,7 +255,7 @@ export const runMultipleSimulations = (
     }
 
     // Move to next date (3 days later)
-    currentDateString = addDays(currentDateString, 3);
+    currentDateString = addDays(currentDateString, 1);
   }
 
   console.log(
@@ -306,13 +306,13 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
   ).length;
   const winRateVsQQQ = (strategyWinsOverQQQ / results.length) * 100;
 
-  // Calculate how much better strategy is than QQQ
-  const TQQQVsQQQPercentageImprovement = (averageTQQQRate / averageQQQRate - 1) * 100;
-  // Count how many times strategy beats QQQ
-  const TQQQWinsOverQQQ = results.filter(
-    (r) => (r.simulation.annualizedTQQQRate || 0) > (r.simulation.annualizedQQQRate || 0)
-  ).length;
-  const winRateTQQQVsQQQ = (TQQQWinsOverQQQ / results.length) * 100;
+  // // Calculate how much better strategy is than QQQ
+  // const TQQQVsQQQPercentageImprovement = (averageTQQQRate / averageQQQRate - 1) * 100;
+  // // Count how many times strategy beats QQQ
+  // const TQQQWinsOverQQQ = results.filter(
+  //   (r) => (r.simulation.annualizedTQQQRate || 0) > (r.simulation.annualizedQQQRate || 0)
+  // ).length;
+  // const winRateTQQQVsQQQ = (TQQQWinsOverQQQ / results.length) * 100;
 
   const resultsWithRates = results.map((r) => ({
     startDate: r.startDate,

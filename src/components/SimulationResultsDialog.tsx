@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from "@mui/material";
 import * as d3 from "d3";
+import { blue, green, yellow } from "./Chart";
 
 interface SimulationResult {
   startDate: string;
@@ -48,6 +49,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
 
     return {
       averageStrategyRate,
+      averageQQQRate,
       strategyVsQQQImprovement,
       winRateVsQQQ,
       absoluteWorst,
@@ -158,23 +160,23 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
     g.append("path")
       .datum(parsedData)
       .attr("fill", "none")
-      .attr("stroke", "#4285F4") // Blue for strategy
-      .attr("stroke-width", 2)
+      .attr("stroke", yellow) // for strategy
+      .attr("stroke-width", 1)
       .attr("d", strategyLine);
 
     g.append("path")
       .datum(parsedData)
       .attr("fill", "none")
-      .attr("stroke", "#EA4335") // Red for QQQ
-      .attr("stroke-width", 2)
+      .attr("stroke", blue) // for QQQ
+      .attr("stroke-width", 1)
       .attr("d", qqqLine);
 
     // Add legend
-    const legend = g.append("g").attr("transform", `translate(${width - 70}, 20)`);
+    const legend = g.append("g").attr("transform", `translate(20, 20)`);
 
     legend
       .append("rect")
-      .attr("width", 70)
+      .attr("width", 100)
       .attr("height", 50)
       .attr("fill", "white")
       .attr("stroke", "#ccc")
@@ -186,7 +188,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("x2", 25)
       .attr("y1", 15)
       .attr("y2", 15)
-      .attr("stroke", "#4285F4")
+      .attr("stroke", green)
       .attr("stroke-width", 2);
 
     legend.append("text").attr("x", 30).attr("y", 15).attr("dy", "0.35em").style("font-size", "12px").text("Strategy");
@@ -197,7 +199,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("x2", 25)
       .attr("y1", 35)
       .attr("y2", 35)
-      .attr("stroke", "#EA4335")
+      .attr("stroke", yellow)
       .attr("stroke-width", 2);
 
     legend.append("text").attr("x", 30).attr("y", 35).attr("dy", "0.35em").style("font-size", "12px").text("QQQ");
@@ -305,18 +307,18 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Performance Summary
               </Typography>
-              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 2 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 2 }}>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
                     Average Strategy Rate
                   </Typography>
-                  <Typography variant="h6" color={statistics.averageStrategyRate > 0 ? "success.main" : "error.main"}>
+                  <Typography variant="h6" color={yellow}>
                     {(statistics.averageStrategyRate * 100).toFixed(2)}%
                   </Typography>
                 </Box>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
-                    Strategy vs QQQ Improvement
+                    Strategy vs QQQ
                   </Typography>
                   <Typography
                     variant="h6"
@@ -331,6 +333,15 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                   </Typography>
                   <Typography variant="h6" color={statistics.winRateVsQQQ > 50 ? "success.main" : "error.main"}>
                     {statistics.winRateVsQQQ.toFixed(2)}%
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Average QQQ Rate
+                  </Typography>
+                  <Typography variant="h6" color={blue}>
+                    {(statistics.averageQQQRate * 100).toFixed(2)}%
                   </Typography>
                 </Box>
                 <Box>
