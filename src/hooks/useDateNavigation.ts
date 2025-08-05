@@ -2,19 +2,15 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Simulation } from '../core/models';
 
 export interface UseDateNavigationReturn {
-  selectedDateIndex: number;
   selectedDate: string | null;
   availableDates: string[];
-  handleSliderChange: (_: Event, value: number | number[]) => void;
-  handlePreviousDate: () => void;
-  handleNextDate: () => void;
   setSelectedDateIndex: (index: number) => void;
 }
 
 export const useDateNavigation = (simulation: Simulation): UseDateNavigationReturn => {
   const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
 
-  // Available dates for slider navigation
+  // Available dates for navigation
   const availableDates = useMemo(() => {
     if (!simulation || simulation.rebalanceLogs.length === 0) return [];
     return simulation.rebalanceLogs.map((log) => log.date).sort();
@@ -26,12 +22,6 @@ export const useDateNavigation = (simulation: Simulation): UseDateNavigationRetu
     return availableDates[selectedDateIndex];
   }, [availableDates, selectedDateIndex]);
 
-  // Handle slider-controlled date selection
-  const handleSliderChange = useCallback((_: Event, value: number | number[]) => {
-    const index = Array.isArray(value) ? value[0] : value;
-    setSelectedDateIndex(Math.round(index));
-  }, []);
-
   // Handle keyboard navigation
   const handlePreviousDate = useCallback(() => {
     setSelectedDateIndex((prev) => Math.max(0, prev - 1));
@@ -41,7 +31,7 @@ export const useDateNavigation = (simulation: Simulation): UseDateNavigationRetu
     setSelectedDateIndex((prev) => Math.min(availableDates.length - 1, prev + 1));
   }, [availableDates.length]);
 
-  // Keyboard event handler
+  // Keyboard event handler for arrow key navigation
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       // Only handle if no input elements are focused
@@ -70,12 +60,8 @@ export const useDateNavigation = (simulation: Simulation): UseDateNavigationRetu
   }, [simulation.rebalanceLogs]);
 
   return {
-    selectedDateIndex,
     selectedDate,
     availableDates,
-    handleSliderChange,
-    handlePreviousDate,
-    handleNextDate,
     setSelectedDateIndex,
   };
 };

@@ -3,7 +3,6 @@ import { Box } from "@mui/material";
 import { MarketData } from "../core/models";
 import { useSimulation, useDateNavigation, useChartData } from "../hooks";
 import SimulationSetup from "./SimulationSetup";
-import DateNavigation from "./DateNavigation";
 import Legend from "./Legend";
 import RebalanceDetails from "./RebalanceDetails";
 import SimulationResultsDialog from "./SimulationResultsDialog";
@@ -26,15 +25,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
   } = useSimulation(marketData);
 
   // Date navigation
-  const {
-    selectedDateIndex,
-    selectedDate,
-    availableDates,
-    handleSliderChange,
-    handlePreviousDate,
-    handleNextDate,
-    setSelectedDateIndex,
-  } = useDateNavigation(simulation);
+  const { selectedDate, availableDates, setSelectedDateIndex } = useDateNavigation(simulation);
 
   // Chart data processing
   const { chartData, legendValues } = useChartData(simulation, selectedDate);
@@ -114,7 +105,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         sx={{
           display: "grid",
           gridTemplateColumns: "1fr",
-          gridTemplateRows: "min-content min-content min-content 1fr ",
+          gridTemplateRows: "min-content 1fr min-content",
           overflow: "hidden",
           minWidth: 0,
           maxWidth: "100%",
@@ -132,20 +123,6 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
             />
           </Box>
         )}
-
-        {/* Rebalance Details */}
-        <Box sx={{ mx: 4 }}>
-          <RebalanceDetails selectedDate={selectedDate} simulation={simulation} chartData={chartData} />
-        </Box>
-
-        {/* Date Navigation */}
-        <DateNavigation
-          selectedDateIndex={selectedDateIndex}
-          availableDates={availableDates}
-          onSliderChange={handleSliderChange}
-          onPreviousDate={handlePreviousDate}
-          onNextDate={handleNextDate}
-        />
 
         {/* Chart */}
         {simulation && simulation.portfolioSnapshots.length > 0 && (
@@ -168,6 +145,11 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
             />
           </Box>
         )}
+
+        {/* Rebalance Details */}
+        <Box sx={{ mx: 4 }}>
+          <RebalanceDetails selectedDate={selectedDate} simulation={simulation} chartData={chartData} />
+        </Box>
       </Box>
 
       {/* Results Dialog */}

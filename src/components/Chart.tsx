@@ -299,7 +299,7 @@ const Chart: React.FC<ChartProps> = ({
       .append("g")
       .attr("class", "crosshair")
       .style("display", selectedDate ? "block" : "none");
-    const crosshairHeight = ratioTop + ratioHeight;
+    const crosshairHeight = ratioTop + ratioHeight + spaceBetweenCharts / 2;
     const crosshairLine = crosshair
       .append("line")
       .attr("x1", 0)
@@ -369,7 +369,7 @@ const Chart: React.FC<ChartProps> = ({
       })
       .on("mousemove", function (event) {
         const [mouseX] = d3.pointer(event, this);
-        
+
         // Always update crosshair position to follow cursor
         updateCrosshairPosition(mouseX);
 
