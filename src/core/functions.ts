@@ -182,12 +182,14 @@ export const convertAnnualRateToDaily = (annualRate: number): number => {
  * @param variables - The simulation variables (including initialMoney and all required fields)
  * @param marketData - The market data containing QQQ and TQQQ prices
  * @param nbYear - Number of years to run each simulation (default: 5)
+ * @param onProgress - Optional callback to report progress (0-100)
  * @returns Object containing array of simulation results with their starting dates and analysis results
  */
 export const runMultipleSimulations = async (
   variables: Variables,
   marketData: MarketData,
-  nbYear: number
+  nbYear: number,
+  onProgress?: (progress: number) => void
 ): Promise<{
   results: Array<{ startDate: string; simulation: Simulation }>;
   analysisResults: any;
@@ -207,11 +209,16 @@ export const runMultipleSimulations = async (
   const endDate = addYears(lastAvailableDate, -1);
   const finalDate = endDate < todayString ? endDate : todayString;
 
+  // Calculate total number of days to process for progress tracking
+  const totalDays = Math.ceil((new Date(finalDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
+
   let currentDateString = startDate;
   let simulationCount = 0;
+  let loopIterations = 0;
 
   while (currentDateString <= finalDate) {
     const currentIterationDate = currentDateString;
+    loopIterations++;
 
     // Check if this date exists in market data or find next available date
     const nextAvailableDate = availableDates.find((date) => date >= currentIterationDate);
@@ -257,9 +264,11 @@ export const runMultipleSimulations = async (
     // Move to next date (3 days later)
     currentDateString = addDays(currentDateString, 1);
     
-    // Yield control back to the browser every 100 iterations to keep UI responsive
-    if (simulationCount % 100 === 0) {
-      await new Promise(resolve => setTimeout(resolve, 0));
+    // Report progress and yield control back to the browser frequently to keep UI responsive
+    if (loopIterations % 25 === 0) {
+      const progress = Math.min(100, (loopIterations / totalDays) * 100);
+      onProgress?.(Math.round(progress));
+      await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
     }
   }
 
@@ -268,6 +277,9 @@ export const runMultipleSimulations = async (
       results[results.length - 1]?.startDate
     }`
   );
+
+  // Report 100% completion
+  onProgress?.(100);
 
   const analysisResults = analyzeSimulationResults(results);
 

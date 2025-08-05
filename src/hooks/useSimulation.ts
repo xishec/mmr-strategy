@@ -27,6 +27,7 @@ export interface UseSimulationReturn {
     tqqqRate: number;
   }>;
   isRunningMultipleSimulations: boolean;
+  simulationProgress: number;
   updateVariable: <K extends keyof SimulationVariables>(key: K, value: SimulationVariables[K]) => void;
   runMultipleSimulationsHandler: () => void;
 }
@@ -57,6 +58,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   >([]);
 
   const [isRunningMultipleSimulations, setIsRunningMultipleSimulations] = useState<boolean>(false);
+  const [simulationProgress, setSimulationProgress] = useState<number>(0);
 
   const [simulation, setSimulation] = useState<Simulation>({
     portfolioSnapshots: [],
@@ -89,18 +91,21 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   const runMultipleSimulationsHandler = useCallback(async () => {
     if (marketData && simulation.variables) {
       setIsRunningMultipleSimulations(true);
+      setSimulationProgress(0);
       try {
         console.log(`Starting multiple simulations for ${variables.simulationYears} years each...`);
         const { analysisResults } = await runMultipleSimulations(
           simulation.variables, 
           marketData, 
-          variables.simulationYears
+          variables.simulationYears,
+          (progress) => setSimulationProgress(progress)
         );
         setSimulationResults(analysisResults.resultsWithRates);
       } catch (error) {
         console.error('Error running multiple simulations:', error);
       } finally {
         setIsRunningMultipleSimulations(false);
+        setSimulationProgress(0);
       }
     }
   }, [marketData, simulation.variables, variables.simulationYears]);
@@ -149,6 +154,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     variables,
     simulationResults,
     isRunningMultipleSimulations,
+    simulationProgress,
     updateVariable,
     runMultipleSimulationsHandler,
   };

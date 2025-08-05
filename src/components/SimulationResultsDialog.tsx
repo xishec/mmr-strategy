@@ -1,5 +1,14 @@
 import React, { useEffect, useRef, useCallback } from "react";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, CircularProgress } from "@mui/material";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Box,
+  Typography,
+  CircularProgress,
+} from "@mui/material";
 import * as d3 from "d3";
 import { blue, green, yellow } from "./Chart";
 
@@ -15,6 +24,7 @@ interface SimulationResultsDialogProps {
   onClose: () => void;
   results: SimulationResult[];
   isLoading?: boolean;
+  progress?: number;
   title?: string;
 }
 
@@ -23,6 +33,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
   onClose,
   results,
   isLoading = false,
+  progress = 0,
   title = "Simulation Results",
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -68,7 +79,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
     svg.selectAll("*").remove();
 
     const container = containerRef.current;
-    const margin = { top: 20, right: 80, bottom: 60, left: 80 };
+    const margin = { top: 20, right: 30, bottom: 60, left: 80 };
     const width = container.clientWidth - margin.left - margin.right;
     const height = 400 - margin.top - margin.bottom;
 
@@ -128,7 +139,10 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("stroke-width", 0.5);
 
     // Add axes
-    const xAxis = d3.axisBottom(xScale).tickFormat(d3.timeFormat("%Y-%m") as any);
+    const xAxis = d3
+      .axisBottom(xScale)
+      .ticks(20)
+      .tickFormat(d3.timeFormat("%Y-%m") as any);
     const yAxis = d3.axisLeft(yScale).tickFormat(d3.format(".1%"));
 
     g.append("g")
@@ -145,7 +159,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
     // Add axis labels
     g.append("text")
       .attr("transform", "rotate(-90)")
-      .attr("y", 0 - margin.left)
+      .attr("y", 0 - margin.left + 10)
       .attr("x", 0 - height / 2)
       .attr("dy", "1em")
       .style("text-anchor", "middle")
@@ -153,7 +167,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .text("Annualized Rate");
 
     g.append("text")
-      .attr("transform", `translate(${width / 2}, ${height + margin.bottom - 10})`)
+      .attr("transform", `translate(${width / 2}, ${height + margin.bottom})`)
       .style("text-anchor", "middle")
       .style("font-size", "12px")
       .text("Simulation Start Date");
@@ -296,118 +310,153 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
         },
       }}
     >
-      <DialogTitle>{isLoading ? "Running Simulations..." : title}</DialogTitle>
+      <DialogTitle>{isLoading ? `Running Simulations...` : title}</DialogTitle>
       <DialogContent>
         {isLoading ? (
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              minHeight: '300px',
-              gap: 2
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "300px",
+              height: "100%",
+              gap: 10,
+              "@keyframes pulse": {
+                "0%": {
+                  opacity: 1,
+                },
+                "50%": {
+                  opacity: 0.7,
+                },
+                "100%": {
+                  opacity: 1,
+                },
+              },
+              animation: "pulse 2s ease-in-out infinite",
             }}
           >
-            <CircularProgress size={60} />
-            <Typography variant="h6" color="text.secondary">
-              Running multiple simulations...
-            </Typography>
-            <Typography variant="body2" color="text.secondary" textAlign="center">
-              This may take a few moments as we analyze thousands of scenarios.
+            <Box sx={{ position: "relative", display: "inline-flex" }}>
+              <CircularProgress
+                variant="determinate"
+                value={progress}
+                size={150}
+                thickness={2}
+                sx={{
+                  color: "primary.main",
+                }}
+              />
+              <Box
+                sx={{
+                  top: 0,
+                  left: 0,
+                  bottom: 0,
+                  right: 0,
+                  position: "absolute",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Typography variant="h6" component="div" color="text.primary">
+                  {`${Math.round(progress)}%`}
+                </Typography>
+              </Box>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: "center", maxWidth: "600px" }}>
+              Running {results.length > 0 ? results.length : "multiple"} independent backtests to validate strategy
+              robustness.
+              <br />
+              Each simulation starts investing on a different historical date and runs through to today, comparing your
+              strategy's annualized returns against the QQQ benchmark.
+              <br />
+              This comprehensive analysis reveals how your strategy would have performed regardless of market entry
+              timing.
             </Typography>
           </Box>
         ) : (
-        <Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Comparison of strategy performance vs QQQ benchmark across different simulation start dates. Each point
-            represents a {results.length > 0 ? "multi-year" : ""} simulation starting on that date.
-          </Typography>
-
-          {/* Statistics Summary */}
-          {statistics && (
-            <Box sx={{ mb: 3, p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Performance Summary
-              </Typography>
-              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 2 }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Average Strategy Rate
-                  </Typography>
-                  <Typography variant="h6" color={yellow}>
-                    {(statistics.averageStrategyRate * 100).toFixed(2)}%
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Strategy vs QQQ
-                  </Typography>
-                  <Typography
-                    variant="h6"
-                    color={statistics.strategyVsQQQImprovement > 0 ? "success.main" : "error.main"}
-                  >
-                    {statistics.strategyVsQQQImprovement.toFixed(2)}%
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Win Rate vs QQQ
-                  </Typography>
-                  <Typography variant="h6" color={statistics.winRateVsQQQ > 50 ? "success.main" : "error.main"}>
-                    {statistics.winRateVsQQQ.toFixed(2)}%
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Average QQQ Rate
-                  </Typography>
-                  <Typography variant="h6" color={blue}>
-                    {(statistics.averageQQQRate * 100).toFixed(2)}%
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Absolute Worst
-                  </Typography>
-                  <Typography
-                    variant="h6"
-                    color={statistics.absoluteWorst.strategyRate > 0 ? "success.main" : "error.main"}
-                  >
-                    {(statistics.absoluteWorst.strategyRate * 100).toFixed(2)}%
-                    <Typography variant="caption" display="block" color="text.secondary">
-                      ({statistics.absoluteWorst.startDate})
+          <Box>
+            {/* Statistics Summary */}
+            {statistics && (
+              <Box sx={{ m: 4, p: 4, bgcolor: "grey.50", borderRadius: "0.5rem" }}>
+                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 2 }}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Average Strategy Rate
                     </Typography>
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Relative Worst
-                  </Typography>
-                  <Typography
-                    variant="h6"
-                    color={statistics.relativeWorst.strategyRate > 0 ? "success.main" : "error.main"}
-                  >
-                    {(statistics.relativeWorst.strategyRate * 100).toFixed(2)}%
-                    <Typography variant="caption" display="block" color="text.secondary">
-                      ({statistics.relativeWorst.startDate})
+                    <Typography variant="h6" color={yellow}>
+                      {(statistics.averageStrategyRate * 100).toFixed(2)}%
                     </Typography>
-                  </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Strategy vs QQQ
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      color={statistics.strategyVsQQQImprovement > 0 ? "success.main" : "error.main"}
+                    >
+                      {statistics.strategyVsQQQImprovement.toFixed(2)}%
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Win Rate vs QQQ
+                    </Typography>
+                    <Typography variant="h6" color={statistics.winRateVsQQQ > 50 ? "success.main" : "error.main"}>
+                      {statistics.winRateVsQQQ.toFixed(2)}%
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Average QQQ Rate
+                    </Typography>
+                    <Typography variant="h6" color={blue}>
+                      {(statistics.averageQQQRate * 100).toFixed(2)}%
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Absolute Worst
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      color={statistics.absoluteWorst.strategyRate > 0 ? "success.main" : "error.main"}
+                    >
+                      {(statistics.absoluteWorst.strategyRate * 100).toFixed(2)}%
+                      <Typography variant="caption" display="block" color="text.secondary">
+                        ({statistics.absoluteWorst.startDate})
+                      </Typography>
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Relative Worst
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      color={statistics.relativeWorst.strategyRate > 0 ? "success.main" : "error.main"}
+                    >
+                      {(statistics.relativeWorst.strategyRate * 100).toFixed(2)}%
+                      <Typography variant="caption" display="block" color="text.secondary">
+                        ({statistics.relativeWorst.startDate})
+                      </Typography>
+                    </Typography>
+                  </Box>
                 </Box>
               </Box>
-            </Box>
-          )}
+            )}
 
-          <Box ref={containerRef} sx={{ width: "100%", height: 400 }}>
-            <svg ref={svgRef} style={{ width: "100%", height: "100%" }} />
+            <Box ref={containerRef} sx={{ width: "100%", height: 400 }}>
+              <svg ref={svgRef} style={{ width: "100%", height: "100%" }} />
+            </Box>
           </Box>
-        </Box>
         )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={isLoading}>
-          {isLoading ? 'Running...' : 'Close'}
+          {isLoading ? "Running..." : "Close"}
         </Button>
       </DialogActions>
     </Dialog>
