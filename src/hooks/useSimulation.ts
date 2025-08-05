@@ -30,6 +30,7 @@ export interface UseSimulationReturn {
   simulationProgress: number;
   updateVariable: <K extends keyof SimulationVariables>(key: K, value: SimulationVariables[K]) => void;
   runMultipleSimulationsHandler: () => void;
+  cancelSimulation: () => void;
 }
 
 export const useSimulation = (marketData: MarketData | null): UseSimulationReturn => {
@@ -87,28 +88,91 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     setVariables(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  // Handle multiple simulations
+  // Ref to track if simulation should be cancelled
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const lastProgressUpdateRef = useRef<number>(0);
+
+  // Throttled progress update to prevent excessive re-renders
+  const throttledProgressUpdate = useCallback((progress: number) => {
+    const now = Date.now();
+    if (now - lastProgressUpdateRef.current > 100 || progress === 100) { // Update max once per 100ms
+      lastProgressUpdateRef.current = now;
+      setSimulationProgress(progress);
+    }
+  }, []);
+
+  // Handle multiple simulations with proper cleanup and cancellation
   const runMultipleSimulationsHandler = useCallback(async () => {
     if (marketData && simulation.variables) {
+      // Cancel any existing simulation
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      // Create new abort controller
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
       setIsRunningMultipleSimulations(true);
       setSimulationProgress(0);
+      lastProgressUpdateRef.current = 0;
+      
       try {
         console.log(`Starting multiple simulations for ${variables.simulationYears} years each...`);
+        
+        // Clear previous results to free memory
+        setSimulationResults([]);
+        
         const { analysisResults } = await runMultipleSimulations(
           simulation.variables, 
           marketData, 
           variables.simulationYears,
-          (progress) => setSimulationProgress(progress)
+          (progress) => {
+            // Check if cancelled before updating progress
+            if (!signal.aborted) {
+              throttledProgressUpdate(progress);
+            }
+          },
+          signal
         );
-        setSimulationResults(analysisResults.resultsWithRates);
+        
+        // Only set results if not cancelled
+        if (!signal.aborted) {
+          setSimulationResults(analysisResults.resultsWithRates);
+        }
       } catch (error) {
-        console.error('Error running multiple simulations:', error);
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log('Simulation cancelled by user');
+        } else {
+          console.error('Error running multiple simulations:', error);
+        }
       } finally {
-        setIsRunningMultipleSimulations(false);
-        setSimulationProgress(0);
+        if (!signal.aborted) {
+          setIsRunningMultipleSimulations(false);
+          setSimulationProgress(0);
+        }
+        abortControllerRef.current = null;
       }
     }
-  }, [marketData, simulation.variables, variables.simulationYears]);
+  }, [marketData, simulation.variables, variables.simulationYears, throttledProgressUpdate]);
+
+  // Cancel simulation function
+  const cancelSimulation = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsRunningMultipleSimulations(false);
+      setSimulationProgress(0);
+    }
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Auto-update simulation when variables change
   useEffect(() => {
@@ -157,5 +221,6 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     simulationProgress,
     updateVariable,
     runMultipleSimulationsHandler,
+    cancelSimulation,
   };
 };

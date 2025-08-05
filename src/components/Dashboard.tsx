@@ -22,7 +22,8 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
     isRunningMultipleSimulations, 
     simulationProgress,
     updateVariable, 
-    runMultipleSimulationsHandler 
+    runMultipleSimulationsHandler,
+    cancelSimulation 
   } = useSimulation(marketData);
 
   // Date navigation
@@ -140,7 +141,8 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         results={simulationResults}
         isLoading={isRunningMultipleSimulations}
         progress={simulationProgress}
-        title={`Multiple Simulation Results (${variables.simulationYears} year periods)`}
+        title={`Historical Strategy Performance vs QQQ (${variables.simulationYears} year periods)`}
+        onCancel={cancelSimulation}
       />
     </Box>
   );

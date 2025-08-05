@@ -12,17 +12,40 @@ interface SimulationWorkerMessage {
 }
 
 interface SimulationWorkerResponse {
-  type: 'SIMULATION_COMPLETE' | 'SIMULATION_ERROR';
+  type: 'SIMULATION_COMPLETE' | 'SIMULATION_ERROR' | 'SIMULATION_PROGRESS';
   results?: any;
   error?: string;
+  progress?: number;
 }
 
-self.onmessage = async function(e: MessageEvent<SimulationWorkerMessage>) {
+// Declare the worker context with proper typing
+declare const self: Worker & {
+  addEventListener: (type: string, listener: (event: MessageEvent) => void) => void;
+  postMessage: (message: any) => void;
+};
+
+// Handle messages from the main thread
+self.addEventListener('message', async (e: MessageEvent<SimulationWorkerMessage>) => {
   const { type, variables, marketData, nbYear } = e.data;
   
   if (type === 'RUN_SIMULATIONS') {
     try {
-      const results = await runMultipleSimulations(variables, marketData, nbYear);
+      // Progress callback to report back to main thread
+      const onProgress = (progress: number) => {
+        self.postMessage({
+          type: 'SIMULATION_PROGRESS',
+          progress
+        } as SimulationWorkerResponse);
+      };
+
+      const results = await runMultipleSimulations(
+        variables, 
+        marketData, 
+        nbYear, 
+        onProgress,
+        undefined // No abort signal in worker for now
+      );
+      
       self.postMessage({
         type: 'SIMULATION_COMPLETE',
         results
@@ -34,6 +57,6 @@ self.onmessage = async function(e: MessageEvent<SimulationWorkerMessage>) {
       } as SimulationWorkerResponse);
     }
   }
-};
+});
 
 export {};
