@@ -1,13 +1,5 @@
 import React, { useEffect, useRef, useCallback } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Box,
-  Typography,
-} from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from "@mui/material";
 import * as d3 from "d3";
 
 interface SimulationResult {
@@ -37,31 +29,29 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
   const calculateStatistics = useCallback(() => {
     if (results.length === 0) return null;
 
-    const strategyRates = results.map(r => r.strategyRate);
-    const qqqRates = results.map(r => r.qqqRate);
-    
+    const strategyRates = results.map((r) => r.strategyRate);
+    const qqqRates = results.map((r) => r.qqqRate);
+
     const averageStrategyRate = strategyRates.reduce((sum, rate) => sum + rate, 0) / strategyRates.length;
     const averageQQQRate = qqqRates.reduce((sum, rate) => sum + rate, 0) / qqqRates.length;
-    
+
     const strategyVsQQQImprovement = (averageStrategyRate / averageQQQRate - 1) * 100;
-    
-    const strategyWinsOverQQQ = results.filter(r => r.strategyRate > r.qqqRate).length;
+
+    const strategyWinsOverQQQ = results.filter((r) => r.strategyRate > r.qqqRate).length;
     const winRateVsQQQ = (strategyWinsOverQQQ / results.length) * 100;
-    
+
     const sortedByStrategy = [...results].sort((a, b) => a.strategyRate - b.strategyRate);
     const absoluteWorst = sortedByStrategy[0];
-    
-    const sortedByRelative = [...results].sort((a, b) => 
-      (a.strategyRate - a.qqqRate) - (b.strategyRate - b.qqqRate)
-    );
+
+    const sortedByRelative = [...results].sort((a, b) => a.strategyRate - a.qqqRate - (b.strategyRate - b.qqqRate));
     const relativeWorst = sortedByRelative[0];
-    
+
     return {
       averageStrategyRate,
       strategyVsQQQImprovement,
       winRateVsQQQ,
       absoluteWorst,
-      relativeWorst
+      relativeWorst,
     };
   }, [results]);
 
@@ -109,13 +99,13 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
 
     // Line generators
     const strategyLine = d3
-      .line<typeof parsedData[0]>()
+      .line<(typeof parsedData)[0]>()
       .x((d) => xScale(d.date))
       .y((d) => yScale(d.strategyRate))
       .curve(d3.curveMonotoneX);
 
     const qqqLine = d3
-      .line<typeof parsedData[0]>()
+      .line<(typeof parsedData)[0]>()
       .x((d) => xScale(d.date))
       .y((d) => yScale(d.qqqRate))
       .curve(d3.curveMonotoneX);
@@ -180,9 +170,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("d", qqqLine);
 
     // Add legend
-    const legend = g
-      .append("g")
-      .attr("transform", `translate(${width - 70}, 20)`);
+    const legend = g.append("g").attr("transform", `translate(${width - 70}, 20)`);
 
     legend
       .append("rect")
@@ -201,13 +189,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("stroke", "#4285F4")
       .attr("stroke-width", 2);
 
-    legend
-      .append("text")
-      .attr("x", 30)
-      .attr("y", 15)
-      .attr("dy", "0.35em")
-      .style("font-size", "12px")
-      .text("Strategy");
+    legend.append("text").attr("x", 30).attr("y", 15).attr("dy", "0.35em").style("font-size", "12px").text("Strategy");
 
     legend
       .append("line")
@@ -218,13 +200,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("stroke", "#EA4335")
       .attr("stroke-width", 2);
 
-    legend
-      .append("text")
-      .attr("x", 30)
-      .attr("y", 35)
-      .attr("dy", "0.35em")
-      .style("font-size", "12px")
-      .text("QQQ");
+    legend.append("text").attr("x", 30).attr("y", 35).attr("dy", "0.35em").style("font-size", "12px").text("QQQ");
 
     // Add tooltip
     const tooltip = d3
@@ -249,9 +225,9 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .on("mousemove", function (event) {
         const [mouseX] = d3.pointer(event);
         const dateAtMouse = xScale.invert(mouseX);
-        
+
         // Find closest data point
-        const bisectDate = d3.bisector((d: typeof parsedData[0]) => d.date).left;
+        const bisectDate = d3.bisector((d: (typeof parsedData)[0]) => d.date).left;
         const index = bisectDate(parsedData, dateAtMouse, 1);
         const d0 = parsedData[index - 1];
         const d1 = parsedData[index];
@@ -319,10 +295,10 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       <DialogContent>
         <Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Comparison of strategy performance vs QQQ benchmark across different simulation start dates.
-            Each point represents a {results.length > 0 ? "multi-year" : ""} simulation starting on that date.
+            Comparison of strategy performance vs QQQ benchmark across different simulation start dates. Each point
+            represents a {results.length > 0 ? "multi-year" : ""} simulation starting on that date.
           </Typography>
-          
+
           {/* Statistics Summary */}
           {statistics && (
             <Box sx={{ mb: 3, p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
@@ -334,15 +310,18 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                   <Typography variant="body2" color="text.secondary">
                     Average Strategy Rate
                   </Typography>
-                  <Typography variant="h6">
-                    {(statistics.averageStrategyRate * 100).toFixed(3)}%
+                  <Typography variant="h6" color={statistics.averageStrategyRate > 0 ? "success.main" : "error.main"}>
+                    {(statistics.averageStrategyRate * 100).toFixed(2)}%
                   </Typography>
                 </Box>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
                     Strategy vs QQQ Improvement
                   </Typography>
-                  <Typography variant="h6" color={statistics.strategyVsQQQImprovement > 0 ? "success.main" : "error.main"}>
+                  <Typography
+                    variant="h6"
+                    color={statistics.strategyVsQQQImprovement > 0 ? "success.main" : "error.main"}
+                  >
                     {statistics.strategyVsQQQImprovement.toFixed(2)}%
                   </Typography>
                 </Box>
@@ -350,16 +329,19 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                   <Typography variant="body2" color="text.secondary">
                     Win Rate vs QQQ
                   </Typography>
-                  <Typography variant="h6">
-                    {statistics.winRateVsQQQ.toFixed(1)}%
+                  <Typography variant="h6" color={statistics.winRateVsQQQ > 50 ? "success.main" : "error.main"}>
+                    {statistics.winRateVsQQQ.toFixed(2)}%
                   </Typography>
                 </Box>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
                     Absolute Worst
                   </Typography>
-                  <Typography variant="h6">
-                    {(statistics.absoluteWorst.strategyRate * 100).toFixed(3)}%
+                  <Typography
+                    variant="h6"
+                    color={statistics.absoluteWorst.strategyRate > 0 ? "success.main" : "error.main"}
+                  >
+                    {(statistics.absoluteWorst.strategyRate * 100).toFixed(2)}%
                     <Typography variant="caption" display="block" color="text.secondary">
                       ({statistics.absoluteWorst.startDate})
                     </Typography>
@@ -369,8 +351,11 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                   <Typography variant="body2" color="text.secondary">
                     Relative Worst
                   </Typography>
-                  <Typography variant="h6">
-                    {(statistics.relativeWorst.strategyRate * 100).toFixed(3)}%
+                  <Typography
+                    variant="h6"
+                    color={statistics.relativeWorst.strategyRate > 0 ? "success.main" : "error.main"}
+                  >
+                    {(statistics.relativeWorst.strategyRate * 100).toFixed(2)}%
                     <Typography variant="caption" display="block" color="text.secondary">
                       ({statistics.relativeWorst.startDate})
                     </Typography>

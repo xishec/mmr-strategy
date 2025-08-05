@@ -46,7 +46,7 @@ const RatioBox: React.FC<RatioBoxProps> = ({ ratio, cashBackgroundColor, tqqqBac
           fontSize: "1rem",
         }}
       >
-        {(ratio * 100).toFixed(1)}%
+        {(ratio * 100).toFixed(2)}%
       </Box>
     </Box>
   );

@@ -347,17 +347,17 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
 
   console.log(
     "\naverageStrategyRate\t\t\t\t",
-    `${(averageStrategyRate * 100).toFixed(3)}%`,
+    `${(averageStrategyRate * 100).toFixed(2)}%`,
     "\nstrategyVsQQQImprovement\t\t\t\t",
     `${strategyVsQQQPercentageImprovement.toFixed(2)}%`,
     "\nwinRateVsQQQ\t\t\t\t",
-    `${winRateVsQQQ.toFixed(1)}%`,
+    `${winRateVsQQQ.toFixed(2)}%`,
     `absoluteWorst`,
-    resultsWithRates.sort((a, b) => a.strategyRate - b.strategyRate)[0].strategyRate.toFixed(3) + "%",
+    resultsWithRates.sort((a, b) => a.strategyRate - b.strategyRate)[0].strategyRate.toFixed(2) + "%",
     `relativeWorst`,
     resultsWithRates
       .sort((a, b) => a.strategyRate - a.qqqRate - (b.strategyRate - b.qqqRate))[0]
-      .strategyRate.toFixed(3) + "%"
+      .strategyRate.toFixed(2) + "%"
   );
 
   return {

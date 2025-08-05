@@ -103,7 +103,7 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({
           <Slider
             orientation="vertical"
             valueLabelDisplay="on"
-            valueLabelFormat={() => `${actualPercentage.toFixed(1)}%`}
+            valueLabelFormat={() => `${actualPercentage.toFixed(2)}%`}
             track={false}
             value={clampedPercentage}
             min={minRange}
