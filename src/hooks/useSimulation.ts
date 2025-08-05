@@ -88,29 +88,16 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     setVariables(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  // Ref to track if simulation should be cancelled
-  const lastProgressUpdateRef = useRef<number>(0);
-
-  // Throttled progress update to prevent excessive re-renders
-  const throttledProgressUpdate = useCallback((progress: number) => {
-    const now = Date.now();
-    if (now - lastProgressUpdateRef.current > 100 || progress === 100) { // Update max once per 100ms
-      lastProgressUpdateRef.current = now;
-      setSimulationProgress(progress);
-    }
-  }, []);
-
-  // Handle multiple simulations - simplified without cancellation
+  // Handle multiple simulations - simple approach
   const runMultipleSimulationsHandler = useCallback(async () => {
     if (marketData && simulation.variables) {
       setIsRunningMultipleSimulations(true);
       setSimulationProgress(0);
-      lastProgressUpdateRef.current = 0;
       
       try {
         console.log(`Starting multiple simulations for ${variables.simulationYears} years each...`);
         
-        // Clear previous results to free memory
+        // Clear previous results
         setSimulationResults([]);
         
         const { analysisResults } = await runMultipleSimulations(
@@ -118,20 +105,23 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
           marketData, 
           variables.simulationYears,
           (progress) => {
-            throttledProgressUpdate(progress);
+            setSimulationProgress(progress);
           }
         );
         
-        // Set results after completion
-        setSimulationResults(analysisResults.resultsWithRates);
+        // Set only the essential results we need for display
+        setSimulationResults(analysisResults.resultsWithRates || []);
+        
+        console.log(`Completed ${analysisResults.totalSimulations} simulations`);
       } catch (error) {
         console.error('Error running multiple simulations:', error);
+        setSimulationResults([]);
       } finally {
         setIsRunningMultipleSimulations(false);
         setSimulationProgress(0);
       }
     }
-  }, [marketData, simulation.variables, variables.simulationYears, throttledProgressUpdate]);
+  }, [marketData, simulation.variables, variables.simulationYears]);
 
   // Simple cancel function (just resets state)
   const cancelSimulation = useCallback(() => {
