@@ -5,6 +5,7 @@ import { useSimulation, useDateNavigation, useChartData } from "../hooks";
 import SimulationSetup from "./SimulationSetup";
 import DateNavigation from "./DateNavigation";
 import ChartSection from "./ChartSection";
+import Legend from "./Legend";
 import RebalanceDetails from "./RebalanceDetails";
 import SimulationResultsDialog from "./SimulationResultsDialog";
 
@@ -87,20 +88,23 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         sx={{
           display: "grid",
           gridTemplateColumns: "1fr",
-          gridTemplateRows: "min-content 1fr min-content 200px",
+          gridTemplateRows: "min-content min-content 1fr 200px",
           overflow: "hidden",
           minWidth: 0,
           maxWidth: "100%",
         }}
       >
-        {/* Chart and Legend */}
+        {/* Legend */}
         {simulation && simulation.portfolioSnapshots.length > 0 && (
-          <ChartSection
-            chartData={chartData}
-            legendValues={legendValues}
-            selectedDate={selectedDate}
-            isLogScale={variables.isLogScale}
-          />
+          <Box sx={{ px: 2, ml: 6 }}>
+            <Legend
+              priceSeriesData={chartData.priceChart}
+              ratioSeriesData={{ ...chartData.ratioChart, ...chartData.pullbackChart }}
+              selectedDate={selectedDate}
+              priceValues={legendValues.priceValues}
+              ratioValues={legendValues.ratioValues}
+            />
+          </Box>
         )}
 
         {/* Date Navigation */}
@@ -111,6 +115,11 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
           onPreviousDate={handlePreviousDate}
           onNextDate={handleNextDate}
         />
+
+        {/* Chart */}
+        {simulation && simulation.portfolioSnapshots.length > 0 && (
+          <ChartSection chartData={chartData} selectedDate={selectedDate} isLogScale={variables.isLogScale} />
+        )}
 
         {/* Rebalance Details */}
         <RebalanceDetails selectedDate={selectedDate} simulation={simulation} chartData={chartData} />
