@@ -47,6 +47,15 @@ export enum RebalanceType {
   BigDrop = "Big Drop",
 }
 
+export enum RebalanceTypeExplanation {
+  BigSpike = "Rebalance with 1.5x factor, usually big spikes comes together.",
+  Spike = "Rebalance with 1x factor, basically just restart.",
+  Excess = "Sell excess TQQQ to follow the target rate.",
+  Shortfall = "Buy more TQQQ to follow the target rate.",
+  Drop = "No action taken, maintain current allocation, we don't sell low",
+  BigDrop = "Rebalance with 0.5x factor, now market is very low, we have to buy something.",
+}
+
 export interface Investments {
   total: number;
   mockTotalQQQ: number;

@@ -4,7 +4,14 @@ import { KeyboardArrowLeft, KeyboardArrowRight } from "@mui/icons-material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { convertAnnualRateToDaily, formatValue, runMultipleSimulations, startSimulation } from "../core/functions";
-import { MarketData, Simulation, RebalanceLog, PortfolioSnapshot, RebalanceType } from "../core/models";
+import {
+  MarketData,
+  Simulation,
+  RebalanceLog,
+  PortfolioSnapshot,
+  RebalanceType,
+  RebalanceTypeExplanation,
+} from "../core/models";
 import Chart, { green, red, yellow } from "./Chart";
 import Legend from "./Legend";
 
@@ -537,7 +544,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
             margin: "0 3rem",
             marginTop: "1.5rem",
             display: "grid",
-            gridTemplateColumns: "225px min-content 1fr min-content",
+            gridTemplateColumns: "1fr min-content 3fr min-content",
             gap: "2rem",
             justifyContent: "center",
             alignItems: "center",
@@ -654,7 +661,16 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                       <Box sx={{ alignSelf: "start" }}>
                         <Typography fontSize="1rem">
                           The accumulated rate in the last {simulation.variables.rebalanceDays} days is{" "}
-                          <strong>{formatValue(cumulativeRate, true)}</strong>
+                          <strong>{formatValue(cumulativeRate, true)}</strong>, the type of the rebalance is{" "}
+                          <strong>{rebalanceLog.rebalanceType}</strong>.
+                        </Typography>
+                        <Typography fontSize="1rem">
+                          Explanation :{" "}
+                          {
+                            RebalanceTypeExplanation[
+                              rebalanceLog.rebalanceType as keyof typeof RebalanceTypeExplanation
+                            ]
+                          }
                         </Typography>
                         <Typography fontSize="1rem">---</Typography>
                         <Typography fontSize="1rem">
