@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback } from "react";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, CircularProgress } from "@mui/material";
 import * as d3 from "d3";
 import { blue, green, yellow } from "./Chart";
 
@@ -14,6 +14,7 @@ interface SimulationResultsDialogProps {
   open: boolean;
   onClose: () => void;
   results: SimulationResult[];
+  isLoading?: boolean;
   title?: string;
 }
 
@@ -21,6 +22,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
   open,
   onClose,
   results,
+  isLoading = false,
   title = "Simulation Results",
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -283,9 +285,10 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={isLoading ? undefined : onClose}
       maxWidth="lg"
       fullWidth
+      disableEscapeKeyDown={isLoading}
       PaperProps={{
         sx: {
           height: "80vh",
@@ -293,8 +296,28 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
         },
       }}
     >
-      <DialogTitle>{title}</DialogTitle>
+      <DialogTitle>{isLoading ? "Running Simulations..." : title}</DialogTitle>
       <DialogContent>
+        {isLoading ? (
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              minHeight: '300px',
+              gap: 2
+            }}
+          >
+            <CircularProgress size={60} />
+            <Typography variant="h6" color="text.secondary">
+              Running multiple simulations...
+            </Typography>
+            <Typography variant="body2" color="text.secondary" textAlign="center">
+              This may take a few moments as we analyze thousands of scenarios.
+            </Typography>
+          </Box>
+        ) : (
         <Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Comparison of strategy performance vs QQQ benchmark across different simulation start dates. Each point
@@ -380,9 +403,12 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
             <svg ref={svgRef} style={{ width: "100%", height: "100%" }} />
           </Box>
         </Box>
+        )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Close</Button>
+        <Button onClick={onClose} disabled={isLoading}>
+          {isLoading ? 'Running...' : 'Close'}
+        </Button>
       </DialogActions>
     </Dialog>
   );

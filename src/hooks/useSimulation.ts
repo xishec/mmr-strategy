@@ -26,6 +26,7 @@ export interface UseSimulationReturn {
     qqqRate: number;
     tqqqRate: number;
   }>;
+  isRunningMultipleSimulations: boolean;
   updateVariable: <K extends keyof SimulationVariables>(key: K, value: SimulationVariables[K]) => void;
   runMultipleSimulationsHandler: () => void;
 }
@@ -55,6 +56,8 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     }>
   >([]);
 
+  const [isRunningMultipleSimulations, setIsRunningMultipleSimulations] = useState<boolean>(false);
+
   const [simulation, setSimulation] = useState<Simulation>({
     portfolioSnapshots: [],
     rebalanceLogs: [],
@@ -83,11 +86,22 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   }, []);
 
   // Handle multiple simulations
-  const runMultipleSimulationsHandler = useCallback(() => {
+  const runMultipleSimulationsHandler = useCallback(async () => {
     if (marketData && simulation.variables) {
-      console.log(`Starting multiple simulations for ${variables.simulationYears} years each...`);
-      const { analysisResults } = runMultipleSimulations(simulation.variables, marketData, variables.simulationYears);
-      setSimulationResults(analysisResults.resultsWithRates);
+      setIsRunningMultipleSimulations(true);
+      try {
+        console.log(`Starting multiple simulations for ${variables.simulationYears} years each...`);
+        const { analysisResults } = await runMultipleSimulations(
+          simulation.variables, 
+          marketData, 
+          variables.simulationYears
+        );
+        setSimulationResults(analysisResults.resultsWithRates);
+      } catch (error) {
+        console.error('Error running multiple simulations:', error);
+      } finally {
+        setIsRunningMultipleSimulations(false);
+      }
     }
   }, [marketData, simulation.variables, variables.simulationYears]);
 
@@ -134,6 +148,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     simulation,
     variables,
     simulationResults,
+    isRunningMultipleSimulations,
     updateVariable,
     runMultipleSimulationsHandler,
   };

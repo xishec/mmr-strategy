@@ -184,14 +184,14 @@ export const convertAnnualRateToDaily = (annualRate: number): number => {
  * @param nbYear - Number of years to run each simulation (default: 5)
  * @returns Object containing array of simulation results with their starting dates and analysis results
  */
-export const runMultipleSimulations = (
+export const runMultipleSimulations = async (
   variables: Variables,
   marketData: MarketData,
   nbYear: number
-): {
+): Promise<{
   results: Array<{ startDate: string; simulation: Simulation }>;
   analysisResults: any;
-} => {
+}> => {
   const results: Array<{ startDate: string; simulation: Simulation }> = [];
 
   // Get all available dates from market data (sorted)
@@ -256,6 +256,11 @@ export const runMultipleSimulations = (
 
     // Move to next date (3 days later)
     currentDateString = addDays(currentDateString, 1);
+    
+    // Yield control back to the browser every 100 iterations to keep UI responsive
+    if (simulationCount % 100 === 0) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
   }
 
   console.log(

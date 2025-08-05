@@ -15,8 +15,14 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
   // Simulation state management
-  const { simulation, variables, simulationResults, updateVariable, runMultipleSimulationsHandler } =
-    useSimulation(marketData);
+  const { 
+    simulation, 
+    variables, 
+    simulationResults, 
+    isRunningMultipleSimulations, 
+    updateVariable, 
+    runMultipleSimulationsHandler 
+  } = useSimulation(marketData);
 
   // Date navigation
   const { selectedDateIndex, selectedDate, availableDates, handleSliderChange, handlePreviousDate, handleNextDate } =
@@ -28,9 +34,9 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
   // Dialog state
   const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
 
-  const handleRunMultipleSimulations = () => {
-    runMultipleSimulationsHandler();
+  const handleRunMultipleSimulations = async () => {
     setDialogOpen(true);
+    await runMultipleSimulationsHandler();
   };
 
   return (
@@ -60,6 +66,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         monthlyNewCash={variables.monthlyNewCash}
         simulationYears={variables.simulationYears}
         isLogScale={variables.isLogScale}
+        isRunningMultipleSimulations={isRunningMultipleSimulations}
         marketData={marketData}
         onStartDateChange={(newValue: Date | null) => {
           if (newValue) {
@@ -130,6 +137,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         results={simulationResults}
+        isLoading={isRunningMultipleSimulations}
         title={`Multiple Simulation Results (${variables.simulationYears} year periods)`}
       />
     </Box>

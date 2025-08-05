@@ -16,6 +16,7 @@ interface SimulationSetupProps {
   monthlyNewCash: number;
   simulationYears: number;
   isLogScale: boolean;
+  isRunningMultipleSimulations: boolean;
   marketData: MarketData;
   onStartDateChange: (date: Date | null) => void;
   onEndDateChange: (date: Date | null) => void;
@@ -43,6 +44,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   monthlyNewCash,
   simulationYears,
   isLogScale,
+  isRunningMultipleSimulations,
   marketData,
   onStartDateChange,
   onEndDateChange,
@@ -198,7 +200,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
           variant="outlined"
           color="primary"
           onClick={onRunMultipleSimulations}
-          disabled={!marketData}
+          disabled={!marketData || isRunningMultipleSimulations}
           fullWidth
         >
           Simulation everyday
