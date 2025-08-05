@@ -296,9 +296,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const generateRatioBox = (ratio: number) => (
     <Box
       sx={{
-        border: "1px solid",
-        borderColor: "grey.300",
-        borderRadius: "0.25rem",
+        borderRadius: "0.5rem",
         height: "100%",
         aspectRatio: "1 / 1",
         display: "flex",
