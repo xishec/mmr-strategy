@@ -18,17 +18,11 @@ interface SimulationWorkerResponse {
   progress?: number;
 }
 
-// Declare the worker context with proper typing
-declare const self: Worker & {
-  addEventListener: (type: string, listener: (event: MessageEvent) => void) => void;
-  postMessage: (message: any) => void;
-};
-
 // Global abort controller for cancellation
 let abortController: AbortController | null = null;
 
 // Handle messages from the main thread
-self.addEventListener('message', async (e: MessageEvent<SimulationWorkerMessage>) => {
+addEventListener('message', async (e: MessageEvent<SimulationWorkerMessage>) => {
   const { type, variables, marketData, nbYear } = e.data;
   
   if (type === 'CANCEL_SIMULATION') {
@@ -36,7 +30,7 @@ self.addEventListener('message', async (e: MessageEvent<SimulationWorkerMessage>
     if (abortController) {
       abortController.abort();
       abortController = null;
-      self.postMessage({
+      postMessage({
         type: 'SIMULATION_CANCELLED'
       } as SimulationWorkerResponse);
     }
@@ -55,7 +49,7 @@ self.addEventListener('message', async (e: MessageEvent<SimulationWorkerMessage>
     try {
       // Progress callback to report back to main thread
       const onProgress = (progress: number) => {
-        self.postMessage({
+        postMessage({
           type: 'SIMULATION_PROGRESS',
           progress
         } as SimulationWorkerResponse);
@@ -71,7 +65,7 @@ self.addEventListener('message', async (e: MessageEvent<SimulationWorkerMessage>
       
       // Only send results if not cancelled
       if (!abortController.signal.aborted) {
-        self.postMessage({
+        postMessage({
           type: 'SIMULATION_COMPLETE',
           results
         } as SimulationWorkerResponse);
@@ -79,11 +73,11 @@ self.addEventListener('message', async (e: MessageEvent<SimulationWorkerMessage>
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         // Cancelled simulation - send cancellation message
-        self.postMessage({
+        postMessage({
           type: 'SIMULATION_CANCELLED'
         } as SimulationWorkerResponse);
       } else {
-        self.postMessage({
+        postMessage({
           type: 'SIMULATION_ERROR',
           error: error instanceof Error ? error.message : 'Unknown error'
         } as SimulationWorkerResponse);

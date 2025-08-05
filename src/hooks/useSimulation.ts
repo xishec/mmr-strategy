@@ -89,7 +89,6 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   }, []);
 
   // Ref to track if simulation should be cancelled
-  const abortControllerRef = useRef<AbortController | null>(null);
   const lastProgressUpdateRef = useRef<number>(0);
 
   // Throttled progress update to prevent excessive re-renders
@@ -101,18 +100,9 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     }
   }, []);
 
-  // Handle multiple simulations with proper cleanup and cancellation
+  // Handle multiple simulations - simplified without cancellation
   const runMultipleSimulationsHandler = useCallback(async () => {
     if (marketData && simulation.variables) {
-      // Cancel any existing simulation
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-
-      // Create new abort controller
-      abortControllerRef.current = new AbortController();
-      const signal = abortControllerRef.current.signal;
-
       setIsRunningMultipleSimulations(true);
       setSimulationProgress(0);
       lastProgressUpdateRef.current = 0;
@@ -128,50 +118,26 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
           marketData, 
           variables.simulationYears,
           (progress) => {
-            // Check if cancelled before updating progress
-            if (!signal.aborted) {
-              throttledProgressUpdate(progress);
-            }
-          },
-          signal
+            throttledProgressUpdate(progress);
+          }
         );
         
-        // Only set results if not cancelled
-        if (!signal.aborted) {
-          setSimulationResults(analysisResults.resultsWithRates);
-        }
+        // Set results after completion
+        setSimulationResults(analysisResults.resultsWithRates);
       } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          console.log('Simulation cancelled by user');
-        } else {
-          console.error('Error running multiple simulations:', error);
-        }
+        console.error('Error running multiple simulations:', error);
       } finally {
-        if (!signal.aborted) {
-          setIsRunningMultipleSimulations(false);
-          setSimulationProgress(0);
-        }
-        abortControllerRef.current = null;
+        setIsRunningMultipleSimulations(false);
+        setSimulationProgress(0);
       }
     }
   }, [marketData, simulation.variables, variables.simulationYears, throttledProgressUpdate]);
 
-  // Cancel simulation function
+  // Simple cancel function (just resets state)
   const cancelSimulation = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setIsRunningMultipleSimulations(false);
-      setSimulationProgress(0);
-    }
-  }, []);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
+    setIsRunningMultipleSimulations(false);
+    setSimulationProgress(0);
+    console.log('Simulation state reset');
   }, []);
 
   // Auto-update simulation when variables change
