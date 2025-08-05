@@ -2,14 +2,14 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Variables, MarketData } from '../core/models';
 
 interface SimulationWorkerMessage {
-  type: 'RUN_SIMULATIONS';
-  variables: Variables;
-  marketData: MarketData;
-  nbYear: number;
+  type: 'RUN_SIMULATIONS' | 'CANCEL_SIMULATION';
+  variables?: Variables;
+  marketData?: MarketData;
+  nbYear?: number;
 }
 
 interface SimulationWorkerResponse {
-  type: 'SIMULATION_COMPLETE' | 'SIMULATION_ERROR' | 'SIMULATION_PROGRESS';
+  type: 'SIMULATION_COMPLETE' | 'SIMULATION_ERROR' | 'SIMULATION_PROGRESS' | 'SIMULATION_CANCELLED';
   results?: any;
   error?: string;
   progress?: number;
@@ -66,6 +66,12 @@ export const useSimulationWorker = (): UseSimulationWorkerReturn => {
               setProgress(0);
               setError(null);
               break;
+            case 'SIMULATION_CANCELLED':
+              console.log('Simulation cancelled by user');
+              setIsRunning(false);
+              setProgress(0);
+              setError(null);
+              break;
             case 'SIMULATION_ERROR':
               setError(workerError || 'Unknown error');
               setIsRunning(false);
@@ -117,47 +123,13 @@ export const useSimulationWorker = (): UseSimulationWorkerReturn => {
 
   const cancelSimulation = useCallback(() => {
     if (workerRef.current && isRunning) {
-      // Terminate and recreate worker to cancel simulation
-      workerRef.current.terminate();
-      setIsRunning(false);
-      setProgress(0);
-      
-      // Recreate worker for future use
-      if (typeof Worker !== 'undefined') {
-        try {
-          workerRef.current = new Worker(
-            new URL('../workers/simulationWorker.ts', import.meta.url),
-            { type: 'module' }
-          );
-          // Re-setup event handlers (same as in useEffect)
-          workerRef.current.onmessage = (e: MessageEvent<SimulationWorkerResponse>) => {
-            const { type, results: workerResults, error: workerError, progress: workerProgress } = e.data;
-            switch (type) {
-              case 'SIMULATION_PROGRESS':
-                if (workerProgress !== undefined) {
-                  throttledProgressUpdate(workerProgress);
-                }
-                break;
-              case 'SIMULATION_COMPLETE':
-                setResults(workerResults?.analysisResults?.resultsWithRates || []);
-                setIsRunning(false);
-                setProgress(0);
-                setError(null);
-                break;
-              case 'SIMULATION_ERROR':
-                setError(workerError || 'Unknown error');
-                setIsRunning(false);
-                setProgress(0);
-                break;
-            }
-          };
-        } catch (error) {
-          console.warn('Failed to recreate worker');
-          workerRef.current = null;
-        }
-      }
+      // Send cancellation message to worker
+      const cancelMessage: SimulationWorkerMessage = {
+        type: 'CANCEL_SIMULATION'
+      };
+      workerRef.current.postMessage(cancelMessage);
     }
-  }, [isRunning, throttledProgressUpdate]);
+  }, [isRunning]);
 
   return {
     isRunning,

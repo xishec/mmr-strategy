@@ -2,6 +2,7 @@ import React from "react";
 import { Box } from "@mui/material";
 import { MarketData } from "../core/models";
 import { useSimulation, useDateNavigation, useChartData } from "../hooks";
+import { useSimulationWorker } from "../hooks/useSimulationWorker";
 import SimulationSetup from "./SimulationSetup";
 import DateNavigation from "./DateNavigation";
 import ChartSection from "./ChartSection";
@@ -14,17 +15,21 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
-  // Simulation state management
+  // Simulation state management (main thread for basic simulation)
   const { 
     simulation, 
     variables, 
-    simulationResults, 
-    isRunningMultipleSimulations, 
-    simulationProgress,
-    updateVariable, 
-    runMultipleSimulationsHandler,
-    cancelSimulation 
+    updateVariable
   } = useSimulation(marketData);
+
+  // Web worker for multiple simulations to prevent crashes
+  const {
+    isRunning: isRunningMultipleSimulations,
+    progress: simulationProgress,
+    results: simulationResults,
+    runSimulation,
+    cancelSimulation
+  } = useSimulationWorker();
 
   // Date navigation
   const { selectedDateIndex, selectedDate, availableDates, handleSliderChange, handlePreviousDate, handleNextDate } =
@@ -38,7 +43,9 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
 
   const handleRunMultipleSimulations = async () => {
     setDialogOpen(true);
-    await runMultipleSimulationsHandler();
+    if (marketData && simulation.variables) {
+      runSimulation(simulation.variables, marketData, variables.simulationYears);
+    }
   };
 
   return (

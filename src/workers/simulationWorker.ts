@@ -5,14 +5,14 @@ import { runMultipleSimulations } from '../core/functions';
 import { Variables, MarketData } from '../core/models';
 
 interface SimulationWorkerMessage {
-  type: 'RUN_SIMULATIONS';
-  variables: Variables;
-  marketData: MarketData;
-  nbYear: number;
+  type: 'RUN_SIMULATIONS' | 'CANCEL_SIMULATION';
+  variables?: Variables;
+  marketData?: MarketData;
+  nbYear?: number;
 }
 
 interface SimulationWorkerResponse {
-  type: 'SIMULATION_COMPLETE' | 'SIMULATION_ERROR' | 'SIMULATION_PROGRESS';
+  type: 'SIMULATION_COMPLETE' | 'SIMULATION_ERROR' | 'SIMULATION_PROGRESS' | 'SIMULATION_CANCELLED';
   results?: any;
   error?: string;
   progress?: number;
@@ -24,11 +24,34 @@ declare const self: Worker & {
   postMessage: (message: any) => void;
 };
 
+// Global abort controller for cancellation
+let abortController: AbortController | null = null;
+
 // Handle messages from the main thread
 self.addEventListener('message', async (e: MessageEvent<SimulationWorkerMessage>) => {
   const { type, variables, marketData, nbYear } = e.data;
   
-  if (type === 'RUN_SIMULATIONS') {
+  if (type === 'CANCEL_SIMULATION') {
+    // Cancel any running simulation
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
+      self.postMessage({
+        type: 'SIMULATION_CANCELLED'
+      } as SimulationWorkerResponse);
+    }
+    return;
+  }
+  
+  if (type === 'RUN_SIMULATIONS' && variables && marketData && nbYear) {
+    // Cancel any existing simulation first
+    if (abortController) {
+      abortController.abort();
+    }
+    
+    // Create new abort controller
+    abortController = new AbortController();
+    
     try {
       // Progress callback to report back to main thread
       const onProgress = (progress: number) => {
@@ -43,18 +66,30 @@ self.addEventListener('message', async (e: MessageEvent<SimulationWorkerMessage>
         marketData, 
         nbYear, 
         onProgress,
-        undefined // No abort signal in worker for now
+        abortController.signal
       );
       
-      self.postMessage({
-        type: 'SIMULATION_COMPLETE',
-        results
-      } as SimulationWorkerResponse);
+      // Only send results if not cancelled
+      if (!abortController.signal.aborted) {
+        self.postMessage({
+          type: 'SIMULATION_COMPLETE',
+          results
+        } as SimulationWorkerResponse);
+      }
     } catch (error) {
-      self.postMessage({
-        type: 'SIMULATION_ERROR',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      } as SimulationWorkerResponse);
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Cancelled simulation - send cancellation message
+        self.postMessage({
+          type: 'SIMULATION_CANCELLED'
+        } as SimulationWorkerResponse);
+      } else {
+        self.postMessage({
+          type: 'SIMULATION_ERROR',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        } as SimulationWorkerResponse);
+      }
+    } finally {
+      abortController = null;
     }
   }
 });
