@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import * as d3 from "d3";
-import { ChartData, MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core/models";
+import { MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core/models";
 
 export const black = "#202124";
 export const yellow = "#FBBC04";
@@ -9,21 +9,21 @@ export const red = "#EA4335";
 export const green = "#34A853";
 
 interface ChartProps {
-  chartData?: ChartData;
   multiSeriesData?: MultiSeriesChartData;
   rebalanceLogsMap?: Record<string, RebalanceLog>;
   selectedDate: string | null;
   isLogScale?: boolean;
   height: string | number;
+  onDateChange?: (date: string) => void;
 }
 
 const Chart: React.FC<ChartProps> = ({
-  chartData,
   multiSeriesData,
   rebalanceLogsMap,
   selectedDate,
   isLogScale = false,
   height,
+  onDateChange,
 }: ChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -31,8 +31,8 @@ const Chart: React.FC<ChartProps> = ({
 
   // Memoize expensive data processing to prevent unnecessary re-computations
   const chartDataMemo = useMemo(() => {
-    return multiSeriesData || (chartData ? { default: chartData } : {});
-  }, [multiSeriesData, chartData]);
+    return multiSeriesData || {};
+  }, [multiSeriesData]);
 
   const createD3Chart = useCallback(() => {
     if (!chartContainerRef.current || !svgRef.current) return null;
@@ -294,16 +294,139 @@ const Chart: React.FC<ChartProps> = ({
       });
     }
 
-    // Add crosshair
-    const crosshair = g.append("g").attr("class", "crosshair").style("display", "none");
+    // Add interactive crosshair with dragging
+    const crosshair = g
+      .append("g")
+      .attr("class", "crosshair")
+      .style("display", selectedDate ? "block" : "none");
     const crosshairHeight = ratioTop + ratioHeight;
     const crosshairLine = crosshair
       .append("line")
+      .attr("x1", 0)
+      .attr("x2", 0)
       .attr("y1", timelineTop)
       .attr("y2", crosshairHeight)
       .attr("stroke", "#666")
-      .attr("stroke-width", 1)
+      .attr("stroke-width", 2)
       .attr("stroke-dasharray", "3,3");
+
+    // Dragging state
+    let isDragging = false;
+
+    // Helper function to find nearest date
+    const findNearestDate = (xPosition: number): string | null => {
+      if (!rebalanceLogsMap) return null;
+
+      const dates = Object.keys(rebalanceLogsMap).sort();
+      if (dates.length === 0) return null;
+
+      const parseTime = d3.timeParse("%Y-%m-%d");
+      let nearestDate = dates[0];
+      let minDistance = Math.abs(xScale(parseTime(dates[0])!) - xPosition);
+
+      dates.forEach((date) => {
+        const dateObj = parseTime(date);
+        if (dateObj) {
+          const distance = Math.abs(xScale(dateObj) - xPosition);
+          if (distance < minDistance) {
+            minDistance = distance;
+            nearestDate = date;
+          }
+        }
+      });
+
+      return nearestDate;
+    };
+
+    // Helper function to update crosshair position
+    const updateCrosshairPosition = (xPosition: number) => {
+      const constrainedX = Math.max(0, Math.min(width, xPosition));
+      crosshairLine.attr("x1", constrainedX).attr("x2", constrainedX);
+      crosshair.style("display", "block");
+    };
+
+    // Add invisible overlay for better mouse interaction
+    const overlay = g
+      .append("rect")
+      .attr("class", "overlay")
+      .attr("width", width)
+      .attr("height", crosshairHeight)
+      .attr("fill", "none")
+      .attr("pointer-events", "all")
+      .style("cursor", "grab");
+
+    // Add interaction behavior to the overlay
+    overlay
+      .on("mouseenter", function (event) {
+        // Show crosshair when mouse enters chart area
+        crosshair.style("display", "block");
+      })
+      .on("mouseleave", function (event) {
+        // Hide crosshair when mouse leaves chart area (unless we have a selected date)
+        if (!isDragging) {
+          crosshair.style("display", selectedDate ? "block" : "none");
+        }
+      })
+      .on("mousemove", function (event) {
+        const [mouseX] = d3.pointer(event, this);
+        
+        // Always update crosshair position to follow cursor
+        updateCrosshairPosition(mouseX);
+
+        if (isDragging) {
+          // Find and set the nearest date when dragging
+          const nearestDate = findNearestDate(mouseX);
+          if (nearestDate && onDateChange) {
+            onDateChange(nearestDate);
+          }
+          event.preventDefault();
+        }
+      })
+      .on("mousedown", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const [mouseX] = d3.pointer(event, this);
+
+        isDragging = true;
+        d3.select(this).style("cursor", "grabbing");
+
+        // Snap to nearest date immediately on mousedown
+        const nearestDate = findNearestDate(mouseX);
+        if (nearestDate && onDateChange) {
+          onDateChange(nearestDate);
+        }
+      })
+      .on("mouseup", function (event) {
+        isDragging = false;
+        d3.select(this).style("cursor", "grab");
+      });
+
+    // Add global mouse up and mouse move handlers for better tracking
+    d3.select("body")
+      .on("mouseup.chart", function (event) {
+        if (isDragging) {
+          isDragging = false;
+          overlay.style("cursor", "grab");
+        }
+      })
+      .on("mousemove.chart", function (event) {
+        if (isDragging) {
+          // Get mouse position relative to the overlay
+          const overlayNode = overlay.node();
+          if (overlayNode) {
+            const [mouseX] = d3.pointer(event, overlayNode);
+
+            // Update crosshair position in real-time
+            updateCrosshairPosition(mouseX);
+
+            // Find and set the nearest date
+            const nearestDate = findNearestDate(mouseX);
+            if (nearestDate && onDateChange) {
+              onDateChange(nearestDate);
+            }
+          }
+        }
+      });
 
     // Add axes
     g.append("g")
@@ -349,7 +472,7 @@ const Chart: React.FC<ChartProps> = ({
     };
 
     return { chart: chartLikeObject, mainSeries };
-  }, [isLogScale, chartDataMemo, rebalanceLogsMap]);
+  }, [isLogScale, chartDataMemo, rebalanceLogsMap, onDateChange, selectedDate]);
 
   // Handle selectedDate changes
   useEffect(() => {
@@ -363,7 +486,7 @@ const Chart: React.FC<ChartProps> = ({
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
-    const hasData = (chartData && chartData.length > 0) || (multiSeriesData && Object.keys(multiSeriesData).length > 0);
+    const hasData = multiSeriesData && Object.keys(multiSeriesData).length > 0;
 
     if (!hasData) return;
 
@@ -389,6 +512,9 @@ const Chart: React.FC<ChartProps> = ({
 
     // Cleanup function with more thorough removal
     const cleanup = () => {
+      // Remove global event listeners
+      d3.select("body").on("mouseup.chart", null).on("mousemove.chart", null);
+
       if (currentSvgRef) {
         const svg = d3.select(currentSvgRef);
         // Remove all elements
@@ -403,7 +529,7 @@ const Chart: React.FC<ChartProps> = ({
       window.removeEventListener("resize", handleResize);
       cleanup();
     };
-  }, [createD3Chart, chartData, multiSeriesData, selectedDate]);
+  }, [createD3Chart, multiSeriesData, selectedDate]);
 
   return (
     <div

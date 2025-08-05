@@ -4,10 +4,10 @@ import { MarketData } from "../core/models";
 import { useSimulation, useDateNavigation, useChartData } from "../hooks";
 import SimulationSetup from "./SimulationSetup";
 import DateNavigation from "./DateNavigation";
-import ChartSection from "./ChartSection";
 import Legend from "./Legend";
 import RebalanceDetails from "./RebalanceDetails";
 import SimulationResultsDialog from "./SimulationResultsDialog";
+import Chart from "./Chart";
 
 interface DashboardProps {
   marketData: MarketData;
@@ -23,15 +23,32 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
     simulationProgress,
     updateVariable,
     runMultipleSimulationsHandler,
-    cancelSimulation,
   } = useSimulation(marketData);
 
   // Date navigation
-  const { selectedDateIndex, selectedDate, availableDates, handleSliderChange, handlePreviousDate, handleNextDate } =
-    useDateNavigation(simulation);
+  const {
+    selectedDateIndex,
+    selectedDate,
+    availableDates,
+    handleSliderChange,
+    handlePreviousDate,
+    handleNextDate,
+    setSelectedDateIndex,
+  } = useDateNavigation(simulation);
 
   // Chart data processing
   const { chartData, legendValues } = useChartData(simulation, selectedDate);
+
+  // Handle date changes from chart interactions
+  const handleDateChange = React.useCallback(
+    (date: string) => {
+      const dateIndex = availableDates.indexOf(date);
+      if (dateIndex !== -1) {
+        setSelectedDateIndex(dateIndex);
+      }
+    },
+    [availableDates, setSelectedDateIndex]
+  );
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
@@ -132,7 +149,24 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
 
         {/* Chart */}
         {simulation && simulation.portfolioSnapshots.length > 0 && (
-          <ChartSection chartData={chartData} selectedDate={selectedDate} isLogScale={variables.isLogScale} />
+          <Box
+            sx={{
+              minHeight: 0, // Critical: allows grid item to shrink
+              minWidth: 0, // Critical: allows grid item to shrink
+              overflow: "hidden", // Prevents content overflow
+              contain: "layout", // Optimizes layout containment
+              pl: 2,
+            }}
+          >
+            <Chart
+              multiSeriesData={{ ...chartData.priceChart, ...chartData.ratioChart, ...chartData.pullbackChart }}
+              rebalanceLogsMap={chartData.rebalanceLogsMap}
+              selectedDate={selectedDate}
+              isLogScale={variables.isLogScale}
+              height="100%"
+              onDateChange={handleDateChange}
+            />
+          </Box>
         )}
       </Box>
 
