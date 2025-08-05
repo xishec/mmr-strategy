@@ -62,7 +62,6 @@ const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) =
     after: portfolioSnapshot,
     cumulativeRateSinceLastRebalance: 0,
     rebalanceType: RebalanceType.Excess,
-    reason: "Initial setup",
   };
   simulation.rebalanceLogs = [rebalanceLog];
 };
@@ -191,7 +190,6 @@ const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData
   const isDrop = cumulativeRate < dropRate && cumulativeRate >= doubleDropRate;
   const isBigDrop = cumulativeRate < doubleDropRate;
 
-  let reason = ``;
   let rebalanceType: RebalanceType = RebalanceType.Excess;
 
   if (isBigSpike) {
@@ -217,7 +215,6 @@ const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
     after.nextTarget = before.nextTarget * (1 + targetRate);
-    reason += `Excess (${cumulativeRate.toFixed(3)} >= ${targetRate.toFixed(3)})`;
   } else if (isShortfall) {
     rebalanceType = RebalanceType.Shortfall;
     const shortfall = before.nextTarget - before.investments.total;
@@ -227,10 +224,8 @@ const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
     after.nextTarget = before.nextTarget * (1 + targetRate);
-    reason += `Shortfall (${cumulativeRate.toFixed(3)} < ${targetRate.toFixed(3)})`;
   } else if (isDrop) {
     rebalanceType = RebalanceType.Drop;
-    reason += `Drop ${cumulativeRate.toFixed(3)} < ${dropRate.toFixed(3)}`;
   } else if (isBigDrop) {
     rebalanceType = RebalanceType.BigDrop;
     after.investments.TQQQ = before.investments.total * targetRatio * 0.544;
@@ -238,17 +233,9 @@ const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
     after.nextTarget = before.investments.total * (1 + targetRate * 0.544);
-    reason += `Big Drop ${cumulativeRate.toFixed(3)} < ${dropRate.toFixed(3)}`;
   } else {
     console.log("bug");
   }
-
-  reason += `
-    before.investments.TQQQ : ${before.investments.TQQQ.toFixed(2)} \n
-    before.investments.cash : ${before.investments.cash.toFixed(2)} \n
-    after.investments.TQQQ : ${after.investments.TQQQ.toFixed(2)} \n
-    after.investments.cash : ${after.investments.cash.toFixed(2)} \n
-    `;
 
   after.nextRebalanceDate = addDaysToDate(before.date, rebalanceDays);
   after.cumulativeRateSinceRebalance = 0;
@@ -259,7 +246,6 @@ const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData
     after: after,
     cumulativeRateSinceLastRebalance: cumulativeRate,
     rebalanceType: rebalanceType,
-    reason: reason,
   };
   // console.log(rebalanceLog);
   simulation.rebalanceLogs.push(rebalanceLog);
@@ -561,4 +547,21 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
       end: results[results.length - 1]?.startDate,
     },
   };
+};
+
+export const formatValue = (value: number, isPercentage = false): string => {
+  if (typeof value !== "number") return "";
+
+  // Format ratios and pullbacks as percentages
+  if (isPercentage) {
+    return (value * 100).toFixed(2) + "%";
+  }
+
+  // Format currency values
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
 };

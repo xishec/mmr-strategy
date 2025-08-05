@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
+import { formatValue } from "../core/functions";
 
 const yellow = "#FBBC04";
 const blue = "#4285F4";
@@ -37,23 +38,6 @@ const Legend: React.FC<LegendProps> = ({
     { label: "Portfolio Pullback", color: red, type: "area", seriesKey: "pullback" },
   ];
 
-  const formatValue = (value: number, seriesKey: string): string => {
-    if (typeof value !== "number") return "";
-
-    // Format ratios and pullbacks as percentages
-    if (seriesKey === "Ratio" || seriesKey === "pullback") {
-      return (value * 100).toFixed(2) + "%";
-    }
-
-    // Format currency values
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
   const getValueForSeries = (seriesKey: string): string => {
     if (!selectedDate) return "";
 
@@ -62,11 +46,11 @@ const Legend: React.FC<LegendProps> = ({
     // Check if it's a price series or ratio series
     if (seriesKey === "Ratio" || seriesKey === "pullback") {
       value = ratioValues[seriesKey];
+      return formatValue(value, true);
     } else {
       value = priceValues[seriesKey];
+      return formatValue(value, false);
     }
-
-    return value !== undefined ? formatValue(value, seriesKey) : "";
   };
 
   // Filter items to only show those that have data

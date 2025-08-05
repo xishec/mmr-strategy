@@ -136,7 +136,7 @@ const Chart: React.FC<ChartProps> = ({
           .attr("cx", (d) => xScale(d.parsedTime))
           .attr("cy", (d) => yScale(d.value))
           .attr("r", 2.5)
-          .attr("fill", black);
+          .attr("fill", "none");
       } else {
         // Render as line/area with optional step interpolation
         const line = d3

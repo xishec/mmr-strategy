@@ -7,18 +7,18 @@ import { loadData } from "./core/functions";
 
 const theme = createTheme({
   palette: {
+    primary: {
+      main: "#ffcb2eff",
+      light: "#ffe990ff",
+      dark: "#C79200ff",
+      contrastText: "#1a1a1aff",
+    },
     secondary: {
       main: "#a4a4a4ff",
       light: "#e1e1e1ff",
       dark: "#7d7d7dff",
       contrastText: "#1a1a1aff",
     },
-    // secondary: {
-    //   main: "#fabb00ff",
-    //   light: "#ffe990ff",
-    //   dark: "#C79200ff",
-    //   contrastText: "#1a1a1aff",
-    // },
   },
 });
 

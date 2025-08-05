@@ -36,7 +36,6 @@ export interface RebalanceLog {
   after: PortfolioSnapshot;
   cumulativeRateSinceLastRebalance: number;
   rebalanceType: RebalanceType;
-  reason: string;
 }
 
 export enum RebalanceType {

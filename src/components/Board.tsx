@@ -3,7 +3,7 @@ import { Box, Typography, TextField, FormControlLabel, Switch, Button, Slider, I
 import { KeyboardArrowLeft, KeyboardArrowRight } from "@mui/icons-material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { convertAnnualRateToDaily, runMultipleSimulations, startSimulation } from "../core/functions";
+import { convertAnnualRateToDaily, formatValue, runMultipleSimulations, startSimulation } from "../core/functions";
 import { MarketData, Simulation, RebalanceLog, PortfolioSnapshot, RebalanceType } from "../core/models";
 import Chart, { green, red, yellow } from "./Chart";
 import Legend from "./Legend";
@@ -24,14 +24,14 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [simulationYears, setSimulationYears] = useState<number>(5);
   const [startDate, setStartDate] = useState<Date>(new Date(2000, 0, 1)); // Year, Month (0-based), Day
   const [endDate, setEndDate] = useState<Date>(new Date());
-  const [initialMoney, setInitialMoney] = useState<number>(100000);
+  const [initialMoney, setInitialMoney] = useState<number>(100);
   const [rebalanceDays, setRebalanceDays] = useState<number>(90);
   const [targetRate, setTargetRate] = useState<number>(0.2);
   const [cashYearRate, setCashYearRate] = useState<number>(0.0);
   const [targetRatio, setTargetRatio] = useState<number>(0.5);
   const [dropRate, setDropRate] = useState<number>(-0.2);
   const [isLogScale, setIsLogScale] = useState<boolean>(true);
-  const [monthlyNewCash, setMonthlyNewCash] = useState<number>(2000);
+  const [monthlyNewCash, setMonthlyNewCash] = useState<number>(2);
 
   const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
 
@@ -472,7 +472,7 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
         sx={{
           height: "95vh",
           display: "grid",
-          gridTemplateRows: "min-content 4fr min-content 1fr",
+          gridTemplateRows: "min-content min-content 4fr 1fr",
           gap: "0",
           padding: "1rem",
         }}
@@ -487,34 +487,15 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
         </Box>
 
-        {/* Combined Chart Section */}
-        {simulation && simulation.portfolioSnapshots.length > 0 && (
-          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-            <Chart
-              multiSeriesData={{ ...chartData.priceChart, ...chartData.ratioChart, ...chartData.pullbackChart }}
-              rebalanceLogsMap={chartData.rebalanceLogsMap}
-              selectedDate={selectedDate}
-              isLogScale={isLogScale}
-              height="100%"
-            />
-          </Box>
-        )}
-
         {/* Date Navigation Slider */}
         {availableDates.length > 0 && (
-          <Box
-            display={"grid"}
-            alignItems="center"
-            gridTemplateColumns={"min-content 1fr min-content"}
-            gap={2}
-            sx={{ marginTop: "-3.5rem" }}
-          >
+          <Box display={"grid"} alignItems="center" gridTemplateColumns={"min-content 1fr min-content"} gap={2}>
             <IconButton onClick={handlePreviousDate} disabled={selectedDateIndex === 0} size="small">
               <KeyboardArrowLeft />
             </IconButton>
 
             <Slider
-              color="secondary"
+              color="primary"
               value={selectedDateIndex}
               onChange={handleSliderChange}
               size="small"
@@ -531,6 +512,19 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
             >
               <KeyboardArrowRight />
             </IconButton>
+          </Box>
+        )}
+
+        {/* Combined Chart Section */}
+        {simulation && simulation.portfolioSnapshots.length > 0 && (
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            <Chart
+              multiSeriesData={{ ...chartData.priceChart, ...chartData.ratioChart, ...chartData.pullbackChart }}
+              rebalanceLogsMap={chartData.rebalanceLogsMap}
+              selectedDate={selectedDate}
+              isLogScale={isLogScale}
+              height="100%"
+            />
           </Box>
         )}
 
@@ -644,10 +638,38 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
                   const currentRatio = rebalanceLog.before.investments.ratio;
                   const nextRatio = rebalanceLog.after.investments.ratio;
 
+                  const total = rebalanceLog.before.investments.total;
+                  const cumulativeRate = rebalanceLog.cumulativeRateSinceLastRebalance;
+                  const beforeRatio = rebalanceLog.before.investments.ratio;
+                  const afterRatio = rebalanceLog.after.investments.ratio;
+                  const beforeTQQQ = rebalanceLog.before.investments.TQQQ;
+                  const afterTQQQ = rebalanceLog.after.investments.TQQQ;
+                  const movedToCash = beforeTQQQ - afterTQQQ;
+
+                  const action = movedToCash >= 0 ? "Buying" : "Selling";
+
                   return (
                     <>
                       {generateRatioBox(currentRatio)}
-                      <Box>{rebalanceLog.reason}</Box>
+                      <Box sx={{ alignSelf: "start" }}>
+                        <Typography fontSize="1rem">
+                          The accumulated rate in the last {simulation.variables.rebalanceDays} days is{" "}
+                          <strong>{formatValue(cumulativeRate, true)}</strong>
+                        </Typography>
+                        <Typography fontSize="1rem">---</Typography>
+                        <Typography fontSize="1rem">
+                          Before balance I have <strong>{formatValue(total)}</strong> in total with{" "}
+                          <strong>
+                            {formatValue(beforeTQQQ)} ({formatValue(beforeRatio, true)}){" "}
+                          </strong>{" "}
+                          in TQQQ.
+                        </Typography>
+                        <Typography fontSize="1rem">
+                          {action} <strong>{formatValue(Math.abs(movedToCash))}</strong> of TQQQ to have{" "}
+                          <strong>{formatValue(afterRatio, true)}</strong> in TQQQ and{" "}
+                          <strong>{formatValue(1 - afterRatio, true)}</strong> in cash.
+                        </Typography>
+                      </Box>
                       {generateRatioBox(nextRatio)}
                     </>
                   );
