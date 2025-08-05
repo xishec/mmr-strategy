@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import "./App.css";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
 import { MarketData } from "./core/models";
-import Board from "./components/Board";
+import Dashboard from "./components/Dashboard";
 import { loadData } from "./core/functions";
 
 const theme = createTheme({
@@ -39,7 +39,7 @@ function App() {
 
   const componentsManager = () => {
     if (marketData && !dataLoading) {
-      return <Board marketData={marketData} />;
+      return <Dashboard marketData={marketData} />;
     } else {
       return <></>;
     }
