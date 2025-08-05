@@ -33,6 +33,40 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Calculate statistics
+  const calculateStatistics = useCallback(() => {
+    if (results.length === 0) return null;
+
+    const strategyRates = results.map(r => r.strategyRate);
+    const qqqRates = results.map(r => r.qqqRate);
+    
+    const averageStrategyRate = strategyRates.reduce((sum, rate) => sum + rate, 0) / strategyRates.length;
+    const averageQQQRate = qqqRates.reduce((sum, rate) => sum + rate, 0) / qqqRates.length;
+    
+    const strategyVsQQQImprovement = (averageStrategyRate / averageQQQRate - 1) * 100;
+    
+    const strategyWinsOverQQQ = results.filter(r => r.strategyRate > r.qqqRate).length;
+    const winRateVsQQQ = (strategyWinsOverQQQ / results.length) * 100;
+    
+    const sortedByStrategy = [...results].sort((a, b) => a.strategyRate - b.strategyRate);
+    const absoluteWorst = sortedByStrategy[0];
+    
+    const sortedByRelative = [...results].sort((a, b) => 
+      (a.strategyRate - a.qqqRate) - (b.strategyRate - b.qqqRate)
+    );
+    const relativeWorst = sortedByRelative[0];
+    
+    return {
+      averageStrategyRate,
+      strategyVsQQQImprovement,
+      winRateVsQQQ,
+      absoluteWorst,
+      relativeWorst
+    };
+  }, [results]);
+
+  const statistics = calculateStatistics();
+
   const createChart = useCallback(() => {
     if (!svgRef.current || !containerRef.current || results.length === 0) return;
 
@@ -288,6 +322,64 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
             Comparison of strategy performance vs QQQ benchmark across different simulation start dates.
             Each point represents a {results.length > 0 ? "multi-year" : ""} simulation starting on that date.
           </Typography>
+          
+          {/* Statistics Summary */}
+          {statistics && (
+            <Box sx={{ mb: 3, p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Performance Summary
+              </Typography>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 2 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Average Strategy Rate
+                  </Typography>
+                  <Typography variant="h6">
+                    {(statistics.averageStrategyRate * 100).toFixed(3)}%
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Strategy vs QQQ Improvement
+                  </Typography>
+                  <Typography variant="h6" color={statistics.strategyVsQQQImprovement > 0 ? "success.main" : "error.main"}>
+                    {statistics.strategyVsQQQImprovement.toFixed(2)}%
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Win Rate vs QQQ
+                  </Typography>
+                  <Typography variant="h6">
+                    {statistics.winRateVsQQQ.toFixed(1)}%
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Absolute Worst
+                  </Typography>
+                  <Typography variant="h6">
+                    {(statistics.absoluteWorst.strategyRate * 100).toFixed(3)}%
+                    <Typography variant="caption" display="block" color="text.secondary">
+                      ({statistics.absoluteWorst.startDate})
+                    </Typography>
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Relative Worst
+                  </Typography>
+                  <Typography variant="h6">
+                    {(statistics.relativeWorst.strategyRate * 100).toFixed(3)}%
+                    <Typography variant="caption" display="block" color="text.secondary">
+                      ({statistics.relativeWorst.startDate})
+                    </Typography>
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          )}
+
           <Box ref={containerRef} sx={{ width: "100%", height: 400 }}>
             <svg ref={svgRef} style={{ width: "100%", height: "100%" }} />
           </Box>

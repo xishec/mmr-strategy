@@ -202,7 +202,7 @@ export const runMultipleSimulations = (
   // Start from the first available date or 2000-01-01, whichever is later
   const startDate = firstAvailableDate >= "2000-01-01" ? firstAvailableDate : "2000-01-01";
   const todayString = today();
-  
+
   // End 3 years before the last available date to ensure we have enough data
   const endDate = addYears(lastAvailableDate, -3);
   const finalDate = endDate < todayString ? endDate : todayString;
@@ -212,7 +212,7 @@ export const runMultipleSimulations = (
 
   while (currentDateString <= finalDate) {
     const currentIterationDate = currentDateString;
-    
+
     // Check if this date exists in market data or find next available date
     const nextAvailableDate = availableDates.find((date) => date >= currentIterationDate);
 
@@ -267,7 +267,8 @@ export const runMultipleSimulations = (
   const analysisResults = analyzeSimulationResults(results);
 
   return { results, analysisResults };
-};/**
+};
+/**
  * Analyzes multiple simulation results to get statistics
  * @param results - Array of simulation results from runMultipleSimulations
  * @returns Statistics about the simulation results and the detailed results data
@@ -351,10 +352,12 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
     `${strategyVsQQQPercentageImprovement.toFixed(2)}%`,
     "\nwinRateVsQQQ\t\t\t\t",
     `${winRateVsQQQ.toFixed(1)}%`,
-    "\nTQQQVsQQQImprovement\t\t\t\t",
-    `${TQQQVsQQQPercentageImprovement.toFixed(2)}%`,
-    "\nwinRateTQQQVsQQQ\t\t\t\t",
-    `${winRateTQQQVsQQQ.toFixed(1)}%`
+    `absoluteWorst`,
+    resultsWithRates.sort((a, b) => a.strategyRate - b.strategyRate)[0].strategyRate.toFixed(3) + "%",
+    `relativeWorst`,
+    resultsWithRates
+      .sort((a, b) => a.strategyRate - a.qqqRate - (b.strategyRate - b.qqqRate))[0]
+      .strategyRate.toFixed(3) + "%"
   );
 
   return {

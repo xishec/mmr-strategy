@@ -195,7 +195,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
         />
 
         <Button
-          variant="contained"
+          variant="outlined"
           color="primary"
           onClick={onRunMultipleSimulations}
           disabled={!marketData}
