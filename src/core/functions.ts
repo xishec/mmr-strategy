@@ -1,3 +1,4 @@
+import { computePortfolioSnapshot, rebalance } from "./core-logic";
 import {
   Investments,
   MarketData,
@@ -25,7 +26,7 @@ export const loadData = async (
   }
 };
 
-const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) => {
+export const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) => {
   const investments: Investments = {
     total: simulation.variables.initialMoney,
     TQQQ: simulation.variables.initialMoney * simulation.variables.targetRatio,
@@ -82,7 +83,7 @@ export const startSimulation = (
  * @param endDate - Optional end date to limit the simulation (format: YYYY-MM-DD)
  * @returns The completed simulation
  */
-const runSingleSimulation = (simulation: Simulation, marketData: MarketData): Simulation => {
+export const runSingleSimulation = (simulation: Simulation, marketData: MarketData): Simulation => {
   // Create a deep copy of the simulation to avoid mutations
   const newSimulation: Simulation = {
     ...simulation,
@@ -116,7 +117,7 @@ const runSingleSimulation = (simulation: Simulation, marketData: MarketData): Si
   return newSimulation;
 };
 
-const calculateAnnualizedRates = (simulation: Simulation) => {
+export const calculateAnnualizedRates = (simulation: Simulation) => {
   const endDate = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].date;
 
   simulation.annualizedStrategyRate = calculateAnnualizedRate(
@@ -139,121 +140,7 @@ const calculateAnnualizedRates = (simulation: Simulation) => {
   );
 };
 
-const computePortfolioSnapshot = (simulation: Simulation, date: string, marketData: MarketData) => {
-  const lastInvestmentsSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
-  const newPortfolioSnapshot = deepCopyPortfolioSnapshot(lastInvestmentsSnapshot);
-
-  const TQQQDelta = marketData.TQQQ[date] || 0;
-  const QQQDelta = marketData.QQQ[date] || 0;
-
-  const newTQQQ = lastInvestmentsSnapshot.investments.TQQQ * (TQQQDelta / 100 + 1);
-  const newCash = lastInvestmentsSnapshot.investments.cash * (1 + simulation.variables.cashDayRate);
-  const newTotal = newTQQQ + newCash;
-  const investments: Investments = {
-    total: newTotal,
-    TQQQ: newTQQQ,
-    cash: newCash,
-    ratio: newTQQQ / (newTQQQ + newCash),
-    mockTotalQQQ: lastInvestmentsSnapshot.investments.mockTotalQQQ * (QQQDelta / 100 + 1),
-    mockTotalTQQQ: lastInvestmentsSnapshot.investments.mockTotalTQQQ * (TQQQDelta / 100 + 1),
-  };
-
-  newPortfolioSnapshot.date = date;
-  newPortfolioSnapshot.investments = investments;
-  newPortfolioSnapshot.peak = Math.max(lastInvestmentsSnapshot.peak, newTotal);
-  newPortfolioSnapshot.pullback = -(newPortfolioSnapshot.peak - newTotal) / newPortfolioSnapshot.peak;
-  newPortfolioSnapshot.cumulativeRateSinceRebalance =
-    (1 + newPortfolioSnapshot.cumulativeRateSinceRebalance) * (1 + TQQQDelta / 100) - 1;
-
-  return newPortfolioSnapshot;
-};
-
-const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData: MarketData) => {
-  const { monthlyNewCash, rebalanceDays, targetRatio, targetRate, dropRate } = simulation.variables;
-
-  before.investments.cash += (monthlyNewCash / 30) * rebalanceDays;
-  before.investments.mockTotalQQQ += (monthlyNewCash / 30) * rebalanceDays;
-  before.investments.mockTotalTQQQ += (monthlyNewCash / 30) * rebalanceDays;
-  before.investments.total = before.investments.cash + before.investments.TQQQ;
-  before.investments.ratio = before.investments.TQQQ / before.investments.total;
-
-  const after = deepCopyPortfolioSnapshot(before);
-
-  const doubleTargetRate = targetRate * 2;
-  const doubleDropRate = dropRate * 2;
-  const cumulativeRate = before.cumulativeRateSinceRebalance;
-
-  const isBigSpike = cumulativeRate >= doubleTargetRate;
-  const isSpike = cumulativeRate < doubleTargetRate && cumulativeRate >= targetRate;
-  const isExcess = cumulativeRate < targetRate && before.investments.total >= before.nextTarget;
-  const isShortfall = before.investments.total < before.nextTarget && cumulativeRate >= dropRate;
-  const isDrop = cumulativeRate < dropRate && cumulativeRate >= doubleDropRate;
-  const isBigDrop = cumulativeRate < doubleDropRate;
-
-  let rebalanceType: RebalanceType = RebalanceType.Excess;
-
-  if (isBigSpike) {
-    rebalanceType = RebalanceType.BigSpike;
-    after.investments.TQQQ = before.investments.total * Math.min(targetRatio * 1.5, 1);
-    after.investments.cash = before.investments.total * (1 - Math.min(targetRatio * 1.5, 1));
-    after.investments.total = before.investments.total;
-    after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    after.nextTarget = before.investments.total * (1 + targetRate * 1.5);
-  } else if (isSpike) {
-    rebalanceType = RebalanceType.Spike;
-    after.investments.TQQQ = before.investments.total * targetRatio * 1;
-    after.investments.cash = before.investments.total * (1 - targetRatio * 1);
-    after.investments.total = before.investments.total;
-    after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    after.nextTarget = before.investments.total * (1 + targetRate * 1);
-  } else if (isExcess) {
-    rebalanceType = RebalanceType.Excess;
-    const excess = before.investments.total - before.nextTarget;
-    const actualExcess = Math.min(excess, before.investments.TQQQ);
-    after.investments.TQQQ = before.investments.TQQQ - actualExcess;
-    after.investments.cash = before.investments.cash + actualExcess;
-    after.investments.total = before.investments.total;
-    after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    after.nextTarget = before.nextTarget * (1 + targetRate);
-  } else if (isShortfall) {
-    rebalanceType = RebalanceType.Shortfall;
-    const shortfall = before.nextTarget - before.investments.total;
-    const actualShortfall = Math.min(shortfall, before.investments.cash);
-    after.investments.TQQQ = before.investments.TQQQ + actualShortfall;
-    after.investments.cash = before.investments.cash - actualShortfall;
-    after.investments.total = before.investments.total;
-    after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    after.nextTarget = before.nextTarget * (1 + targetRate);
-  } else if (isDrop) {
-    rebalanceType = RebalanceType.Drop;
-  } else if (isBigDrop) {
-    rebalanceType = RebalanceType.BigDrop;
-    after.investments.TQQQ = before.investments.total * targetRatio * 0.75;
-    after.investments.cash = before.investments.total * (1 - targetRatio * 0.75);
-    after.investments.total = before.investments.total;
-    after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    after.nextTarget = before.investments.total * (1 + targetRate * 0.75);
-  } else {
-    console.log("bug");
-  }
-
-  after.nextRebalanceDate = addDaysToDate(before.date, rebalanceDays);
-  after.cumulativeRateSinceRebalance = 0;
-
-  const rebalanceLog: RebalanceLog = {
-    date: before.date,
-    before: before,
-    after: after,
-    cumulativeRateSinceLastRebalance: cumulativeRate,
-    rebalanceType: rebalanceType,
-  };
-  // console.log(rebalanceLog);
-  simulation.rebalanceLogs.push(rebalanceLog);
-
-  return after;
-};
-
-const addDaysToDate = (date: string, days: number): string => {
+export const addDaysToDate = (date: string, days: number): string => {
   if (!date || typeof date !== "string") {
     throw new Error(`Invalid date provided to addDaysToDate: ${date}`);
   }
@@ -279,7 +166,7 @@ const addDaysToDate = (date: string, days: number): string => {
  * @param snapshot - The PortfolioSnapshot to copy
  * @returns A new PortfolioSnapshot with all nested objects copied
  */
-const deepCopyPortfolioSnapshot = (snapshot: PortfolioSnapshot): PortfolioSnapshot => {
+export const deepCopyPortfolioSnapshot = (snapshot: PortfolioSnapshot): PortfolioSnapshot => {
   return {
     ...snapshot,
     investments: {
