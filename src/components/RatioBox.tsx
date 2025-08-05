@@ -1,5 +1,6 @@
 import React from "react";
 import { Box } from "@mui/material";
+import { black } from "./Chart";
 
 interface RatioBoxProps {
   ratio: number;
@@ -41,7 +42,7 @@ const RatioBox: React.FC<RatioBoxProps> = ({ ratio, cashBackgroundColor, tqqqBac
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          color: "white",
+          color: black,
           fontWeight: "bold",
           fontSize: "1rem",
         }}

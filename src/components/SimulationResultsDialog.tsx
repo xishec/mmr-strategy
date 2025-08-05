@@ -10,7 +10,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import * as d3 from "d3";
-import { blue, green, yellow } from "./Chart";
+import { blue, yellow } from "./Chart";
 
 interface SimulationResult {
   startDate: string;
@@ -79,7 +79,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
     svg.selectAll("*").remove();
 
     const container = containerRef.current;
-    const margin = { top: 20, right: 30, bottom: 60, left: 80 };
+    const margin = { top: 20, right: 30, bottom: 70, left: 80 };
     const width = container.clientWidth - margin.left - margin.right;
     const height = 400 - margin.top - margin.bottom;
 
@@ -204,7 +204,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("x2", 25)
       .attr("y1", 15)
       .attr("y2", 15)
-      .attr("stroke", green)
+      .attr("stroke", yellow)
       .attr("stroke-width", 2);
 
     legend.append("text").attr("x", 30).attr("y", 15).attr("dy", "0.35em").style("font-size", "12px").text("Strategy");
@@ -215,7 +215,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("x2", 25)
       .attr("y1", 35)
       .attr("y2", 35)
-      .attr("stroke", yellow)
+      .attr("stroke", blue)
       .attr("stroke-width", 2);
 
     legend.append("text").attr("x", 30).attr("y", 35).attr("dy", "0.35em").style("font-size", "12px").text("QQQ");
@@ -303,14 +303,16 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       maxWidth="lg"
       fullWidth
       disableEscapeKeyDown={isLoading}
-      PaperProps={{
-        sx: {
-          height: "80vh",
-          maxHeight: "800px",
+      slotProps={{
+        paper: {
+          sx: {
+            height: "80vh",
+            maxHeight: "800px",
+          },
         },
       }}
     >
-      <DialogTitle>{isLoading ? `Running Simulations...` : title}</DialogTitle>
+      <DialogTitle sx={{ p: 3 }}>{isLoading ? `Running Simulations...` : title}</DialogTitle>
       <DialogContent>
         {isLoading ? (
           <Box
@@ -322,18 +324,6 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
               minHeight: "300px",
               height: "100%",
               gap: 10,
-              "@keyframes pulse": {
-                "0%": {
-                  opacity: 1,
-                },
-                "50%": {
-                  opacity: 0.7,
-                },
-                "100%": {
-                  opacity: 1,
-                },
-              },
-              animation: "pulse 2s ease-in-out infinite",
             }}
           >
             <Box sx={{ position: "relative", display: "inline-flex" }}>
@@ -344,6 +334,18 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                 thickness={2}
                 sx={{
                   color: "primary.main",
+                  "@keyframes pulse": {
+                    "0%": {
+                      opacity: 1,
+                    },
+                    "50%": {
+                      opacity: 0.5,
+                    },
+                    "100%": {
+                      opacity: 1,
+                    },
+                  },
+                  animation: "pulse 2s ease-in-out infinite",
                 }}
               />
               <Box
@@ -378,8 +380,17 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
           <Box>
             {/* Statistics Summary */}
             {statistics && (
-              <Box sx={{ m: 4, p: 4, bgcolor: "grey.50", borderRadius: "0.5rem" }}>
+              <Box sx={{ m: 4, mt: 2, p: 4, bgcolor: "grey.50", borderRadius: "0.5rem" }}>
                 <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 2 }}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Average QQQ Rate
+                    </Typography>
+                    <Typography variant="h6" color={blue}>
+                      {(statistics.averageQQQRate * 100).toFixed(2)}%
+                    </Typography>
+                  </Box>
+
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Average Strategy Rate
@@ -408,14 +419,6 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                     </Typography>
                   </Box>
 
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Average QQQ Rate
-                    </Typography>
-                    <Typography variant="h6" color={blue}>
-                      {(statistics.averageQQQRate * 100).toFixed(2)}%
-                    </Typography>
-                  </Box>
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Absolute Worst
@@ -454,10 +457,12 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
           </Box>
         )}
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={isLoading}>
-          {isLoading ? "Running..." : "Close"}
-        </Button>
+      <DialogActions sx={{ p: 3 }}>
+        {!isLoading && (
+          <Button onClick={onClose} disabled={isLoading}>
+            Close
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );
