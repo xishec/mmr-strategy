@@ -194,11 +194,11 @@ const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData
 
   if (isBigSpike) {
     rebalanceType = RebalanceType.BigSpike;
-    after.investments.TQQQ = before.investments.total * Math.min(targetRatio * 1.5, 1);
-    after.investments.cash = before.investments.total * (1 - Math.min(targetRatio * 1.5, 1));
+    after.investments.TQQQ = before.investments.total * Math.min(targetRatio * 1, 1);
+    after.investments.cash = before.investments.total * (1 - Math.min(targetRatio * 1, 1));
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    after.nextTarget = before.investments.total * (1 + targetRate * 1.5);
+    after.nextTarget = before.investments.total * (1 + targetRate * 1);
   } else if (isSpike) {
     rebalanceType = RebalanceType.Spike;
     after.investments.TQQQ = before.investments.total * targetRatio * 1;
