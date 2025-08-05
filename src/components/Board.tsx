@@ -320,20 +320,41 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           fontSize: "1rem",
         }}
       >
-        {(ratio * 100).toFixed(2)}%
+        {(ratio * 100).toFixed(1)}%
       </Box>
     </Box>
   );
 
   return (
-    <Box width="100%" height="100vh" display="grid" gridTemplateColumns="1fr 4fr" gap={2} sx={{ p: 4 }}>
+    <Box
+      sx={{
+        width: "100%",
+        height: "100vh",
+        display: "grid",
+        gridTemplateColumns: "300px 1fr", // Flexible sidebar with constraints
+        gridTemplateRows: "1fr",
+        gap: 2,
+        p: 4,
+        overflow: "hidden",
+        minWidth: 0, // Critical: allows grid items to shrink
+      }}
+    >
       {/* Variables */}
-      <Box>
-        <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateRows: "auto 1fr auto",
+          gap: 2,
+          overflow: "auto",
+          minWidth: 0, // Allow shrinking
+          maxWidth: "100%", // Prevent expansion
+        }}
+      >
+        <Typography variant="h5" component="h2">
           Simulation Setup
         </Typography>
 
-        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 2, mb: 3 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: "1fr", gap: 2 }}>
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DatePicker
               label="Start Date"
@@ -457,34 +478,37 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           />
         </Box>
 
-        <FormControlLabel
-          control={<Switch checked={isLogScale} onChange={(e) => setIsLogScale(e.target.checked)} color="primary" />}
-          label="Log Scale"
-          sx={{ mt: 2 }}
-        />
+        <Box sx={{ display: "grid", gap: 2 }}>
+          <FormControlLabel
+            control={<Switch checked={isLogScale} onChange={(e) => setIsLogScale(e.target.checked)} color="primary" />}
+            label="Log Scale"
+          />
 
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleRunMultipleSimulations}
-          sx={{ mt: 2, alignSelf: "start" }}
-          disabled={!marketData}
-        >
-          Run Multiple Simulations (Every 10 Days)
-        </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleRunMultipleSimulations}
+            disabled={!marketData}
+            fullWidth
+          >
+            Simulation everyday
+          </Button>
+        </Box>
       </Box>
 
-      {/* Rebalance Log Details */}
+      {/* Chart and Details Section */}
       <Box
         sx={{
-          height: "95vh",
           display: "grid",
-          gridTemplateRows: "min-content min-content 4fr 1fr",
-          gap: "0",
-          padding: "1rem",
+          gridTemplateColumns: "1fr",
+          gridTemplateRows: "min-content min-content 1fr 200px",
+          overflow: "hidden",
+          minWidth: 0, // Critical: allows shrinking
+          maxWidth: "100%", // Prevents expansion
         }}
       >
-        <Box sx={{ margin: "0 3rem" }}>
+        {/* Legend */}
+        <Box sx={{ px: 2, ml: 6 }}>
           <Legend
             priceSeriesData={chartData.priceChart}
             ratioSeriesData={{ ...chartData.ratioChart, ...chartData.pullbackChart }}
@@ -496,7 +520,15 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
 
         {/* Date Navigation Slider */}
         {availableDates.length > 0 && (
-          <Box display={"grid"} alignItems="center" gridTemplateColumns={"min-content 1fr min-content"} gap={2}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "auto 1fr auto",
+              alignItems: "center",
+              gap: 2,
+              px: 2,
+            }}
+          >
             <IconButton onClick={handlePreviousDate} disabled={selectedDateIndex === 0} size="small">
               <KeyboardArrowLeft />
             </IconButton>
@@ -522,9 +554,17 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           </Box>
         )}
 
-        {/* Combined Chart Section */}
+        {/* Chart Section - Uses available space */}
         {simulation && simulation.portfolioSnapshots.length > 0 && (
-          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          <Box
+            sx={{
+              minHeight: 0, // Critical: allows grid item to shrink
+              minWidth: 0, // Critical: allows grid item to shrink
+              overflow: "hidden", // Prevents content overflow
+              contain: "layout", // Optimizes layout containment
+              pl: 2,
+            }}
+          >
             <Chart
               multiSeriesData={{ ...chartData.priceChart, ...chartData.ratioChart, ...chartData.pullbackChart }}
               rebalanceLogsMap={chartData.rebalanceLogsMap}
@@ -535,163 +575,157 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           </Box>
         )}
 
+        {/* Rebalance Details - Fixed minimum height */}
         <Box
           sx={{
             borderRadius: "0.5rem",
             border: "2px solid",
             borderColor: getRebalanceColor,
-            padding: "1rem",
-            margin: "0 3rem",
-            marginTop: "1.5rem",
+            p: 4,
+            mx: 4,
             display: "grid",
-            gridTemplateColumns: "1fr min-content 3fr min-content",
-            gap: "2rem",
-            justifyContent: "center",
-            alignItems: "center",
+            gridTemplateColumns: "200px minmax(60px, auto) 1fr minmax(60px, auto)",
+            gap: 2,
+            alignItems: "start",
+            minHeight: "200px", // Prevents layout shift
+            overflow: "auto", // Allows scrolling if content is too large
           }}
         >
           {selectedDate &&
-            currentRebalanceLog &&
-            chartData.rebalanceLogsMap &&
-            typeof chartData.rebalanceLogsMap === "object" &&
-            (chartData.rebalanceLogsMap as Record<string, RebalanceLog>)[selectedDate] && (
-              <>
-                {(() => {
-                  // Calculate slider values for better readability
-                  const actualPercentage = currentRebalanceLog.cumulativeRateSinceLastRebalance * 100;
-                  const minRange = simulation.variables.dropRate * 2 * 100; // Big Drop threshold
-                  const maxRange = simulation.variables.targetRate * 2 * 100; // Big Spike threshold
-                  const clampedPercentage = Math.max(minRange, Math.min(maxRange, actualPercentage));
+          currentRebalanceLog &&
+          chartData.rebalanceLogsMap &&
+          typeof chartData.rebalanceLogsMap === "object" &&
+          (chartData.rebalanceLogsMap as Record<string, RebalanceLog>)[selectedDate] ? (
+            (() => {
+              const rebalanceLog = simulation.rebalanceLogs.find((snapshot) => snapshot.date === selectedDate);
+              if (!rebalanceLog) return null;
 
-                  // Mark positions for the slider
-                  const sliderMarks = [
-                    { value: minRange, label: `${minRange}% Big Drop` },
-                    {
-                      value: simulation.variables.dropRate * 100,
-                      label: `${simulation.variables.dropRate * 100}% Drop`,
-                    },
-                    { value: 0, label: "0%" },
-                    {
-                      value: simulation.variables.targetRate * 100,
-                      label: `${simulation.variables.targetRate * 100}% Spike`,
-                    },
-                    { value: maxRange, label: `${maxRange}% Big Spike` },
-                  ];
+              const currentRatio = rebalanceLog.before.investments.ratio;
+              const nextRatio = rebalanceLog.after.investments.ratio;
+              const total = rebalanceLog.before.investments.total;
+              const cumulativeRate = rebalanceLog.cumulativeRateSinceLastRebalance;
+              const beforeRatio = rebalanceLog.before.investments.ratio;
+              const afterRatio = rebalanceLog.after.investments.ratio;
+              const beforeTQQQ = rebalanceLog.before.investments.TQQQ;
+              const afterTQQQ = rebalanceLog.after.investments.TQQQ;
+              const movedToCash = beforeTQQQ - afterTQQQ;
+              const action = movedToCash >= 0 ? "Buying" : "Selling";
 
-                  return (
-                    <Box
-                      sx={{
-                        width: "100%",
-                        height: "100%",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        position: "relative",
-                        overflow: "visible",
-                      }}
-                    >
-                      <Slider
-                        orientation="vertical"
-                        valueLabelDisplay="on"
-                        valueLabelFormat={() => `${actualPercentage.toFixed(2)}%`}
-                        track={false}
-                        value={clampedPercentage}
-                        min={minRange}
-                        max={maxRange}
-                        marks={sliderMarks}
+              return (
+                <>
+                  {(() => {
+                    // Calculate slider values for better readability
+                    const actualPercentage = currentRebalanceLog.cumulativeRateSinceLastRebalance * 100;
+                    const minRange = simulation.variables.dropRate * 2 * 100; // Big Drop threshold
+                    const maxRange = simulation.variables.targetRate * 2 * 100; // Big Spike threshold
+                    const clampedPercentage = Math.max(minRange, Math.min(maxRange, actualPercentage));
+
+                    // Mark positions for the slider
+                    const sliderMarks = [
+                      { value: minRange, label: `${minRange}% Big Drop` },
+                      {
+                        value: simulation.variables.dropRate * 100,
+                        label: `${simulation.variables.dropRate * 100}% Drop`,
+                      },
+                      { value: 0, label: "0%" },
+                      {
+                        value: simulation.variables.targetRate * 100,
+                        label: `${simulation.variables.targetRate * 100}% Spike`,
+                      },
+                      { value: maxRange, label: `${maxRange}% Big Spike` },
+                    ];
+
+                    return (
+                      <Box
                         sx={{
-                          height: "80%",
-                          "& .MuiSlider-thumb": {
-                            backgroundColor: getRebalanceColor,
-                            width: 16,
-                            height: 16,
-                            "&:hover": {
-                              boxShadow: "none",
-                            },
-                          },
-                          "& .MuiSlider-mark": {
-                            backgroundColor: "grey.400",
-                            width: 2,
-                            height: 2,
-                          },
-                          "& .MuiSlider-markLabel": {
-                            fontSize: "1rem",
-                            color: "text.secondary",
-                            whiteSpace: "nowrap",
-                          },
-                          "& .MuiSlider-valueLabel": {
-                            backgroundColor: getRebalanceColor,
-                            color: "white",
-                            fontWeight: "bold",
-                            fontSize: "1rem",
-                            borderRadius: "4px",
-                            padding: "2px 6px",
-                            "&:before": {
-                              borderColor: getRebalanceColor,
-                            },
-                          },
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          position: "relative",
+                          overflow: "visible",
                         }}
-                        disabled
-                      />
-                    </Box>
-                  );
-                })()}
-
-                {/* Rectangle with cash and TQQQ amounts */}
-                {(() => {
-                  const rebalanceLog = simulation.rebalanceLogs.find((snapshot) => snapshot.date === selectedDate);
-                  if (!rebalanceLog) return null;
-
-                  const currentRatio = rebalanceLog.before.investments.ratio;
-                  const nextRatio = rebalanceLog.after.investments.ratio;
-
-                  const total = rebalanceLog.before.investments.total;
-                  const cumulativeRate = rebalanceLog.cumulativeRateSinceLastRebalance;
-                  const beforeRatio = rebalanceLog.before.investments.ratio;
-                  const afterRatio = rebalanceLog.after.investments.ratio;
-                  const beforeTQQQ = rebalanceLog.before.investments.TQQQ;
-                  const afterTQQQ = rebalanceLog.after.investments.TQQQ;
-                  const movedToCash = beforeTQQQ - afterTQQQ;
-
-                  const action = movedToCash >= 0 ? "Buying" : "Selling";
-
-                  return (
-                    <>
-                      {generateRatioBox(currentRatio)}
-                      <Box sx={{ alignSelf: "start" }}>
-                        <Typography fontSize="1rem">
-                          The accumulated rate in the last {simulation.variables.rebalanceDays} days is{" "}
-                          <strong>{formatValue(cumulativeRate, true)}</strong>, the type of the rebalance is{" "}
-                          <strong>{rebalanceLog.rebalanceType}</strong>.
-                        </Typography>
-                        <Typography fontSize="1rem">
-                          Explanation :{" "}
-                          {
-                            RebalanceTypeExplanation[
-                              rebalanceLog.rebalanceType as keyof typeof RebalanceTypeExplanation
-                            ]
-                          }
-                        </Typography>
-                        <Typography fontSize="1rem">---</Typography>
-                        <Typography fontSize="1rem">
-                          Before balance I have <strong>{formatValue(total)}</strong> in total with{" "}
-                          <strong>
-                            {formatValue(beforeTQQQ)} ({formatValue(beforeRatio, true)}){" "}
-                          </strong>{" "}
-                          in TQQQ.
-                        </Typography>
-                        <Typography fontSize="1rem">
-                          {action} <strong>{formatValue(Math.abs(movedToCash))}</strong> of TQQQ to have{" "}
-                          <strong>{formatValue(afterRatio, true)}</strong> in TQQQ and{" "}
-                          <strong>{formatValue(1 - afterRatio, true)}</strong> in cash.
-                        </Typography>
+                      >
+                        <Slider
+                          orientation="vertical"
+                          valueLabelDisplay="on"
+                          valueLabelFormat={() => `${actualPercentage.toFixed(1)}%`}
+                          track={false}
+                          value={clampedPercentage}
+                          min={minRange}
+                          max={maxRange}
+                          marks={sliderMarks}
+                          sx={{
+                            height: "80%",
+                            "& .MuiSlider-thumb": {
+                              backgroundColor: getRebalanceColor,
+                              width: 16,
+                              height: 16,
+                              "&:hover": {
+                                boxShadow: "none",
+                              },
+                            },
+                            "& .MuiSlider-mark": {
+                              backgroundColor: "grey.400",
+                              width: 2,
+                              height: 2,
+                            },
+                            "& .MuiSlider-markLabel": {
+                              fontSize: "1rem",
+                              color: "text.secondary",
+                              whiteSpace: "nowrap",
+                            },
+                            "& .MuiSlider-valueLabel": {
+                              backgroundColor: getRebalanceColor,
+                              color: "white",
+                              fontWeight: "bold",
+                              fontSize: "1rem",
+                              borderRadius: "4px",
+                              padding: "2px 6px",
+                              "&:before": {
+                                borderColor: getRebalanceColor,
+                              },
+                            },
+                          }}
+                          disabled
+                        />
                       </Box>
-                      {generateRatioBox(nextRatio)}
-                    </>
-                  );
-                })()}
-              </>
-            )}
+                    );
+                  })()}
+
+                  {/* Before Ratio Box */}
+                  {generateRatioBox(currentRatio)}
+
+                  {/* Details Text - Center Column */}
+                  <Box sx={{ overflow: "auto", minWidth: 0 }}>
+                    <Typography fontSize={"1rem"} gutterBottom>
+                      <strong>Rate ({simulation.variables.rebalanceDays}d):</strong> {formatValue(cumulativeRate, true)}
+                    </Typography>
+                    <Typography fontSize={"1rem"} gutterBottom>
+                      <strong>Type:</strong> {rebalanceLog.rebalanceType} -{" "}
+                      {RebalanceTypeExplanation[rebalanceLog.rebalanceType as keyof typeof RebalanceTypeExplanation]}
+                    </Typography>
+                    <Typography fontSize={"1rem"} gutterBottom>
+                      <strong>Before:</strong> {formatValue(total)} total with {formatValue(beforeTQQQ)} (
+                      {formatValue(beforeRatio, true)}) in TQQQ
+                    </Typography>
+                    <Typography fontSize={"1rem"}>
+                      <strong>{action}:</strong> {formatValue(Math.abs(movedToCash))} of TQQQ to have{" "}
+                      {formatValue(afterRatio, true)} in TQQQ
+                    </Typography>
+                  </Box>
+
+                  {/* After Ratio Box */}
+                  {generateRatioBox(nextRatio)}
+                </>
+              );
+            })()
+          ) : (
+            <Box sx={{ gridColumn: "1 / -1", textAlign: "center", color: "text.secondary", p: 4 }}>
+              <Typography>Select a date to view rebalance details</Typography>
+            </Box>
+          )}
         </Box>
       </Box>
     </Box>

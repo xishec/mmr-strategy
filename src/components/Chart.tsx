@@ -46,7 +46,7 @@ const Chart: React.FC<ChartProps> = ({
     svg.on(".drag", null);
 
     // Setup dimensions and data
-    const margin = { top: 20, left: 50, right: 55 };
+    const margin = { top: 20, left: 50, right: 65 };
     const width = container.clientWidth - margin.left - margin.right;
     const totalChartHeight = container.clientHeight;
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
@@ -210,7 +210,7 @@ const Chart: React.FC<ChartProps> = ({
     // Render rebalance timeline
     if (rebalanceLogsMap) {
       const rebalanceDates = Object.keys(rebalanceLogsMap);
-      const timelineY = timelineTop + rebalanceTimelineHeight / 2;
+      const timelineY = timelineTop + rebalanceTimelineHeight / 2 + 20;
 
       // Add timeline base line
       g.append("line")
