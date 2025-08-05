@@ -310,6 +310,63 @@ const Chart: React.FC<ChartProps> = ({
       .attr("stroke-width", 2)
       .attr("stroke-dasharray", "3,3");
 
+    // Add persistent selected date crosshair
+    const selectedCrosshair = g.append("g").attr("class", "selected-crosshair").style("display", "none");
+
+    const selectedCrosshairLine = selectedCrosshair
+      .append("line")
+      .attr("x1", 0)
+      .attr("x2", 0)
+      .attr("y1", timelineTop)
+      .attr("y2", crosshairHeight)
+      .attr("stroke-width", 2)
+      .attr("stroke-dasharray", "3,3");
+
+    // Function to get rebalance type color
+    const getRebalanceTypeColor = (date: string): string => {
+      if (!rebalanceLogsMap || !rebalanceLogsMap[date]) return "#666";
+
+      const rebalanceLog = rebalanceLogsMap[date];
+      const rebalanceType = rebalanceLog.rebalanceType;
+
+      switch (rebalanceType) {
+        case RebalanceType.BigSpike:
+        case RebalanceType.Spike:
+          return green;
+        case RebalanceType.Excess:
+        case RebalanceType.Shortfall:
+          return yellow;
+        case RebalanceType.Drop:
+        case RebalanceType.BigDrop:
+          return red;
+        default:
+          return black;
+      }
+    };
+
+    // Function to update selected crosshair
+    const updateSelectedCrosshair = (date: string | null) => {
+      if (!date) {
+        selectedCrosshair.style("display", "none");
+        return;
+      }
+
+      const dateObj = parseTime(date);
+      if (dateObj) {
+        const x = xScale(dateObj);
+        const color = getRebalanceTypeColor(date);
+
+        selectedCrosshairLine.attr("x1", x).attr("x2", x).attr("stroke", color);
+
+        selectedCrosshair.style("display", "block");
+      }
+    };
+
+    // Initialize selected crosshair if we have a selected date
+    if (selectedDate) {
+      updateSelectedCrosshair(selectedDate);
+    }
+
     // Dragging state
     let isDragging = false;
 
@@ -458,6 +515,9 @@ const Chart: React.FC<ChartProps> = ({
           const x = xScale(date);
           crosshair.style("display", null);
           crosshairLine.attr("x1", x).attr("x2", x);
+
+          // Also update the persistent selected crosshair
+          updateSelectedCrosshair(time);
         }
       },
       clearCrosshairPosition: () => {
