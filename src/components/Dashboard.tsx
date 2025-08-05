@@ -142,7 +142,6 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         isLoading={isRunningMultipleSimulations}
         progress={simulationProgress}
         title={`Historical Strategy Performance vs QQQ (${variables.simulationYears} year periods)`}
-        onCancel={cancelSimulation}
       />
     </Box>
   );
