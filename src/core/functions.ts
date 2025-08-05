@@ -320,13 +320,16 @@ export const convertAnnualRateToDaily = (annualRate: number): number => {
  * @param variables - The simulation variables (including initialMoney and all required fields)
  * @param marketData - The market data containing QQQ and TQQQ prices
  * @param nbYear - Number of years to run each simulation (default: 5)
- * @returns Array of simulation results with their starting dates
+ * @returns Object containing array of simulation results with their starting dates and analysis results
  */
 export const runMultipleSimulations = (
   variables: Variables,
   marketData: MarketData,
   nbYear = 5
-): Array<{ startDate: string; simulation: Simulation }> => {
+): {
+  results: Array<{ startDate: string; simulation: Simulation }>;
+  analysisResults: ReturnType<typeof analyzeSimulationResults>;
+} => {
   const results: Array<{ startDate: string; simulation: Simulation }> = [];
 
   // Start from 2000-01-01 using UTC to avoid timezone issues
@@ -349,7 +352,7 @@ export const runMultipleSimulations = (
   const [lastYear, lastMonth, lastDay] = lastAvailableDate.split("-").map(Number);
 
   const firstAvailableUTC = new Date(Date.UTC(firstYear, firstMonth - 1, firstDay));
-  const lastAvailableUTC = new Date(Date.UTC(lastYear, lastMonth - 1, lastDay));
+  const lastAvailableUTC = new Date(Date.UTC(lastYear - 3, lastMonth - 1, lastDay));
 
   let currentDate = new Date(Math.max(startDate.getTime(), firstAvailableUTC.getTime()));
   const finalDate = new Date(Math.min(endDate.getTime(), lastAvailableUTC.getTime()));
@@ -375,7 +378,7 @@ export const runMultipleSimulations = (
         const hasEnoughData = lastAvailableUTC > minEndDate;
 
         if (hasEnoughData) {
-          // Calculate end date for this simulation (start date + nbYear years)
+          // Calculate end date for this simulation (start date + nbYear years - 1 year)
           const simulationEndDate = new Date(startDateObj.getTime());
           simulationEndDate.setUTCFullYear(simulationEndDate.getUTCFullYear() + nbYear);
           const simulationEndDateString = simulationEndDate.toISOString().split("T")[0];
@@ -409,7 +412,7 @@ export const runMultipleSimulations = (
     }
 
     // Move to next date (10 days later)
-    currentDate.setDate(currentDate.getDate() + 1);
+    currentDate.setDate(currentDate.getDate() + 3);
   }
 
   console.log(
@@ -418,15 +421,15 @@ export const runMultipleSimulations = (
     }`
   );
 
-  analyzeSimulationResults(results);
+  const analysisResults = analyzeSimulationResults(results);
 
-  return results;
+  return { results, analysisResults };
 };
 
 /**
  * Analyzes multiple simulation results to get statistics
  * @param results - Array of simulation results from runMultipleSimulations
- * @returns Statistics about the simulation results
+ * @returns Statistics about the simulation results and the detailed results data
  */
 export const analyzeSimulationResults = (results: Array<{ startDate: string; simulation: Simulation }>) => {
   if (results.length === 0) {
@@ -438,6 +441,7 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
       bestStrategyRate: 0,
       worstStrategyRate: 0,
       winRate: 0,
+      resultsWithRates: [],
     };
   }
 
@@ -499,29 +503,6 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
       );
     });
 
-  // console.log("Absolute worst 10 TQQQ");
-  // resultsWithRates
-  //   .sort((a, b) => a.tqqqRate - b.tqqqRate)
-  //   .slice(0, 10)
-  //   .forEach((result, index) => {
-  //     console.log(
-  //       `${index + 1}. ${result.startDate}: Strategy= ${(result.strategyRate * 100)?.toFixed(2)}%, QQQ= ${(
-  //         result.qqqRate * 100
-  //       )?.toFixed(2)}%, TQQQ= ${(result.tqqqRate * 100)?.toFixed(2)}%`
-  //     );
-  //   });
-  // console.log("Relative worst 10 TQQQ");
-  // resultsWithRates
-  //   .sort((a, b) => a.tqqqRate - a.qqqRate - (b.tqqqRate - b.qqqRate))
-  //   .slice(0, 10)
-  //   .forEach((result, index) => {
-  //     console.log(
-  //       `${index + 1}. ${result.startDate}: Strategy= ${(result.strategyRate * 100)?.toFixed(2)}%, QQQ= ${(
-  //         result.qqqRate * 100
-  //       )?.toFixed(2)}%, TQQQ= ${(result.tqqqRate * 100)?.toFixed(2)}%`
-  //     );
-  //   });
-
   console.log(
     "\naverageStrategyRate\t\t\t\t",
     `${(averageStrategyRate * 100).toFixed(3)}%`,
@@ -546,6 +527,7 @@ export const analyzeSimulationResults = (results: Array<{ startDate: string; sim
       start: results[0]?.startDate,
       end: results[results.length - 1]?.startDate,
     },
+    resultsWithRates,
   };
 };
 

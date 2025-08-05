@@ -14,6 +14,7 @@ import {
 } from "../core/models";
 import Chart, { green, red, yellow } from "./Chart";
 import Legend from "./Legend";
+import SimulationResultsDialog from "./SimulationResultsDialog";
 
 // Helper function to format date as YYYY-MM-DD in local timezone
 const formatDateToString = (date: Date): string => {
@@ -41,6 +42,13 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const [monthlyNewCash, setMonthlyNewCash] = useState<number>(2);
 
   const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
+  const [simulationResults, setSimulationResults] = useState<Array<{
+    startDate: string;
+    strategyRate: number;
+    qqqRate: number;
+    tqqqRate: number;
+  }>>([]);
 
   const [simulation, setSimulation] = useState<Simulation>({
     portfolioSnapshots: [],
@@ -110,7 +118,9 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
   const handleRunMultipleSimulations = useCallback(() => {
     if (marketData && simulation.variables) {
       console.log(`Starting multiple simulations for ${simulationYears} years each...`);
-      runMultipleSimulations(simulation.variables, marketData, simulationYears);
+      const { analysisResults } = runMultipleSimulations(simulation.variables, marketData, simulationYears);
+      setSimulationResults(analysisResults.resultsWithRates);
+      setDialogOpen(true);
     }
   }, [marketData, simulation.variables, simulationYears]);
 
@@ -728,6 +738,13 @@ const Board: React.FC<BoardProps> = ({ marketData }) => {
           )}
         </Box>
       </Box>
+      
+      <SimulationResultsDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        results={simulationResults}
+        title={`Multiple Simulation Results (${simulationYears} year periods)`}
+      />
     </Box>
   );
 };
