@@ -46,7 +46,7 @@ const Chart: React.FC<ChartProps> = ({
     svg.on(".drag", null);
 
     // Setup dimensions and data
-    const margin = { top: 20, left: 50, right: 65 };
+    const margin = { top: 0, left: 50, right: 65 };
     const width = container.clientWidth - margin.left - margin.right;
     const totalChartHeight = container.clientHeight;
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
@@ -63,16 +63,17 @@ const Chart: React.FC<ChartProps> = ({
       parsedTime: parseTime(d.time),
     }));
 
-    // Chart layout - always combined view with 3 sections
+    // Chart layout - always combined view with 3 sections (timeline on top)
     const spaceBetweenCharts = 20; // Smart spacing between sections
-    const totalSpacing = spaceBetweenCharts * 2; // Two gaps: price-ratio and ratio-timeline
-    const rebalanceTimelineHeight = 40; // Height for rebalance timeline
+    const totalSpacing = spaceBetweenCharts * 2; // Two gaps: timeline-price and price-ratio
+    const rebalanceTimelineHeight = 32; // Height for rebalance timeline
 
     const availableHeight = totalChartHeight - totalSpacing - rebalanceTimelineHeight;
     const priceHeight = availableHeight * 0.65;
     const ratioHeight = availableHeight * 0.25;
-    const ratioTop = priceHeight + spaceBetweenCharts;
-    const timelineTop = ratioTop + ratioHeight + spaceBetweenCharts;
+    const timelineTop = 0; // Timeline at the top
+    const priceTop = rebalanceTimelineHeight + spaceBetweenCharts + rebalanceTimelineHeight / 2;
+    const ratioTop = priceTop + priceHeight + spaceBetweenCharts;
 
     // Separate series by type
     const priceKeys = ["StrategyTotal", "Target", "MockTotalQQQ", "MockTotalTQQQ"];
@@ -101,8 +102,14 @@ const Chart: React.FC<ChartProps> = ({
     const priceExtent = d3.extent(priceData, (d) => d.value) as [number, number];
 
     const priceYScale = isLogScale
-      ? d3.scaleLog().domain(priceExtent).range([priceHeight, 0])
-      : d3.scaleLinear().domain(priceExtent).range([priceHeight, 0]);
+      ? d3
+          .scaleLog()
+          .domain(priceExtent)
+          .range([priceTop + priceHeight, priceTop])
+      : d3
+          .scaleLinear()
+          .domain(priceExtent)
+          .range([priceTop + priceHeight, priceTop]);
 
     const ratioYScale = d3
       .scaleLinear()
@@ -289,10 +296,10 @@ const Chart: React.FC<ChartProps> = ({
 
     // Add crosshair
     const crosshair = g.append("g").attr("class", "crosshair").style("display", "none");
-    const crosshairHeight = timelineTop + rebalanceTimelineHeight;
+    const crosshairHeight = ratioTop + ratioHeight;
     const crosshairLine = crosshair
       .append("line")
-      .attr("y1", 0)
+      .attr("y1", timelineTop)
       .attr("y2", crosshairHeight)
       .attr("stroke", "#666")
       .attr("stroke-width", 1)
@@ -301,7 +308,7 @@ const Chart: React.FC<ChartProps> = ({
     // Add axes
     g.append("g")
       .attr("class", "x-axis")
-      .attr("transform", `translate(0,${timelineTop - 25})`)
+      .attr("transform", `translate(0,${ratioTop + ratioHeight + 10})`)
       .call(
         d3
           .axisBottom(xScale)
@@ -313,7 +320,7 @@ const Chart: React.FC<ChartProps> = ({
 
     // Add Y-axes
     const yAxisConfig = isLogScale ? d3.axisLeft(priceYScale).ticks(4, "~g") : d3.axisLeft(priceYScale);
-    g.append("g").attr("class", "y-axis-price").call(yAxisConfig);
+    g.append("g").attr("class", "y-axis-price").attr("transform", `translate(0,0)`).call(yAxisConfig);
 
     g.append("g").attr("class", "y-axis-ratio").call(d3.axisLeft(ratioYScale).ticks(3));
 

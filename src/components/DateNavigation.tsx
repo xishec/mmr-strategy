@@ -26,7 +26,7 @@ const DateNavigation: React.FC<DateNavigationProps> = ({
         gridTemplateColumns: 'auto 1fr auto',
         alignItems: 'center',
         gap: 2,
-        px: 2,
+        m: 2,
       }}
     >
       <IconButton onClick={onPreviousDate} disabled={selectedDateIndex === 0} size="small">

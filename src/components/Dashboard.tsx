@@ -15,15 +15,15 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
   // Unified simulation state management - now handles both single and multiple simulations
-  const { 
-    simulation, 
-    variables, 
+  const {
+    simulation,
+    variables,
     simulationResults,
     isRunningMultipleSimulations,
     simulationProgress,
     updateVariable,
     runMultipleSimulationsHandler,
-    cancelSimulation
+    cancelSimulation,
   } = useSimulation(marketData);
 
   // Date navigation
@@ -97,7 +97,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         sx={{
           display: "grid",
           gridTemplateColumns: "1fr",
-          gridTemplateRows: "min-content min-content 1fr 200px",
+          gridTemplateRows: "min-content min-content min-content 1fr ",
           overflow: "hidden",
           minWidth: 0,
           maxWidth: "100%",
@@ -116,6 +116,11 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
           </Box>
         )}
 
+        {/* Rebalance Details */}
+        <Box sx={{ mx: 4 }}>
+          <RebalanceDetails selectedDate={selectedDate} simulation={simulation} chartData={chartData} />
+        </Box>
+
         {/* Date Navigation */}
         <DateNavigation
           selectedDateIndex={selectedDateIndex}
@@ -129,9 +134,6 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         {simulation && simulation.portfolioSnapshots.length > 0 && (
           <ChartSection chartData={chartData} selectedDate={selectedDate} isLogScale={variables.isLogScale} />
         )}
-
-        {/* Rebalance Details */}
-        <RebalanceDetails selectedDate={selectedDate} simulation={simulation} chartData={chartData} />
       </Box>
 
       {/* Results Dialog */}
