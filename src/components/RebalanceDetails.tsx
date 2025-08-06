@@ -130,7 +130,14 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
         </Box>
 
         {/* Before Ratio Box */}
-        <RatioBox ratio={currentRatio} cashBackgroundColor={"grey.200"} tqqqBackgroundColor={getRebalanceColor} />
+        <RatioBox ratio={currentRatio} cashBackgroundColor={"grey.200"} tqqqBackgroundColor={"grey.400"} />
+
+        {/* Delta Ratio Box */}
+        <RatioBox
+          ratio={Math.abs(currentRatio - nextRatio)}
+          cashBackgroundColor={"grey.200"}
+          tqqqBackgroundColor={"grey.400"}
+        />
 
         {/* Details Text - Center Column */}
         <Box sx={{ overflow: "auto", minWidth: 0 }}>
@@ -166,7 +173,7 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
         p: 4,
         mx: 4,
         display: "grid",
-        gridTemplateColumns: "200px minmax(60px, auto) 1fr minmax(60px, auto)",
+        gridTemplateColumns: "200px minmax(60px, auto) minmax(60px, auto) 1fr minmax(60px, auto)",
         gap: 2,
         alignItems: "start",
         minHeight: "200px", // Prevents layout shift
