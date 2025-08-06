@@ -47,8 +47,7 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
 
   const isBigSpike = cumulativeRate >= doubleTargetRate;
   const isSpike = cumulativeRate < doubleTargetRate && cumulativeRate >= targetRate;
-  const isExcess = cumulativeRate < targetRate && before.investments.total >= before.nextTarget;
-  const isShortfall = before.investments.total < before.nextTarget && cumulativeRate >= dropRate;
+  const isOnTrack = cumulativeRate < targetRate && cumulativeRate >= dropRate;
   const isDrop = cumulativeRate < dropRate && cumulativeRate >= doubleDropRate;
   const isBigDrop = cumulativeRate < doubleDropRate;
 
@@ -66,17 +65,9 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
     after.investments.cash = before.investments.total * (1 - targetRatio * 0.75);
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
-  } else if (isExcess) {
-    rebalanceType = RebalanceType.Excess;
-    const excess = before.investments.total - before.nextTarget;
-    const actualExcess = Math.min(excess, before.investments.TQQQ);
-    after.investments.TQQQ = before.investments.TQQQ - actualExcess;
-    after.investments.cash = before.investments.cash + actualExcess;
-    after.investments.total = before.investments.total;
-    after.investments.ratio = after.investments.TQQQ / after.investments.total;
-  } else if (isShortfall) {
+  } else if (isOnTrack) {
     rebalanceType = RebalanceType.Shortfall;
-    const shortfall = before.nextTarget - before.investments.total;
+    const shortfall = Math.max(before.nextTarget - before.investments.total, 0);
     const actualShortfall = Math.min(shortfall, before.investments.cash);
     after.investments.TQQQ = before.investments.TQQQ + actualShortfall;
     after.investments.cash = before.investments.cash - actualShortfall;
@@ -93,7 +84,7 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
   } else {
     console.log("bug");
   }
-  
+
   after.nextTarget = before.investments.total * (1 + 0.2);
   after.nextRebalanceDate = addDaysToDate(before.date, rebalanceDays);
   after.cumulativeRateSinceRebalance = 0;
