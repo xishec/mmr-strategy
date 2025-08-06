@@ -1,6 +1,15 @@
 import { computePortfolioSnapshot, rebalance } from "./core-logic";
-import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation, Variables } from ".";
+import {
+  Investments,
+  MarketData,
+  PortfolioSnapshot,
+  RebalanceLog,
+  RebalanceType,
+  Simulation,
+  Variables,
+} from "./models";
 import { addDays, yearsBetween, addYears, today } from "./date-utils";
+import { green, red, yellow, black } from "../components/Chart";
 
 export const loadData = async (
   setDataLoading: (loading: boolean) => void,
@@ -55,7 +64,7 @@ export const setupInitialPortfolio = (simulation: Simulation, marketData: Market
     before: portfolioSnapshot,
     after: portfolioSnapshot,
     cumulativeRateSinceLastRebalance: 0,
-    rebalanceType: RebalanceType.Excess,
+    rebalanceType: RebalanceType.OnTrack,
   };
   simulation.rebalanceLogs = [rebalanceLog];
 };
@@ -357,4 +366,19 @@ export const formatValue = (value: number, isPercentage = false): string => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
+};
+
+export const getRebalanceTypeColor = (rebalanceLog: RebalanceLog): string => {
+  const rebalanceType = rebalanceLog.rebalanceType;
+
+  switch (rebalanceType) {
+    case RebalanceType.OnTrack:
+      return green;
+    case RebalanceType.Drop:
+      return yellow;
+    case RebalanceType.BigDrop:
+      return red;
+    default:
+      return black;
+  }
 };

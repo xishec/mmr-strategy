@@ -1,6 +1,6 @@
 import React from "react";
 import { Box } from "@mui/material";
-import { MarketData } from "../core";
+import { MarketData } from "../core/models";
 import { useSimulation, useDateNavigation, useChartData } from "../hooks";
 import SimulationSetup from "./SimulationSetup";
 import Legend from "./Legend";

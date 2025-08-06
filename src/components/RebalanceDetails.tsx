@@ -1,10 +1,9 @@
 import React, { useMemo } from "react";
 import { Box, Typography, Slider } from "@mui/material";
-import { formatValue } from "../core/functions";
-import { Simulation, RebalanceLog, RebalanceType, RebalanceTypeExplanation } from "../core";
+import { formatValue, getRebalanceTypeColor } from "../core/functions";
+import { Simulation, RebalanceLog, RebalanceTypeExplanation } from "../core/models";
 import { ChartData } from "../hooks";
 import RatioBox from "./RatioBox";
-import { green, red, yellow } from "./Chart";
 
 interface RebalanceDetailsProps {
   selectedDate: string | null;
@@ -24,16 +23,7 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
   // Get rebalance color based on rebalance type
   const getRebalanceColor = useMemo(() => {
     if (!currentRebalanceLog) return "grey.300";
-    const { rebalanceType } = currentRebalanceLog;
-    if (rebalanceType === RebalanceType.BigSpike || rebalanceType === RebalanceType.Spike) {
-      return green;
-    } else if (rebalanceType === RebalanceType.Excess || rebalanceType === RebalanceType.Shortfall) {
-      return yellow;
-    } else if (rebalanceType === RebalanceType.Drop || rebalanceType === RebalanceType.BigDrop) {
-      return red;
-    } else {
-      return "grey.800"; // black/dark grey
-    }
+    return getRebalanceTypeColor(currentRebalanceLog);
   }, [currentRebalanceLog]);
 
   const renderRebalanceContent = () => {

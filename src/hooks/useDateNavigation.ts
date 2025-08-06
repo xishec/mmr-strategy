@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { Simulation } from '../core';
+import { Simulation } from '../core/models';
 
 export interface UseDateNavigationReturn {
   selectedDate: string | null;

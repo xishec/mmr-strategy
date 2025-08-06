@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import * as d3 from "d3";
-import { MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core";
+import { MultiSeriesChartData, RebalanceLog } from "../core/models";
+import { getRebalanceTypeColor } from "../core/functions";
 
 export const black = "#202124";
 export const yellow = "#FBBC04";
@@ -120,7 +121,7 @@ const Chart: React.FC<ChartProps> = ({
       Target: black,
       MockTotalQQQ: green,
       MockTotalTQQQ: red,
-      Ratio: yellow,
+      Ratio: "#848484ff",
       pullback: red,
       default: "#2962FF",
     };
@@ -167,25 +168,25 @@ const Chart: React.FC<ChartProps> = ({
           .attr("d", line);
 
         if (isArea) {
-          const area = d3
-            .area<any>()
-            .x((d) => xScale(d.parsedTime))
-            .y0(yScale(0))
-            .y1((d) => yScale(d.value));
-
-          // Use step interpolation for ratio areas
-          if (isStepLine) {
-            area.curve(d3.curveStepAfter);
-          }
-
-          g.append("path")
-            .datum(processedData)
-            .attr("class", `area series-${seriesName}`)
-            .attr("fill", color)
-            .attr("fill-opacity", 0.3)
-            .attr("d", area);
-
           if (seriesName === "Ratio") {
+            const area = d3
+              .area<any>()
+              .x((d) => xScale(d.parsedTime))
+              .y0(yScale(0))
+              .y1((d) => yScale(d.value));
+
+            // Use step interpolation for ratio areas
+            if (isStepLine) {
+              area.curve(d3.curveStepAfter);
+            }
+
+            g.append("path")
+              .datum(processedData)
+              .attr("class", `area series-${seriesName}`)
+              .attr("fill", color)
+              .attr("fill-opacity", 0.1)
+              .attr("d", area);
+
             g.append("g")
               .attr("class", `points series-${seriesName}`)
               .selectAll("circle")
@@ -194,17 +195,23 @@ const Chart: React.FC<ChartProps> = ({
               .append("circle")
               .attr("cx", (d) => xScale(d.parsedTime))
               .attr("cy", (d) => yScale(d.value))
-              .attr("r", 2.5)
-              .attr("fill", (d) => {
-                const rebalanceLog = rebalanceLogsMap![d.time];
-                return rebalanceLog.rebalanceType === RebalanceType.Shortfall
-                  ? yellow
-                  : rebalanceLog.rebalanceType === RebalanceType.BigSpike
-                  ? green
-                  : red;
-              })
+              .attr("r", 4)
+              .attr("fill", (d) => getRebalanceTypeColor(rebalanceLogsMap![d.time]))
               .attr("stroke", black)
               .attr("stroke-width", 0.5);
+          } else {
+            const area = d3
+              .area<any>()
+              .x((d) => xScale(d.parsedTime))
+              .y0(yScale(0))
+              .y1((d) => yScale(d.value));
+
+            g.append("path")
+              .datum(processedData)
+              .attr("class", `area series-${seriesName}`)
+              .attr("fill", color)
+              .attr("fill-opacity", 0.3)
+              .attr("d", area);
           }
         }
       }
@@ -219,7 +226,27 @@ const Chart: React.FC<ChartProps> = ({
       .attr("x2", width)
       .attr("y1", ratioYScale(0))
       .attr("y2", ratioYScale(0))
-      .attr("stroke", "#666")
+      .attr("stroke", "#d7d7d7ff")
+      .attr("stroke-width", 1)
+      .attr("stroke-dasharray", "3,3");
+
+    g.append("line")
+      .attr("class", "center-line")
+      .attr("x1", 0)
+      .attr("x2", width)
+      .attr("y1", ratioYScale(-1))
+      .attr("y2", ratioYScale(-1))
+      .attr("stroke", "#d7d7d7ff")
+      .attr("stroke-width", 1)
+      .attr("stroke-dasharray", "3,3");
+
+    g.append("line")
+      .attr("class", "center-line")
+      .attr("x1", 0)
+      .attr("x2", width)
+      .attr("y1", ratioYScale(1))
+      .attr("y2", ratioYScale(1))
+      .attr("stroke", "#d7d7d7ff")
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", "3,3");
 
@@ -266,28 +293,6 @@ const Chart: React.FC<ChartProps> = ({
       .attr("stroke-width", 2)
       .attr("stroke-dasharray", "3,3");
 
-    // Function to get rebalance type color
-    const getRebalanceTypeColor = (date: string): string => {
-      if (!rebalanceLogsMap || !rebalanceLogsMap[date]) return "#666";
-
-      const rebalanceLog = rebalanceLogsMap[date];
-      const rebalanceType = rebalanceLog.rebalanceType;
-
-      switch (rebalanceType) {
-        case RebalanceType.BigSpike:
-        case RebalanceType.Spike:
-          return green;
-        case RebalanceType.Excess:
-        case RebalanceType.Shortfall:
-          return yellow;
-        case RebalanceType.Drop:
-        case RebalanceType.BigDrop:
-          return red;
-        default:
-          return black;
-      }
-    };
-
     // Function to update selected crosshair
     const updateSelectedCrosshair = (date: string | null) => {
       if (!date) {
@@ -298,7 +303,7 @@ const Chart: React.FC<ChartProps> = ({
       const dateObj = parseTime(date);
       if (dateObj) {
         const x = xScale(dateObj);
-        const color = getRebalanceTypeColor(date);
+        const color = getRebalanceTypeColor(rebalanceLogsMap![date]);
 
         selectedCrosshairLine.attr("x1", x).attr("x2", x).attr("stroke", color);
 
