@@ -45,7 +45,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     targetRatio: 0.5,
     dropRate: -0.2,
     monthlyNewCash: 2,
-    simulationYears: 50,
+    simulationYears: 5,
     isLogScale: true,
   });
 
