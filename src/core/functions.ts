@@ -214,7 +214,7 @@ export const runMultipleSimulations = async (
   const todayString = today();
 
   // End 3 years before the last available date to ensure we have enough data
-  const endDate = addYears(lastAvailableDate, -1);
+  const endDate = addYears(lastAvailableDate, -3.5);
   const finalDate = endDate < todayString ? endDate : todayString;
 
   // Calculate total number of days to process for progress tracking
