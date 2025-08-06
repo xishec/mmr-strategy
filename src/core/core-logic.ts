@@ -18,6 +18,7 @@ export const computePortfolioSnapshot = (simulation: Simulation, date: string, m
     ratio: newTQQQ / (newTQQQ + newCash),
     mockTotalQQQ: lastInvestmentsSnapshot.investments.mockTotalQQQ * (QQQDelta / 100 + 1),
     mockTotalTQQQ: lastInvestmentsSnapshot.investments.mockTotalTQQQ * (TQQQDelta / 100 + 1),
+    mockTotalNothing: lastInvestmentsSnapshot.investments.mockTotalNothing,
   };
 
   newPortfolioSnapshot.date = date;
@@ -36,6 +37,7 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
   before.investments.cash += (monthlyNewCash / 30) * rebalanceDays;
   before.investments.mockTotalQQQ += (monthlyNewCash / 30) * rebalanceDays;
   before.investments.mockTotalTQQQ += (monthlyNewCash / 30) * rebalanceDays;
+  before.investments.mockTotalNothing += (monthlyNewCash / 30) * rebalanceDays;
   before.investments.total = before.investments.cash + before.investments.TQQQ;
   before.investments.ratio = before.investments.TQQQ / before.investments.total;
 

@@ -57,6 +57,7 @@ export interface Investments {
   total: number;
   mockTotalQQQ: number;
   mockTotalTQQQ: number;
+  mockTotalNothing: number;
   TQQQ: number;
   cash: number;
   ratio: number;

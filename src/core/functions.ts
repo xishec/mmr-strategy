@@ -36,6 +36,7 @@ export const setupInitialPortfolio = (simulation: Simulation, marketData: Market
     ratio: simulation.variables.targetRatio,
     mockTotalQQQ: simulation.variables.initialMoney,
     mockTotalTQQQ: simulation.variables.initialMoney,
+    mockTotalNothing: simulation.variables.initialMoney,
   };
 
   const firstValidDate = Object.keys(marketData.TQQQ).find((date) => date >= simulation.variables.startDate);
@@ -124,21 +125,22 @@ export const runSingleSimulation = (simulation: Simulation, marketData: MarketDa
 
 export const calculateAnnualizedRates = (simulation: Simulation) => {
   const endDate = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].date;
+  const lastRebalanceLog = simulation.rebalanceLogs[simulation.rebalanceLogs.length - 1];
 
   simulation.annualizedStrategyRate = calculateAnnualizedRate(
-    simulation.variables.initialMoney,
+    lastRebalanceLog.before.investments.mockTotalNothing,
     simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.total,
     simulation.variables.startDate,
     endDate
   );
   simulation.annualizedQQQRate = calculateAnnualizedRate(
-    simulation.variables.initialMoney,
+    lastRebalanceLog.before.investments.mockTotalNothing,
     simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.mockTotalQQQ,
     simulation.variables.startDate,
     endDate
   );
   simulation.annualizedTQQQRate = calculateAnnualizedRate(
-    simulation.variables.initialMoney,
+    lastRebalanceLog.before.investments.mockTotalNothing,
     simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.mockTotalTQQQ,
     simulation.variables.startDate,
     endDate
