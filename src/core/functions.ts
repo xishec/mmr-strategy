@@ -275,7 +275,7 @@ export const runMultipleSimulations = async (
     }
 
     // Move to next date (1 days later)
-    currentDateString = addDays(currentDateString, 1);
+    currentDateString = addDays(currentDateString, 3);
     
     // Report progress and yield control back to the browser frequently to keep UI responsive
     if (loopIterations % 25 === 0) {
