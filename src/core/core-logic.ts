@@ -76,7 +76,7 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
     after.investments.cash = before.investments.cash + actualExcess;
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    after.nextTarget = before.nextTarget * (1 + targetRate * 0.25);
+    after.nextTarget = before.nextTarget * (1 + targetRate);
   } else if (isShortfall) {
     rebalanceType = RebalanceType.Shortfall;
     const shortfall = before.nextTarget - before.investments.total;
@@ -85,7 +85,7 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
     after.investments.cash = before.investments.cash - actualShortfall;
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    after.nextTarget = before.nextTarget * (1 + targetRate * 0.25);
+    after.nextTarget = before.nextTarget * (1 + targetRate);
   } else if (isDrop) {
     rebalanceType = RebalanceType.Drop;
   } else if (isBigDrop) {
