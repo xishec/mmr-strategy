@@ -129,7 +129,7 @@ const Chart: React.FC<ChartProps> = ({
       Target: black,
       MockTotalQQQ: green,
       MockTotalTQQQ: red,
-      MockTotalNothing: "#e1e1e1ff",
+      MockTotalNothing: "#ecececff",
       Ratio: "#848484ff",
       pullback: red,
       default: "#2962FF",
@@ -289,7 +289,7 @@ const Chart: React.FC<ChartProps> = ({
       .attr("y1", priceTop)
       .attr("y2", crosshairHeight)
       .attr("stroke", "#666")
-      .attr("stroke-width", 2)
+      .attr("stroke-width", 1)
       .attr("stroke-dasharray", "3,3");
 
     // Horizontal crosshair line
@@ -333,7 +333,8 @@ const Chart: React.FC<ChartProps> = ({
       .attr("fill", "white")
       .attr("font-size", "11px")
       .attr("font-family", "monospace")
-      .attr("text-anchor", "middle")
+      .attr("font-weight", "bold")
+      .attr("text-anchor", "start")
       .attr("dy", "0.35em");
 
     // Add persistent selected date crosshair
@@ -437,19 +438,19 @@ const Chart: React.FC<ChartProps> = ({
             .attr("transform", `translate(${width - textBBox.width - padding - 5}, ${mouseY})`)
             .style("display", "block");
 
-          // Y-axis label (left side)
+          // Y-axis label (right side)
           yAxisValueText.text(displayValue);
 
           // Calculate text dimensions for Y-axis label
           const yAxisTextBBox = (yAxisValueText.node() as SVGTextElement).getBBox();
           const yAxisPadding = 4;
           yAxisValueRect
-            .attr("x", -yAxisTextBBox.width / 2 - yAxisPadding)
+            .attr("x", -yAxisPadding)
             .attr("y", -yAxisTextBBox.height / 2 - yAxisPadding)
             .attr("width", yAxisTextBBox.width + yAxisPadding * 2)
             .attr("height", yAxisTextBBox.height + yAxisPadding * 2);
 
-          yAxisValueLabel.attr("transform", `translate(-10, ${mouseY})`).style("display", "block");
+          yAxisValueLabel.attr("transform", `translate(15, ${mouseY})`).style("display", "block");
         } else {
           valueLabel.style("display", "none");
           yAxisValueLabel.style("display", "none");
