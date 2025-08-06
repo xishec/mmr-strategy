@@ -132,41 +132,50 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("x2", width)
       .attr("y1", (d) => yScale(d))
       .attr("y2", (d) => yScale(d))
-      .attr("stroke", "#e0e0e0")
-      .attr("stroke-width", 0.5);
+      .attr("stroke", "#d7d7d7ff")
+      .attr("stroke-width", 1)
+      .attr("stroke-dasharray", "3,3");
 
     // Add axes
     const xAxis = d3
       .axisBottom(xScale)
       .ticks(20)
-      .tickFormat(d3.timeFormat("%Y-%m") as any);
+      .tickFormat(d3.timeFormat("%Y") as any);
     const yAxis = d3.axisLeft(yScale).tickFormat(d3.format(".1%"));
 
     g.append("g")
+      .attr("class", "x-axis")
       .attr("transform", `translate(0,${height})`)
       .call(xAxis as any)
       .selectAll("text")
-      .style("text-anchor", "end")
-      .attr("dx", "-.8em")
-      .attr("dy", ".15em")
-      .attr("transform", "rotate(-45)");
+      .style("font-size", "11px")
+      .style("font-family", "system-ui, -apple-system, sans-serif");
 
-    g.append("g").call(yAxis as any);
+    g.append("g")
+      .attr("class", "y-axis")
+      .call(yAxis as any)
+      .selectAll("text")
+      .style("font-size", "11px")
+      .style("font-family", "system-ui, -apple-system, sans-serif");
 
     // Add axis labels
     g.append("text")
       .attr("transform", "rotate(-90)")
-      .attr("y", 0 - margin.left + 10)
+      .attr("y", 0 - margin.left + 15)
       .attr("x", 0 - height / 2)
       .attr("dy", "1em")
       .style("text-anchor", "middle")
-      .style("font-size", "12px")
+      .style("font-size", "11px")
+      .style("font-family", "system-ui, -apple-system, sans-serif")
+      .style("fill", "#666")
       .text("Annualized Rate");
 
     g.append("text")
-      .attr("transform", `translate(${width / 2}, ${height + margin.bottom})`)
+      .attr("transform", `translate(${width / 2}, ${height + margin.bottom - 10})`)
       .style("text-anchor", "middle")
-      .style("font-size", "12px")
+      .style("font-size", "11px")
+      .style("font-family", "system-ui, -apple-system, sans-serif")
+      .style("fill", "#666")
       .text("Simulation Start Date");
 
     // Add lines
@@ -184,52 +193,135 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("stroke-width", 1)
       .attr("d", qqqLine);
 
-    // Add legend
+    // Add legend with better styling
     const legend = g.append("g").attr("transform", `translate(20, 20)`);
 
     legend
       .append("rect")
-      .attr("width", 100)
-      .attr("height", 50)
+      .attr("width", 90)
+      .attr("height", 55)
       .attr("fill", "white")
-      .attr("stroke", "#ccc")
-      .attr("stroke-width", 1);
+      .attr("stroke", "#d7d7d7ff")
+      .attr("stroke-width", 1)
+      .attr("rx", 3)
+      .attr("ry", 3);
 
     legend
       .append("line")
-      .attr("x1", 5)
-      .attr("x2", 25)
-      .attr("y1", 15)
-      .attr("y2", 15)
+      .attr("x1", 8)
+      .attr("x2", 28)
+      .attr("y1", 18)
+      .attr("y2", 18)
       .attr("stroke", yellow)
       .attr("stroke-width", 2);
 
-    legend.append("text").attr("x", 30).attr("y", 15).attr("dy", "0.35em").style("font-size", "12px").text("Strategy");
+    legend
+      .append("text")
+      .attr("x", 32)
+      .attr("y", 18)
+      .attr("dy", "0.35em")
+      .style("font-size", "11px")
+      .style("font-family", "system-ui, -apple-system, sans-serif")
+      .style("fill", "#333")
+      .text("Strategy");
 
     legend
       .append("line")
-      .attr("x1", 5)
-      .attr("x2", 25)
-      .attr("y1", 35)
-      .attr("y2", 35)
+      .attr("x1", 8)
+      .attr("x2", 28)
+      .attr("y1", 38)
+      .attr("y2", 38)
       .attr("stroke", blue)
       .attr("stroke-width", 2);
 
-    legend.append("text").attr("x", 30).attr("y", 35).attr("dy", "0.35em").style("font-size", "12px").text("QQQ");
+    legend
+      .append("text")
+      .attr("x", 32)
+      .attr("y", 38)
+      .attr("dy", "0.35em")
+      .style("font-size", "11px")
+      .style("font-family", "system-ui, -apple-system, sans-serif")
+      .style("fill", "#333")
+      .text("QQQ");
 
-    // Add tooltip
+    // Add tooltip with better styling
     const tooltip = d3
       .select("body")
       .append("div")
       .attr("class", "simulation-tooltip")
       .style("position", "absolute")
-      .style("background", "rgba(0, 0, 0, 0.8)")
+      .style("background", "#666")
       .style("color", "white")
       .style("padding", "8px")
-      .style("border-radius", "4px")
-      .style("font-size", "12px")
+      .style("border-radius", "3px")
+      .style("font-size", "11px")
+      .style("font-family", "monospace")
+      .style("font-weight", "bold")
       .style("pointer-events", "none")
-      .style("opacity", 0);
+      .style("opacity", 0)
+      .style("box-shadow", "0 2px 4px rgba(0,0,0,0.2)");
+
+    // Add interactive crosshair
+    const crosshair = g
+      .append("g")
+      .attr("class", "crosshair")
+      .style("display", "none");
+
+    // Vertical crosshair line
+    const crosshairLine = crosshair
+      .append("line")
+      .attr("x1", 0)
+      .attr("x2", 0)
+      .attr("y1", 0)
+      .attr("y2", height)
+      .attr("stroke", "#666")
+      .attr("stroke-width", 1)
+      .attr("stroke-dasharray", "3,3");
+
+    // Horizontal crosshair line
+    const crosshairHorizontal = crosshair
+      .append("line")
+      .attr("class", "crosshair-horizontal")
+      .attr("x1", 0)
+      .attr("x2", width)
+      .attr("y1", 0)
+      .attr("y2", 0)
+      .attr("stroke", "#666")
+      .attr("stroke-width", 1)
+      .attr("stroke-dasharray", "3,3");
+
+    // Value label (right side)
+    const valueLabel = crosshair.append("g").attr("class", "value-label").style("display", "none");
+
+    const valueRect = valueLabel.append("rect").attr("fill", "#666").attr("stroke", "#666").attr("rx", 3).attr("ry", 3);
+
+    const valueText = valueLabel
+      .append("text")
+      .attr("fill", "white")
+      .attr("font-size", "11px")
+      .attr("font-family", "monospace")
+      .attr("font-weight", "bold")
+      .attr("text-anchor", "start")
+      .attr("dy", "0.35em");
+
+    // Y-axis value label (right side)
+    const yAxisValueLabel = crosshair.append("g").attr("class", "y-axis-value-label").style("display", "none");
+
+    const yAxisValueRect = yAxisValueLabel
+      .append("rect")
+      .attr("fill", "#666")
+      .attr("stroke", "#666")
+      .attr("rx", 3)
+      .attr("ry", 3);
+
+    const yAxisValueText = yAxisValueLabel
+      .append("text")
+      .attr("fill", "white")
+      .attr("font-size", "11px")
+      .attr("font-family", "monospace")
+      .attr("font-weight", "bold")
+      .attr("text-anchor", "start")
+      .attr("dy", "0.35em");
 
     // Add invisible overlay for mouse events
     g.append("rect")
@@ -237,11 +329,57 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("height", height)
       .attr("fill", "none")
       .attr("pointer-events", "all")
+      .on("mouseenter", function (event) {
+        // Show crosshair when mouse enters chart area
+        crosshair.style("display", "block");
+      })
+      .on("mouseleave", function (event) {
+        // Hide crosshair when mouse leaves chart area
+        crosshair.style("display", "none");
+        valueLabel.style("display", "none");
+        yAxisValueLabel.style("display", "none");
+        tooltip.transition().duration(500).style("opacity", 0);
+      })
       .on("mousemove", function (event) {
-        const [mouseX] = d3.pointer(event);
+        const [mouseX, mouseY] = d3.pointer(event, this);
         const dateAtMouse = xScale.invert(mouseX);
 
-        // Find closest data point
+        // Update crosshair position
+        crosshairLine.attr("x1", mouseX).attr("x2", mouseX);
+        crosshairHorizontal.attr("y1", mouseY).attr("y2", mouseY);
+        crosshair.style("display", "block");
+
+        // Show value at mouse position
+        const yValue = yScale.invert(mouseY);
+        const displayValue = (yValue * 100).toFixed(1) + "%";
+
+        // Update right-side value label
+        valueText.text(displayValue);
+        const textBBox = (valueText.node() as SVGTextElement).getBBox();
+        const padding = 4;
+        valueRect
+          .attr("x", width - textBBox.width - padding * 2 - 5)
+          .attr("y", mouseY - textBBox.height / 2 - padding)
+          .attr("width", textBBox.width + padding * 2)
+          .attr("height", textBBox.height + padding * 2);
+
+        valueLabel
+          .attr("transform", `translate(${width - textBBox.width - padding - 5}, ${mouseY})`)
+          .style("display", "block");
+
+        // Update y-axis value label
+        yAxisValueText.text(displayValue);
+        const yAxisTextBBox = (yAxisValueText.node() as SVGTextElement).getBBox();
+        const yAxisPadding = 4;
+        yAxisValueRect
+          .attr("x", -yAxisPadding)
+          .attr("y", -yAxisTextBBox.height / 2 - yAxisPadding)
+          .attr("width", yAxisTextBBox.width + yAxisPadding * 2)
+          .attr("height", yAxisTextBBox.height + yAxisPadding * 2);
+
+        yAxisValueLabel.attr("transform", `translate(10, ${mouseY})`).style("display", "block");
+
+        // Find closest data point for tooltip
         const bisectDate = d3.bisector((d: (typeof parsedData)[0]) => d.date).left;
         const index = bisectDate(parsedData, dateAtMouse, 1);
         const d0 = parsedData[index - 1];
@@ -259,9 +397,6 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
             .style("left", event.pageX + 10 + "px")
             .style("top", event.pageY - 28 + "px");
         }
-      })
-      .on("mouseout", function () {
-        tooltip.transition().duration(500).style("opacity", 0);
       });
 
     // Cleanup tooltip on component unmount

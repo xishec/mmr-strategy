@@ -565,6 +565,19 @@ const Chart: React.FC<ChartProps> = ({
     // Add Y-axes
     const yAxisConfig = isLogScale ? d3.axisLeft(priceYScale).ticks(4, "~g") : d3.axisLeft(priceYScale);
     g.append("g").attr("class", "y-axis-price").attr("transform", `translate(0,0)`).call(yAxisConfig);
+    // Add grid lines
+    g.selectAll(".grid-line")
+      .data(priceYScale.ticks(4))
+      .enter()
+      .append("line")
+      .attr("class", "grid-line")
+      .attr("x1", 0)
+      .attr("x2", width)
+      .attr("y1", (d) => priceYScale(d))
+      .attr("y2", (d) => priceYScale(d))
+      .attr("stroke", "#d7d7d7ff")
+      .attr("stroke-width", 1)
+      .attr("stroke-dasharray", "3,3");
 
     g.append("g").attr("class", "y-axis-ratio").call(d3.axisLeft(ratioYScale).ticks(3));
 
