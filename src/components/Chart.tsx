@@ -134,19 +134,22 @@ const Chart: React.FC<ChartProps> = ({
       const color = colorMap[seriesName as keyof typeof colorMap] || colorMap.default;
       const processedData = data.map((d) => ({ ...d, parsedTime: parseTime(d.time) }));
 
+      // Filter data to only include rebalance dates for points
+      const rebalanceData = processedData.filter((d) => rebalanceLogsMap && rebalanceLogsMap[d.time]);
+
       if (seriesName === "Target") {
-        // Render as points
-        g.append("g")
-          .attr("class", `points series-${seriesName}`)
-          .selectAll("circle")
-          .data(processedData)
-          .enter()
-          .append("circle")
-          .attr("cx", (d) => xScale(d.parsedTime))
-          .attr("cy", (d) => yScale(d.value))
-          .attr("r", 2.5)
-          .attr("stroke", black)
-          .attr("fill", "none");
+        // // Render as points (only for rebalance dates)
+        // g.append("g")
+        //   .attr("class", `points series-${seriesName}`)
+        //   .selectAll("circle")
+        //   .data(rebalanceData)
+        //   .enter()
+        //   .append("circle")
+        //   .attr("cx", (d) => xScale(d.parsedTime))
+        //   .attr("cy", (d) => yScale(d.value))
+        //   .attr("r", 2.5)
+        //   .attr("stroke", black)
+        //   .attr("fill", "none");
       } else {
         // Render as line/area with optional step interpolation
         const line = d3
@@ -158,6 +161,14 @@ const Chart: React.FC<ChartProps> = ({
         if (isStepLine) {
           line.curve(d3.curveStepAfter);
         }
+
+        g.append("path")
+          .datum(processedData)
+          .attr("class", `line series-${seriesName}`)
+          .attr("fill", "none")
+          .attr("stroke", color)
+          .attr("stroke-width", 1)
+          .attr("d", line);
 
         if (isArea) {
           const area = d3
@@ -177,15 +188,29 @@ const Chart: React.FC<ChartProps> = ({
             .attr("fill", color)
             .attr("fill-opacity", 0.3)
             .attr("d", area);
-        }
 
-        g.append("path")
-          .datum(processedData)
-          .attr("class", `line series-${seriesName}`)
-          .attr("fill", "none")
-          .attr("stroke", color)
-          .attr("stroke-width", 1)
-          .attr("d", line);
+          if (seriesName === "Ratio") {
+            g.append("g")
+              .attr("class", `points series-${seriesName}`)
+              .selectAll("circle")
+              .data(rebalanceData)
+              .enter()
+              .append("circle")
+              .attr("cx", (d) => xScale(d.parsedTime))
+              .attr("cy", (d) => yScale(d.value))
+              .attr("r", 2.5)
+              .attr("fill", (d) => {
+                const rebalanceLog = rebalanceLogsMap![d.time];
+                return rebalanceLog.rebalanceType === RebalanceType.Shortfall
+                  ? "none"
+                  : rebalanceLog.rebalanceType === RebalanceType.BigSpike
+                  ? green
+                  : red;
+              })
+              .attr("stroke", black)
+              .attr("stroke-width", 0.5);
+          }
+        }
       }
 
       return { data: processedData, name: seriesName };
