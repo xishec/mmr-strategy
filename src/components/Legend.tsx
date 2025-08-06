@@ -34,7 +34,7 @@ const Legend: React.FC<LegendProps> = ({
     { label: "Strategy Total", color: yellow, type: "line", seriesKey: "StrategyTotal" },
     { label: "Mock Total QQQ", color: blue, type: "line", seriesKey: "MockTotalQQQ" },
     { label: "Mock Total TQQQ", color: red, type: "line", seriesKey: "MockTotalTQQQ" },
-    { label: "TQQQ Ratio", color: blue, type: "area", seriesKey: "Ratio" },
+    { label: "TQQQ Ratio", color: "#848484ff", type: "area", seriesKey: "Ratio" },
     { label: "Portfolio Pullback", color: red, type: "area", seriesKey: "pullback" },
   ];
 

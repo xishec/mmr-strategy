@@ -195,7 +195,7 @@ const Chart: React.FC<ChartProps> = ({
               .append("circle")
               .attr("cx", (d) => xScale(d.parsedTime))
               .attr("cy", (d) => yScale(d.value))
-              .attr("r", 4)
+              .attr("r", 2.5)
               .attr("fill", (d) => getRebalanceTypeColor(rebalanceLogsMap![d.time]))
               .attr("stroke", black)
               .attr("stroke-width", 0.5);
