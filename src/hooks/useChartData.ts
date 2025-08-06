@@ -59,10 +59,10 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
         time: rebalanceLog.date,
         value: rebalanceLog.before.investments.total,
       })),
-      Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
-        time: rebalanceLog.date,
-        value: rebalanceLog.before.nextTarget,
-      })),
+      // Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
+      //   time: rebalanceLog.date,
+      //   value: rebalanceLog.before.nextTarget,
+      // })),
     };
 
     const ratioChart = {

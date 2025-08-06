@@ -4,7 +4,7 @@ import { MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core";
 
 export const black = "#202124";
 export const yellow = "#FBBC04";
-export const lightYellow = "#FEEFC3";
+export const lightYellow = "#ffe599ff";
 export const blue = "#4285F4";
 export const red = "#EA4335";
 export const green = "#34A853";
