@@ -1,10 +1,7 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import { formatValue } from "../core/functions";
-
-const yellow = "#FBBC04";
-const blue = "#4285F4";
-const red = "#EA4335";
+import { blue, red, yellow, grey } from "./Chart";
 
 interface LegendItem {
   label: string;
@@ -34,7 +31,7 @@ const Legend: React.FC<LegendProps> = ({
     { label: "Strategy Total", color: yellow, type: "line", seriesKey: "StrategyTotal" },
     { label: "Mock Total QQQ", color: blue, type: "line", seriesKey: "MockTotalQQQ" },
     { label: "Mock Total TQQQ", color: red, type: "line", seriesKey: "MockTotalTQQQ" },
-    { label: "TQQQ Ratio", color: "#848484ff", type: "area", seriesKey: "Ratio" },
+    { label: "TQQQ Ratio", color: grey, type: "area", seriesKey: "Ratio" },
     { label: "Portfolio Pullback", color: red, type: "area", seriesKey: "pullback" },
   ];
 

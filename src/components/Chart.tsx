@@ -9,6 +9,7 @@ export const lightYellow = "#ffe599ff";
 export const blue = "#4285F4";
 export const red = "#EA4335";
 export const green = "#34A853";
+export const grey = "#848484ff";
 
 interface ChartProps {
   multiSeriesData?: MultiSeriesChartData;
@@ -195,10 +196,10 @@ const Chart: React.FC<ChartProps> = ({
               .append("circle")
               .attr("cx", (d) => xScale(d.parsedTime))
               .attr("cy", (d) => yScale(d.value))
-              .attr("r", 2.5)
+              .attr("r", 3)
               .attr("fill", (d) => getRebalanceTypeColor(rebalanceLogsMap![d.time]))
               .attr("stroke", black)
-              .attr("stroke-width", 0.5);
+              .attr("stroke-width", 0);
           } else {
             const area = d3
               .area<any>()
