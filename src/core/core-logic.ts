@@ -93,6 +93,20 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
   } else {
     console.log("bug");
   }
+
+  if (after.investments.ratio >= 0.75) {
+    after.investments.TQQQ = before.investments.total * 0.75;
+    after.investments.cash = before.investments.total * (1 - 0.75);
+    after.investments.total = before.investments.total;
+    after.investments.ratio = after.investments.TQQQ / after.investments.total;
+  }
+  if (after.investments.ratio < 0.25) {
+    after.investments.TQQQ = before.investments.total * 0.25;
+    after.investments.cash = before.investments.total * (1 - 0.25);
+    after.investments.total = before.investments.total;
+    after.investments.ratio = after.investments.TQQQ / after.investments.total;
+  }
+
   after.nextTarget = before.investments.total * (1 + 0.2);
   after.nextRebalanceDate = addDaysToDate(before.date, rebalanceDays);
   after.cumulativeRateSinceRebalance = 0;
