@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import * as d3 from "d3";
 import { getRebalanceTypeColor } from "../core/functions";
 import { D3ChartData } from "../core/models";
+import { CHART_LAYOUT } from "../core/constants";
 
 export const black = "#202124";
 export const yellow = "#FBBC04";
@@ -81,10 +82,10 @@ const Chart: React.FC<ChartProps> = ({
     }));
 
     // Chart layout - combined view with 2 sections (price and ratio)
-    const spaceBetweenCharts = 20; // Smart spacing between sections
+    const spaceBetweenCharts = CHART_LAYOUT.SPACE_BETWEEN_CHARTS; // Smart spacing between sections
     const availableHeight = totalChartHeight - spaceBetweenCharts;
-    const priceHeight = availableHeight * 0.75;
-    const ratioHeight = availableHeight * 0.25;
+    const priceHeight = availableHeight * CHART_LAYOUT.PRICE_HEIGHT_RATIO;
+    const ratioHeight = availableHeight * CHART_LAYOUT.RATIO_HEIGHT_RATIO;
     const priceTop = 0;
     const ratioTop = priceTop + priceHeight + spaceBetweenCharts;
 

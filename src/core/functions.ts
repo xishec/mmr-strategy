@@ -11,6 +11,7 @@ import {
 } from "./models";
 import { addDays, yearsBetween, addYears, today } from "./date-utils";
 import { green, red, yellow, black } from "../components/Chart";
+import { TIME_CONSTANTS } from "./constants";
 
 export const loadData = async (
   setDataLoading: (loading: boolean) => void,
@@ -107,7 +108,7 @@ export const runSingleSimulation = (simulation: Simulation, marketData: MarketDa
     const portfolioSnapshot = computePortfolioSnapshot(newSimulation, date, marketData);
 
     if (date >= portfolioSnapshot.nextRebalanceDate) {
-      const rebalancedSnapshot = rebalance(portfolioSnapshot, newSimulation, marketData);
+      const rebalancedSnapshot = rebalance(portfolioSnapshot, newSimulation);
       newSimulation.portfolioSnapshots.push(rebalancedSnapshot);
     } else {
       newSimulation.portfolioSnapshots.push(portfolioSnapshot);
@@ -117,7 +118,7 @@ export const runSingleSimulation = (simulation: Simulation, marketData: MarketDa
   // Final rebalance and calculate rates
   if (newSimulation.portfolioSnapshots.length > 0) {
     const lastSnapshot = newSimulation.portfolioSnapshots[newSimulation.portfolioSnapshots.length - 1];
-    rebalance(lastSnapshot, newSimulation, marketData);
+    rebalance(lastSnapshot, newSimulation);
     calculateAnnualizedRates(newSimulation);
   }
 
@@ -147,8 +148,6 @@ export const calculateAnnualizedRates = (simulation: Simulation) => {
     endDate
   );
 };
-
-export const addDaysToDate = addDays;
 
 /**
  * Creates a deep copy of a PortfolioSnapshot object
@@ -181,7 +180,7 @@ export const calculateAnnualizedRate = (
 };
 
 export const convertAnnualRateToDaily = (annualRate: number): number => {
-  return Math.pow(1 + annualRate, 1 / 365) - 1;
+  return Math.pow(1 + annualRate, 1 / TIME_CONSTANTS.DAYS_IN_YEAR) - 1;
 };
 
 /**
@@ -232,8 +231,8 @@ export const runMultipleSimulations = async (
 
     if (nextAvailableDate) {
       try {
-        // Check if we have at least 30 days of data after the start date
-        const minEndDate = addDays(nextAvailableDate, 30);
+        // Check if we have at least minimum required days of data after the start date
+        const minEndDate = addDays(nextAvailableDate, TIME_CONSTANTS.MIN_DATA_DAYS);
         const hasEnoughData = lastAvailableDate >= minEndDate;
 
         if (hasEnoughData) {
@@ -273,7 +272,7 @@ export const runMultipleSimulations = async (
       }
     }
 
-    const simulationFrequencyDays = 3;
+    const simulationFrequencyDays = TIME_CONSTANTS.SIMULATION_FREQUENCY_DAYS;
     currentDateString = addDays(currentDateString, simulationFrequencyDays);
 
     // Yield control back to the browser occasionally to keep UI responsive

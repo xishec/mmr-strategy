@@ -21,6 +21,13 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const isLoading = analysisResults === null;
 
+  // Helper function to apply consistent text styling
+  const applyTextStyle = (selection: any) => {
+    return selection
+      .style("font-size", "11px")
+      .style("font-family", "system-ui, -apple-system, sans-serif");
+  };
+
   const createChart = useCallback(() => {
     if (!analysisResults) return;
 
@@ -102,15 +109,13 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("transform", `translate(0,${height})`)
       .call(xAxis as any)
       .selectAll("text")
-      .style("font-size", "11px")
-      .style("font-family", "system-ui, -apple-system, sans-serif");
+      .call(applyTextStyle);
 
     g.append("g")
       .attr("class", "y-axis")
       .call(yAxis as any)
       .selectAll("text")
-      .style("font-size", "11px")
-      .style("font-family", "system-ui, -apple-system, sans-serif");
+      .call(applyTextStyle);
 
     // Add axis labels
     g.append("text")
@@ -119,17 +124,15 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("x", 0 - height / 2)
       .attr("dy", "1em")
       .style("text-anchor", "middle")
-      .style("font-size", "11px")
-      .style("font-family", "system-ui, -apple-system, sans-serif")
       .style("fill", "#666")
+      .call(applyTextStyle)
       .text("Annualized Rate");
 
     g.append("text")
       .attr("transform", `translate(${width / 2}, ${height + margin.bottom - 25})`)
       .style("text-anchor", "middle")
-      .style("font-size", "11px")
-      .style("font-family", "system-ui, -apple-system, sans-serif")
       .style("fill", "#666")
+      .call(applyTextStyle)
       .text("Simulation Start Date");
 
     // Add lines

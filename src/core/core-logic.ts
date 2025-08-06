@@ -1,79 +1,87 @@
-import { addDaysToDate, deepCopyPortfolioSnapshot } from "./functions";
+import { addDays } from "./date-utils";
+import { deepCopyPortfolioSnapshot } from "./functions";
 import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation } from "./models";
+import { PORTFOLIO_LIMITS, TIME_CONSTANTS } from "./constants";
 
 export const computePortfolioSnapshot = (simulation: Simulation, date: string, marketData: MarketData) => {
-  const lastInvestmentsSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
-  const newPortfolioSnapshot = deepCopyPortfolioSnapshot(lastInvestmentsSnapshot);
+  const lastSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
+  const newPortfolioSnapshot = deepCopyPortfolioSnapshot(lastSnapshot);
 
-  const TQQQDelta = marketData.TQQQ[date] || 0;
-  const QQQDelta = marketData.QQQ[date] || 0;
+  const tqqqDelta = marketData.TQQQ[date] || 0;
+  const qqqDelta = marketData.QQQ[date] || 0;
+  const tqqqMultiplier = tqqqDelta / 100 + 1;
+  const qqqMultiplier = qqqDelta / 100 + 1;
+  const cashMultiplier = 1 + simulation.variables.cashDayRate;
 
-  const newTQQQ = lastInvestmentsSnapshot.investments.TQQQ * (TQQQDelta / 100 + 1);
-  const newCash = lastInvestmentsSnapshot.investments.cash * (1 + simulation.variables.cashDayRate);
+  const newTQQQ = lastSnapshot.investments.TQQQ * tqqqMultiplier;
+  const newCash = lastSnapshot.investments.cash * cashMultiplier;
   const newTotal = newTQQQ + newCash;
+
   const investments: Investments = {
     total: newTotal,
     TQQQ: newTQQQ,
     cash: newCash,
-    ratio: newTQQQ / (newTQQQ + newCash),
-    mockTotalQQQ: lastInvestmentsSnapshot.investments.mockTotalQQQ * (QQQDelta / 100 + 1),
-    mockTotalTQQQ: lastInvestmentsSnapshot.investments.mockTotalTQQQ * (TQQQDelta / 100 + 1),
-    mockTotalNothing: lastInvestmentsSnapshot.investments.mockTotalNothing,
+    ratio: newTQQQ / newTotal,
+    mockTotalQQQ: lastSnapshot.investments.mockTotalQQQ * qqqMultiplier,
+    mockTotalTQQQ: lastSnapshot.investments.mockTotalTQQQ * tqqqMultiplier,
+    mockTotalNothing: lastSnapshot.investments.mockTotalNothing,
   };
 
   newPortfolioSnapshot.date = date;
   newPortfolioSnapshot.investments = investments;
-  newPortfolioSnapshot.peak = Math.max(lastInvestmentsSnapshot.peak, newTotal);
+  newPortfolioSnapshot.peak = Math.max(lastSnapshot.peak, newTotal);
   newPortfolioSnapshot.pullback = -(newPortfolioSnapshot.peak - newTotal) / newPortfolioSnapshot.peak;
   newPortfolioSnapshot.cumulativeRateSinceRebalance =
-    (1 + newPortfolioSnapshot.cumulativeRateSinceRebalance) * (1 + TQQQDelta / 100) - 1;
+    (1 + newPortfolioSnapshot.cumulativeRateSinceRebalance) * tqqqMultiplier - 1;
 
   return newPortfolioSnapshot;
 };
 
-export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData: MarketData) => {
-  const { monthlyNewCash, rebalanceDays, dropRate } = simulation.variables;
+// Helper function to update portfolio allocation
+const updatePortfolioAllocation = (snapshot: PortfolioSnapshot, newTargetRatio: number) => {
+  snapshot.investments.TQQQ = snapshot.investments.total * newTargetRatio;
+  snapshot.investments.cash = snapshot.investments.total * (1 - newTargetRatio);
+  snapshot.investments.ratio = newTargetRatio;
+};
 
-  before.investments.cash += (monthlyNewCash / 30) * rebalanceDays;
-  before.investments.mockTotalQQQ += (monthlyNewCash / 30) * rebalanceDays;
-  before.investments.mockTotalTQQQ += (monthlyNewCash / 30) * rebalanceDays;
-  before.investments.mockTotalNothing += (monthlyNewCash / 30) * rebalanceDays;
+export const rebalance = (before: PortfolioSnapshot, simulation: Simulation) => {
+  const { monthlyNewCash, rebalanceDays, dropRate } = simulation.variables;
+  const dailyNewCash = (monthlyNewCash / TIME_CONSTANTS.DAYS_IN_MONTH) * rebalanceDays;
+
+  // Add new cash to all investment types
+  before.investments.cash += dailyNewCash;
+  before.investments.mockTotalQQQ += dailyNewCash;
+  before.investments.mockTotalTQQQ += dailyNewCash;
+  before.investments.mockTotalNothing += dailyNewCash;
   before.investments.total = before.investments.cash + before.investments.TQQQ;
   before.investments.ratio = before.investments.TQQQ / before.investments.total;
 
   const after = deepCopyPortfolioSnapshot(before);
-
-  const doubleDropRate = dropRate * 2;
   const cumulativeRate = before.cumulativeRateSinceRebalance;
 
-  let rebalanceType: RebalanceType = RebalanceType.OnTrack;
+  // Rebalancing thresholds and step size
+  const doubleDropRate = dropRate * 2;
 
-  const maxRatio = 0.75;
-  const stepRatio = 0.25;
-  const minRatio = 0.25;
+  let rebalanceType: RebalanceType;
 
   if (cumulativeRate >= dropRate) {
+    // On track or gaining - increase TQQQ allocation
     rebalanceType = RebalanceType.OnTrack;
-    const newTargetRatio = Math.min(before.investments.ratio + stepRatio, maxRatio);
-    after.investments.TQQQ = before.investments.total * newTargetRatio;
-    after.investments.cash = before.investments.total * (1 - newTargetRatio);
-    after.investments.total = before.investments.total;
-    after.investments.ratio = after.investments.TQQQ / after.investments.total;
-  } else if (cumulativeRate < dropRate && cumulativeRate >= doubleDropRate) {
+    const newTargetRatio = Math.min(before.investments.ratio + PORTFOLIO_LIMITS.STEP_RATIO, PORTFOLIO_LIMITS.MAX_RATIO);
+    updatePortfolioAllocation(after, newTargetRatio);
+  } else if (cumulativeRate >= doubleDropRate) {
+    // Moderate drop - hold current allocation
     rebalanceType = RebalanceType.Drop;
-  } else if (cumulativeRate < doubleDropRate) {
-    rebalanceType = RebalanceType.BigDrop;
-    const newTargetRatio = Math.max(before.investments.ratio - stepRatio, minRatio);
-    after.investments.TQQQ = before.investments.total * newTargetRatio;
-    after.investments.cash = before.investments.total * (1 - newTargetRatio);
-    after.investments.total = before.investments.total;
-    after.investments.ratio = after.investments.TQQQ / after.investments.total;
   } else {
-    console.log("bug");
+    // Big drop - reduce TQQQ allocation (buy the dip but with reduced exposure)
+    rebalanceType = RebalanceType.BigDrop;
+    const newTargetRatio = Math.max(before.investments.ratio - PORTFOLIO_LIMITS.STEP_RATIO, PORTFOLIO_LIMITS.MIN_RATIO);
+    updatePortfolioAllocation(after, newTargetRatio);
   }
 
-  after.nextTarget = before.investments.total * (1 + 0.2);
-  after.nextRebalanceDate = addDaysToDate(before.date, rebalanceDays);
+  // Set post-rebalance metadata
+  after.nextTarget = before.investments.total * TIME_CONSTANTS.GROWTH_TARGET_MULTIPLIER;
+  after.nextRebalanceDate = addDays(before.date, rebalanceDays);
   after.cumulativeRateSinceRebalance = 0;
 
   const rebalanceLog: RebalanceLog = {
@@ -83,8 +91,7 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
     cumulativeRateSinceLastRebalance: cumulativeRate,
     rebalanceType: rebalanceType,
   };
-  // console.log(rebalanceLog);
-  simulation.rebalanceLogs.push(rebalanceLog);
 
+  simulation.rebalanceLogs.push(rebalanceLog);
   return after;
 };
