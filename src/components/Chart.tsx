@@ -32,7 +32,20 @@ const Chart: React.FC<ChartProps> = ({
 
   // Memoize expensive data processing to prevent unnecessary re-computations
   const chartDataMemo = useMemo(() => {
-    return d3ChartData || {};
+    if (!d3ChartData) return { rebalanceLogsMap: {} };
+    console.log({
+      ...d3ChartData.priceChart,
+      ...d3ChartData.ratioChart,
+      ...d3ChartData.pullbackChart,
+      rebalanceLogsMap: d3ChartData.rebalanceLogsMap,
+    })
+    // Combine all chart data into a single object for easier processing
+    return {
+      ...d3ChartData.priceChart,
+      ...d3ChartData.ratioChart,
+      ...d3ChartData.pullbackChart,
+      rebalanceLogsMap: d3ChartData.rebalanceLogsMap,
+    };
   }, [d3ChartData]);
 
   const createD3Chart = useCallback(() => {
@@ -54,12 +67,20 @@ const Chart: React.FC<ChartProps> = ({
 
     // Prepare data
     const seriesData = chartDataMemo;
-    const allData = Object.values(seriesData).flat();
+    const allData: any[] = [];
+    
+    // Collect all data points from all series
+    Object.values(seriesData).forEach(data => {
+      if (Array.isArray(data)) {
+        allData.push(...data);
+      }
+    });
+    
     if (allData.length === 0) return null;
 
     // Parse dates
     const parseTime = d3.timeParse("%Y-%m-%d");
-    const parsedData = allData.map((d) => ({
+    const parsedData = allData.map((d: any) => ({
       ...d,
       parsedTime: parseTime(d.time),
     }));
@@ -87,7 +108,9 @@ const Chart: React.FC<ChartProps> = ({
       const keys = type === "price" ? priceKeys : ratioKeys;
       const result: { [key: string]: any[] } = {};
       Object.entries(seriesData).forEach(([key, data]) => {
-        if (keys.includes(key)) result[key] = data;
+        if (keys.includes(key) && Array.isArray(data)) {
+          result[key] = data;
+        }
       });
       return result;
     };
