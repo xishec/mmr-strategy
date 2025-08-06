@@ -21,7 +21,6 @@ export interface UseSimulationReturn {
   simulation: Simulation;
   variables: DashboardVariables;
   analysisResults: AnalysisResults | null;
-  isRunningMultipleSimulations: boolean;
   updateVariable: <K extends keyof DashboardVariables>(key: K, value: DashboardVariables[K]) => void;
   runMultipleSimulationsHandler: () => void;
   cancelSimulation: () => void;
@@ -44,8 +43,6 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   });
 
   const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
-
-  const [isRunningMultipleSimulations, setIsRunningMultipleSimulations] = useState<boolean>(false);
 
   const [simulation, setSimulation] = useState<Simulation>({
     portfolioSnapshots: [],
@@ -74,8 +71,6 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   // Handle multiple simulations - simple approach
   const runMultipleSimulationsHandler = useCallback(async () => {
     if (marketData && simulation.variables) {
-      setIsRunningMultipleSimulations(true);
-
       try {
         console.log(`Starting multiple simulations for ${variables.simulationYears} years each...`);
 
@@ -96,14 +91,12 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
         console.error("Error running multiple simulations:", error);
         setAnalysisResults(null);
       } finally {
-        setIsRunningMultipleSimulations(false);
       }
     }
   }, [marketData, simulation.variables, variables.simulationYears]);
 
   // Simple cancel function (just resets state)
   const cancelSimulation = useCallback(() => {
-    setIsRunningMultipleSimulations(false);
     console.log("Simulation state reset");
   }, []);
 
@@ -150,7 +143,6 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     simulation,
     variables,
     analysisResults,
-    isRunningMultipleSimulations,
     updateVariable,
     runMultipleSimulationsHandler,
     cancelSimulation,

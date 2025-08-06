@@ -16,14 +16,8 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
   // Unified simulation state management - now handles both single and multiple simulations
-  const {
-    simulation,
-    variables,
-    analysisResults,
-    isRunningMultipleSimulations,
-    updateVariable,
-    runMultipleSimulationsHandler,
-  } = useSimulation(marketData);
+  const { simulation, variables, analysisResults, updateVariable, runMultipleSimulationsHandler } =
+    useSimulation(marketData);
 
   // Date navigation
   const { selectedDate, availableDates, setSelectedDateIndex } = useDateNavigation(simulation);
@@ -77,7 +71,6 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         monthlyNewCash={variables.monthlyNewCash}
         simulationYears={variables.simulationYears}
         isLogScale={variables.isLogScale}
-        isRunningMultipleSimulations={isRunningMultipleSimulations}
         marketData={marketData}
         onStartDateChange={(newValue: Date | null) => {
           if (newValue) {
@@ -152,15 +145,14 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
       </Box>
 
       {/* Results Dialog */}
-      {analysisResults && (
+      {
         <SimulationResultsDialog
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}
           analysisResults={analysisResults}
-          isLoading={isRunningMultipleSimulations}
           title={`Historical Strategy Performance vs QQQ (${variables.simulationYears} year periods)`}
         />
-      )}
+      }
     </Box>
   );
 };

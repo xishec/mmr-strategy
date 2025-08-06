@@ -16,7 +16,6 @@ interface SimulationSetupProps {
   monthlyNewCash: number;
   simulationYears: number;
   isLogScale: boolean;
-  isRunningMultipleSimulations: boolean;
   marketData: MarketData;
   onStartDateChange: (date: Date | null) => void;
   onEndDateChange: (date: Date | null) => void;
@@ -44,7 +43,6 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   monthlyNewCash,
   simulationYears,
   isLogScale,
-  isRunningMultipleSimulations,
   marketData,
   onStartDateChange,
   onEndDateChange,
@@ -76,21 +74,11 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
 
       <Box sx={{ display: "grid", gridTemplateColumns: "1fr", gap: 2 }}>
         <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <DatePicker
-            label="Start Date"
-            value={startDate}
-            onChange={onStartDateChange}
-            format="yyyy-MM-dd"
-          />
+          <DatePicker label="Start Date" value={startDate} onChange={onStartDateChange} format="yyyy-MM-dd" />
         </LocalizationProvider>
 
         <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <DatePicker
-            label="End Date"
-            value={endDate}
-            onChange={onEndDateChange}
-            format="yyyy-MM-dd"
-          />
+          <DatePicker label="End Date" value={endDate} onChange={onEndDateChange} format="yyyy-MM-dd" />
         </LocalizationProvider>
 
         <TextField
@@ -196,13 +184,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
           label="Log Scale"
         />
 
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={onRunMultipleSimulations}
-          disabled={!marketData || isRunningMultipleSimulations}
-          fullWidth
-        >
+        <Button variant="outlined" color="primary" onClick={onRunMultipleSimulations} fullWidth>
           Simulation everyday
         </Button>
       </Box>

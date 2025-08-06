@@ -7,8 +7,7 @@ import { AnalysisResults } from "../core/models";
 interface SimulationResultsDialogProps {
   open: boolean;
   onClose: () => void;
-  analysisResults: AnalysisResults;
-  isLoading: boolean;
+  analysisResults: AnalysisResults | null;
   title?: string;
 }
 
@@ -16,13 +15,15 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
   open,
   onClose,
   analysisResults,
-  isLoading = false,
   title = "Simulation Results",
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isLoading = analysisResults === null;
 
   const createChart = useCallback(() => {
+    if (!analysisResults) return;
+
     if (!svgRef.current || !containerRef.current || analysisResults.resultsWithRates.length === 0) return;
 
     const svg = d3.select(svgRef.current);
@@ -423,9 +424,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
               }}
             />
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: "center", maxWidth: "600px" }}>
-              Running{" "}
-              {analysisResults.resultsWithRates.length > 0 ? analysisResults.resultsWithRates.length : "multiple"}{" "}
-              independent backtests to validate strategy robustness.
+              Running multiple independent backtests to validate strategy robustness.
               <br />
               Each simulation starts investing on a different historical date and runs through to today, comparing your
               strategy's annualized returns against the QQQ benchmark.
@@ -448,7 +447,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                       {(analysisResults.averageQQQRate * 100).toFixed(2)}%
                     </Typography>
                     <Typography variant="caption" display="block" color="text.secondary">
-                      ({(analysisResults.qqqStandardDeviation * 100).toFixed(2)}%)
+                      (σ:{(analysisResults.qqqStandardDeviation * 100).toFixed(2)}%)
                     </Typography>
                   </Box>
 
@@ -460,7 +459,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                       {(analysisResults.averageStrategyRate * 100).toFixed(2)}%
                     </Typography>
                     <Typography variant="caption" display="block" color="text.secondary">
-                      ({(analysisResults.strategyStandardDeviation * 100).toFixed(2)}%)
+                      (σ:{(analysisResults.strategyStandardDeviation * 100).toFixed(2)}%)
                     </Typography>
                   </Box>
                   <Box>
