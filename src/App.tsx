@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
-import { MarketData } from "./core/models";
+import { MarketData } from "./core";
 import Dashboard from "./components/Dashboard";
 import { loadData } from "./core/functions";
 

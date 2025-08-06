@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Simulation, MarketData } from '../core/models';
+import { Simulation, MarketData } from '../core';
 import { convertAnnualRateToDaily, startSimulation, runMultipleSimulations } from '../core/functions';
 import { formatDate } from '../core/date-utils';
 

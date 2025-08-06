@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import * as d3 from "d3";
-import { MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core/models";
+import { MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core";
 
 export const black = "#202124";
 export const yellow = "#FBBC04";

@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Box, Typography, Slider } from "@mui/material";
 import { formatValue } from "../core/functions";
-import { Simulation, RebalanceLog, RebalanceType, RebalanceTypeExplanation } from "../core/models";
+import { Simulation, RebalanceLog, RebalanceType, RebalanceTypeExplanation } from "../core";
 import { ChartData } from "../hooks";
 import RatioBox from "./RatioBox";
 import { green, red, yellow } from "./Chart";

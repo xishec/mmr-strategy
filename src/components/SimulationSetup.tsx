@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Typography, TextField, FormControlLabel, Switch, Button } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { MarketData } from "../core/models";
+import { MarketData } from "../core";
 
 interface SimulationSetupProps {
   startDate: Date;

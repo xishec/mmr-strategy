@@ -1,5 +1,5 @@
 import { addDaysToDate, deepCopyPortfolioSnapshot } from "./functions";
-import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation } from "./models";
+import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation } from ".";
 
 export const computePortfolioSnapshot = (simulation: Simulation, date: string, marketData: MarketData) => {
   const lastInvestmentsSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Simulation, RebalanceLog, PortfolioSnapshot } from '../core/models';
+import { Simulation, RebalanceLog, PortfolioSnapshot } from '../core';
 
 export interface ChartData {
   priceChart: Record<string, Array<{ time: string; value: number }>>;

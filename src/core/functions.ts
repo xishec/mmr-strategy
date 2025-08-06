@@ -7,7 +7,7 @@ import {
   RebalanceType,
   Simulation,
   Variables,
-} from "./models";
+} from ".";
 import { addDays, yearsBetween, addYears, today } from "./date-utils";
 
 export const loadData = async (
