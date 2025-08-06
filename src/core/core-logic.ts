@@ -61,8 +61,8 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
   } else if (isSpike) {
     rebalanceType = RebalanceType.Spike;
-    after.investments.TQQQ = before.investments.total * targetRatio;
-    after.investments.cash = before.investments.total * (1 - targetRatio);
+    after.investments.TQQQ = before.investments.total * targetRatio * 0.5;
+    after.investments.cash = before.investments.total * (1 - targetRatio * 0.5);
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
   } else if (isOnTrack) {
