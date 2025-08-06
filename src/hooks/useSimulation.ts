@@ -27,7 +27,6 @@ export interface UseSimulationReturn {
     tqqqRate: number;
   }>;
   isRunningMultipleSimulations: boolean;
-  simulationProgress: number;
   updateVariable: <K extends keyof SimulationVariables>(key: K, value: SimulationVariables[K]) => void;
   runMultipleSimulationsHandler: () => void;
   cancelSimulation: () => void;
@@ -45,7 +44,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     targetRatio: 0.5,
     dropRate: -0.2,
     monthlyNewCash: 2,
-    simulationYears: 5,
+    simulationYears: 10,
     isLogScale: true,
   });
 
@@ -59,7 +58,6 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   >([]);
 
   const [isRunningMultipleSimulations, setIsRunningMultipleSimulations] = useState<boolean>(false);
-  const [simulationProgress, setSimulationProgress] = useState<number>(0);
 
   const [simulation, setSimulation] = useState<Simulation>({
     portfolioSnapshots: [],
@@ -92,7 +90,6 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   const runMultipleSimulationsHandler = useCallback(async () => {
     if (marketData && simulation.variables) {
       setIsRunningMultipleSimulations(true);
-      setSimulationProgress(0);
       
       try {
         console.log(`Starting multiple simulations for ${variables.simulationYears} years each...`);
@@ -103,10 +100,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
         const { analysisResults } = await runMultipleSimulations(
           simulation.variables, 
           marketData, 
-          variables.simulationYears,
-          (progress) => {
-            setSimulationProgress(progress);
-          }
+          variables.simulationYears
         );
         
         // Set only the essential results we need for display
@@ -118,7 +112,6 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
         setSimulationResults([]);
       } finally {
         setIsRunningMultipleSimulations(false);
-        setSimulationProgress(0);
       }
     }
   }, [marketData, simulation.variables, variables.simulationYears]);
@@ -126,7 +119,6 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   // Simple cancel function (just resets state)
   const cancelSimulation = useCallback(() => {
     setIsRunningMultipleSimulations(false);
-    setSimulationProgress(0);
     console.log('Simulation state reset');
   }, []);
 
@@ -174,7 +166,6 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     variables,
     simulationResults,
     isRunningMultipleSimulations,
-    simulationProgress,
     updateVariable,
     runMultipleSimulationsHandler,
     cancelSimulation,

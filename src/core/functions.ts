@@ -1,13 +1,5 @@
 import { computePortfolioSnapshot, rebalance } from "./core-logic";
-import {
-  Investments,
-  MarketData,
-  PortfolioSnapshot,
-  RebalanceLog,
-  RebalanceType,
-  Simulation,
-  Variables,
-} from ".";
+import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation, Variables } from ".";
 import { addDays, yearsBetween, addYears, today } from "./date-utils";
 
 export const loadData = async (
@@ -97,7 +89,7 @@ export const runSingleSimulation = (simulation: Simulation, marketData: MarketDa
 
   // Get sorted dates within our range for better performance
   const marketDates = Object.keys(marketData.TQQQ).filter(
-    date => date > newSimulation.variables.startDate && date <= newSimulation.variables.endDate
+    (date) => date > newSimulation.variables.startDate && date <= newSimulation.variables.endDate
   );
 
   for (const date of marketDates) {
@@ -186,14 +178,12 @@ export const convertAnnualRateToDaily = (annualRate: number): number => {
  * @param variables - The simulation variables (including initialMoney and all required fields)
  * @param marketData - The market data containing QQQ and TQQQ prices
  * @param nbYear - Number of years to run each simulation (default: 5)
- * @param onProgress - Optional callback to report progress (0-100)
  * @returns Object containing array of simulation results with their starting dates and analysis results
  */
 export const runMultipleSimulations = async (
   variables: Variables,
   marketData: MarketData,
-  nbYear: number,
-  onProgress?: (progress: number) => void
+  nbYear: number
 ): Promise<{
   results: Array<{ startDate: string; simulation: Simulation }>;
   analysisResults: any;
@@ -214,11 +204,8 @@ export const runMultipleSimulations = async (
   const todayString = today();
 
   // End 3 years before the last available date to ensure we have enough data
-  const endDate = addYears(lastAvailableDate, -1);
+  const endDate = addYears(lastAvailableDate, -3.5);
   const finalDate = endDate < todayString ? endDate : todayString;
-
-  // Calculate total number of days to process for progress tracking
-  const totalDays = Math.ceil((new Date(finalDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
 
   let currentDateString = startDate;
   let simulationCount = 0;
@@ -274,21 +261,16 @@ export const runMultipleSimulations = async (
       }
     }
 
-    // Move to next date (1 days later)
-    currentDateString = addDays(currentDateString, 3);
-    
-    // Report progress and yield control back to the browser frequently to keep UI responsive
-    if (loopIterations % 25 === 0) {
-      const progress = Math.min(100, (loopIterations / totalDays) * 100);
-      onProgress?.(Math.round(progress));
-      await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    const simulationFrequencyDays = 3;
+    currentDateString = addDays(currentDateString, simulationFrequencyDays);
+
+    // Yield control back to the browser occasionally to keep UI responsive
+    if (loopIterations % 50 === 0) {
+      await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
     }
   }
 
   console.log(`Completed ${simulationCount} simulations`);
-
-  // Report 100% completion
-  onProgress?.(100);
 
   const analysisResults = calculateSummaryStats(strategyRates, qqqRates, tqqqRates, startDates);
 

@@ -7,7 +7,6 @@ import {
   Button,
   Box,
   Typography,
-  CircularProgress,
 } from "@mui/material";
 import * as d3 from "d3";
 import { blue, yellow } from "./Chart";
@@ -23,8 +22,7 @@ interface SimulationResultsDialogProps {
   open: boolean;
   onClose: () => void;
   results: SimulationResult[];
-  isLoading?: boolean;
-  progress?: number;
+  isLoading: boolean;
   title?: string;
 }
 
@@ -33,7 +31,6 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
   onClose,
   results,
   isLoading = false,
-  progress = 0,
   title = "Simulation Results",
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -326,45 +323,20 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
               gap: 10,
             }}
           >
-            <Box sx={{ position: "relative", display: "inline-flex" }}>
-              <CircularProgress
-                variant="determinate"
-                value={progress}
-                size={150}
-                thickness={2}
-                sx={{
-                  color: "primary.main",
-                  "@keyframes pulse": {
-                    "0%": {
-                      opacity: 1,
-                    },
-                    "50%": {
-                      opacity: 0.5,
-                    },
-                    "100%": {
-                      opacity: 1,
-                    },
-                  },
-                  animation: "pulse 2s ease-in-out infinite",
-                }}
-              />
-              <Box
-                sx={{
-                  top: 0,
-                  left: 0,
-                  bottom: 0,
-                  right: 0,
-                  position: "absolute",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Typography variant="h6" component="div" color="text.primary">
-                  {`${Math.round(progress)}%`}
-                </Typography>
-              </Box>
-            </Box>
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                border: "4px solid #f3f3f3",
+                borderTop: "4px solid #d3d3d3ff",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+                "@keyframes spin": {
+                  "0%": { transform: "rotate(0deg)" },
+                  "100%": { transform: "rotate(360deg)" },
+                },
+              }}
+            />
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: "center", maxWidth: "600px" }}>
               Running {results.length > 0 ? results.length : "multiple"} independent backtests to validate strategy
               robustness.
