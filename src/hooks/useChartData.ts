@@ -1,12 +1,5 @@
 import { useMemo } from "react";
-import { Simulation, RebalanceLog, PortfolioSnapshot } from "../core/models";
-
-export interface ChartData {
-  priceChart: Record<string, Array<{ time: string; value: number }>>;
-  ratioChart: Record<string, Array<{ time: string; value: number }>>;
-  pullbackChart: Record<string, Array<{ time: string; value: number }>>;
-  rebalanceLogsMap: Record<string, RebalanceLog>;
-}
+import { Simulation, RebalanceLog, PortfolioSnapshot, D3ChartData } from "../core/models";
 
 export interface LegendValues {
   priceValues: { [key: string]: number };
@@ -14,13 +7,13 @@ export interface LegendValues {
 }
 
 export interface UseChartDataReturn {
-  chartData: ChartData;
+  d3ChatData: D3ChartData;
   legendValues: LegendValues;
 }
 
 export const useChartData = (simulation: Simulation, selectedDate: string | null): UseChartDataReturn => {
   // Memoize expensive chart data calculations
-  const chartData = useMemo((): ChartData => {
+  const d3ChatData = useMemo((): D3ChartData => {
     if (!simulation || simulation.rebalanceLogs.length === 0) {
       return {
         priceChart: {},
@@ -93,7 +86,7 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
 
   // Calculate legend values for the selected date
   const legendValues = useMemo((): LegendValues => {
-    if (!selectedDate || !chartData) {
+    if (!selectedDate || !d3ChatData) {
       return { priceValues: {}, ratioValues: {} };
     }
 
@@ -102,9 +95,9 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
 
     // Get values for each series at the selected date
     Object.entries({
-      ...chartData.priceChart,
-      ...chartData.ratioChart,
-      ...chartData.pullbackChart,
+      ...d3ChatData.priceChart,
+      ...d3ChatData.ratioChart,
+      ...d3ChatData.pullbackChart,
     }).forEach(([seriesName, data]) => {
       const dataPoint = data.find((dp: any) => dp.time === selectedDate);
       if (dataPoint) {
@@ -117,10 +110,10 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
     });
 
     return { priceValues, ratioValues };
-  }, [selectedDate, chartData]);
+  }, [selectedDate, d3ChatData]);
 
   return {
-    chartData,
+    d3ChatData,
     legendValues,
   };
 };

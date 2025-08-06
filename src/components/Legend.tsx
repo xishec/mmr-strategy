@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Typography } from "@mui/material";
 import { formatValue } from "../core/functions";
 import { blue, red, yellow, grey } from "./Chart";
+import { D3ChartData } from "../core/models";
 
 interface LegendItem {
   label: string;
@@ -12,20 +13,13 @@ interface LegendItem {
 }
 
 interface LegendProps {
-  priceSeriesData: { [key: string]: any[] };
-  ratioSeriesData: { [key: string]: any[] };
+  d3ChartData: D3ChartData;
   selectedDate?: string | null;
   priceValues?: { [key: string]: number };
   ratioValues?: { [key: string]: number };
 }
 
-const Legend: React.FC<LegendProps> = ({
-  priceSeriesData,
-  ratioSeriesData,
-  selectedDate,
-  priceValues = {},
-  ratioValues = {},
-}) => {
+const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate, priceValues = {}, ratioValues = {} }) => {
   // Define all legend items in the requested order
   const allLegendItems: LegendItem[] = [
     { label: "Strategy Total", color: yellow, type: "line", seriesKey: "StrategyTotal" },
@@ -53,9 +47,9 @@ const Legend: React.FC<LegendProps> = ({
   // Filter items to only show those that have data
   const availableItems = allLegendItems.filter((item) => {
     if (item.seriesKey === "Ratio" || item.seriesKey === "pullback") {
-      return ratioSeriesData[item.seriesKey] && ratioSeriesData[item.seriesKey].length > 0;
+      return d3ChartData.ratioChart[item.seriesKey] && d3ChartData.ratioChart[item.seriesKey].length > 0;
     } else {
-      return priceSeriesData[item.seriesKey] && priceSeriesData[item.seriesKey].length > 0;
+      return d3ChartData.priceChart[item.seriesKey] && d3ChartData.priceChart[item.seriesKey].length > 0;
     }
   });
 

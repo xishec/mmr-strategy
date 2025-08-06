@@ -1,5 +1,6 @@
 import { computePortfolioSnapshot, rebalance } from "./core-logic";
 import {
+  AnalysisResults,
   Investments,
   MarketData,
   PortfolioSnapshot,
@@ -297,13 +298,17 @@ const calculateSummaryStats = (
   qqqRates: number[],
   tqqqRates: number[],
   startDates: string[]
-) => {
+): AnalysisResults => {
   if (strategyRates.length === 0) {
     return {
       totalSimulations: 0,
       averageStrategyRate: 0,
       averageQQQRate: 0,
       averageTQQQRate: 0,
+      strategyVsQQQPercentageImprovement: 0,
+      strategyStandardDeviation: 0,
+      qqqStandardDeviation: 0,
+      tqqqStandardDeviation: 0,
       bestStrategyRate: 0,
       worstStrategyRate: 0,
       winRate: 0,
@@ -314,6 +319,17 @@ const calculateSummaryStats = (
   const averageStrategyRate = strategyRates.reduce((sum, rate) => sum + rate, 0) / strategyRates.length;
   const averageQQQRate = qqqRates.reduce((sum, rate) => sum + rate, 0) / qqqRates.length;
   const averageTQQQRate = tqqqRates.reduce((sum, rate) => sum + rate, 0) / tqqqRates.length;
+
+  // Calculate standard deviations
+  const strategyStandardDeviation = Math.sqrt(
+    strategyRates.reduce((sum, rate) => sum + Math.pow(rate - averageStrategyRate, 2), 0) / strategyRates.length
+  );
+  const qqqStandardDeviation = Math.sqrt(
+    qqqRates.reduce((sum, rate) => sum + Math.pow(rate - averageQQQRate, 2), 0) / qqqRates.length
+  );
+  const tqqqStandardDeviation = Math.sqrt(
+    tqqqRates.reduce((sum, rate) => sum + Math.pow(rate - averageTQQQRate, 2), 0) / tqqqRates.length
+  );
 
   const bestStrategyRate = Math.max(...strategyRates);
   const worstStrategyRate = Math.min(...strategyRates);
@@ -345,6 +361,9 @@ const calculateSummaryStats = (
     averageStrategyRate,
     averageQQQRate,
     averageTQQQRate,
+    strategyStandardDeviation,
+    qqqStandardDeviation,
+    tqqqStandardDeviation,
     bestStrategyRate,
     worstStrategyRate,
     winRate: winRateVsQQQ,

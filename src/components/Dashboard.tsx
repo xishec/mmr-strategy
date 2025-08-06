@@ -1,12 +1,14 @@
 import React from "react";
 import { Box } from "@mui/material";
 import { MarketData } from "../core/models";
-import { useSimulation, useDateNavigation, useChartData } from "../hooks";
 import SimulationSetup from "./SimulationSetup";
 import Legend from "./Legend";
 import RebalanceDetails from "./RebalanceDetails";
 import SimulationResultsDialog from "./SimulationResultsDialog";
 import Chart from "./Chart";
+import { useDateNavigation } from "../hooks/useDateNavigation";
+import { useSimulation } from "../hooks/useSimulation";
+import { useChartData } from "../hooks/useChartData";
 
 interface DashboardProps {
   marketData: MarketData;
@@ -17,7 +19,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
   const {
     simulation,
     variables,
-    simulationResults,
+    analysisResults,
     isRunningMultipleSimulations,
     updateVariable,
     runMultipleSimulationsHandler,
@@ -27,7 +29,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
   const { selectedDate, availableDates, setSelectedDateIndex } = useDateNavigation(simulation);
 
   // Chart data processing
-  const { chartData, legendValues } = useChartData(simulation, selectedDate);
+  const { d3ChatData, legendValues } = useChartData(simulation, selectedDate);
 
   // Handle date changes from chart interactions
   const handleDateChange = React.useCallback(
@@ -114,8 +116,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         {simulation && simulation.portfolioSnapshots.length > 0 && (
           <Box sx={{ px: 2, ml: 6 }}>
             <Legend
-              priceSeriesData={chartData.priceChart}
-              ratioSeriesData={{ ...chartData.ratioChart, ...chartData.pullbackChart }}
+              d3ChartData={d3ChatData}
               selectedDate={selectedDate}
               priceValues={legendValues.priceValues}
               ratioValues={legendValues.ratioValues}
@@ -135,8 +136,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
             }}
           >
             <Chart
-              multiSeriesData={{ ...chartData.priceChart, ...chartData.ratioChart, ...chartData.pullbackChart }}
-              rebalanceLogsMap={chartData.rebalanceLogsMap}
+              d3ChartData={d3ChatData}
               selectedDate={selectedDate}
               isLogScale={variables.isLogScale}
               height="100%"
@@ -147,18 +147,20 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
 
         {/* Rebalance Details */}
         <Box sx={{ mx: 4 }}>
-          <RebalanceDetails selectedDate={selectedDate} simulation={simulation} chartData={chartData} />
+          <RebalanceDetails selectedDate={selectedDate} simulation={simulation} d3ChartData={d3ChatData} />
         </Box>
       </Box>
 
       {/* Results Dialog */}
-      <SimulationResultsDialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        results={simulationResults}
-        isLoading={isRunningMultipleSimulations}
-        title={`Historical Strategy Performance vs QQQ (${variables.simulationYears} year periods)`}
-      />
+      {analysisResults && (
+        <SimulationResultsDialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          analysisResults={analysisResults}
+          isLoading={isRunningMultipleSimulations}
+          title={`Historical Strategy Performance vs QQQ (${variables.simulationYears} year periods)`}
+        />
+      )}
     </Box>
   );
 };

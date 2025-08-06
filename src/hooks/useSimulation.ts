@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { Simulation, MarketData } from '../core/models';
-import { convertAnnualRateToDaily, startSimulation, runMultipleSimulations } from '../core/functions';
-import { formatDate } from '../core/date-utils';
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Simulation, MarketData, AnalysisResults } from "../core/models";
+import { convertAnnualRateToDaily, startSimulation, runMultipleSimulations } from "../core/functions";
+import { formatDate } from "../core/date-utils";
 
-export interface SimulationVariables {
+export interface DashboardVariables {
   startDate: Date;
   endDate: Date;
   initialMoney: number;
@@ -19,22 +19,17 @@ export interface SimulationVariables {
 
 export interface UseSimulationReturn {
   simulation: Simulation;
-  variables: SimulationVariables;
-  simulationResults: Array<{
-    startDate: string;
-    strategyRate: number;
-    qqqRate: number;
-    tqqqRate: number;
-  }>;
+  variables: DashboardVariables;
+  analysisResults: AnalysisResults | null;
   isRunningMultipleSimulations: boolean;
-  updateVariable: <K extends keyof SimulationVariables>(key: K, value: SimulationVariables[K]) => void;
+  updateVariable: <K extends keyof DashboardVariables>(key: K, value: DashboardVariables[K]) => void;
   runMultipleSimulationsHandler: () => void;
   cancelSimulation: () => void;
 }
 
 export const useSimulation = (marketData: MarketData | null): UseSimulationReturn => {
   // Simulation variables
-  const [variables, setVariables] = useState<SimulationVariables>({
+  const [variables, setVariables] = useState<DashboardVariables>({
     startDate: new Date(2000, 0, 1),
     endDate: new Date(),
     initialMoney: 100,
@@ -48,14 +43,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     isLogScale: true,
   });
 
-  const [simulationResults, setSimulationResults] = useState<
-    Array<{
-      startDate: string;
-      strategyRate: number;
-      qqqRate: number;
-      tqqqRate: number;
-    }>
-  >([]);
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
 
   const [isRunningMultipleSimulations, setIsRunningMultipleSimulations] = useState<boolean>(false);
 
@@ -76,40 +64,37 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   });
 
   // Track when simulation needs to be run
-  const lastSimulationParams = useRef<string>('');
+  const lastSimulationParams = useRef<string>("");
 
   // Update variable function
-  const updateVariable = useCallback(<K extends keyof SimulationVariables>(
-    key: K,
-    value: SimulationVariables[K]
-  ) => {
-    setVariables(prev => ({ ...prev, [key]: value }));
+  const updateVariable = useCallback(<K extends keyof DashboardVariables>(key: K, value: DashboardVariables[K]) => {
+    setVariables((prev) => ({ ...prev, [key]: value }));
   }, []);
 
   // Handle multiple simulations - simple approach
   const runMultipleSimulationsHandler = useCallback(async () => {
     if (marketData && simulation.variables) {
       setIsRunningMultipleSimulations(true);
-      
+
       try {
         console.log(`Starting multiple simulations for ${variables.simulationYears} years each...`);
-        
+
         // Clear previous results
-        setSimulationResults([]);
-        
+        setAnalysisResults(null);
+
         const { analysisResults } = await runMultipleSimulations(
-          simulation.variables, 
-          marketData, 
+          simulation.variables,
+          marketData,
           variables.simulationYears
         );
-        
-        // Set only the essential results we need for display
-        setSimulationResults(analysisResults.resultsWithRates || []);
-        
+
+        // Set the analysis results and the individual results
+        setAnalysisResults(analysisResults);
+
         console.log(`Completed ${analysisResults.totalSimulations} simulations`);
       } catch (error) {
-        console.error('Error running multiple simulations:', error);
-        setSimulationResults([]);
+        console.error("Error running multiple simulations:", error);
+        setAnalysisResults(null);
       } finally {
         setIsRunningMultipleSimulations(false);
       }
@@ -119,12 +104,12 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   // Simple cancel function (just resets state)
   const cancelSimulation = useCallback(() => {
     setIsRunningMultipleSimulations(false);
-    console.log('Simulation state reset');
+    console.log("Simulation state reset");
   }, []);
 
   // Auto-update simulation when variables change
   useEffect(() => {
-    setSimulation(prevSimulation => ({
+    setSimulation((prevSimulation) => ({
       ...prevSimulation,
       variables: {
         initialMoney: variables.initialMoney,
@@ -164,7 +149,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   return {
     simulation,
     variables,
-    simulationResults,
+    analysisResults,
     isRunningMultipleSimulations,
     updateVariable,
     runMultipleSimulationsHandler,

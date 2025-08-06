@@ -1,27 +1,13 @@
 import React, { useEffect, useRef, useCallback } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Box,
-  Typography,
-} from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from "@mui/material";
 import * as d3 from "d3";
 import { blue, yellow } from "./Chart";
-
-interface SimulationResult {
-  startDate: string;
-  strategyRate: number;
-  qqqRate: number;
-  tqqqRate: number;
-}
+import { AnalysisResults } from "../core/models";
 
 interface SimulationResultsDialogProps {
   open: boolean;
   onClose: () => void;
-  results: SimulationResult[];
+  analysisResults: AnalysisResults;
   isLoading: boolean;
   title?: string;
 }
@@ -29,48 +15,39 @@ interface SimulationResultsDialogProps {
 const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
   open,
   onClose,
-  results,
+  analysisResults,
   isLoading = false,
   title = "Simulation Results",
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Calculate statistics
+  // Use pre-calculated analysis results from functions.ts
   const calculateStatistics = useCallback(() => {
-    if (results.length === 0) return null;
+    if (!analysisResults || analysisResults.resultsWithRates.length === 0) return null;
 
-    const strategyRates = results.map((r) => r.strategyRate);
-    const qqqRates = results.map((r) => r.qqqRate);
-
-    const averageStrategyRate = strategyRates.reduce((sum, rate) => sum + rate, 0) / strategyRates.length;
-    const averageQQQRate = qqqRates.reduce((sum, rate) => sum + rate, 0) / qqqRates.length;
-
-    const strategyVsQQQImprovement = (averageStrategyRate / averageQQQRate - 1) * 100;
-
-    const strategyWinsOverQQQ = results.filter((r) => r.strategyRate > r.qqqRate).length;
-    const winRateVsQQQ = (strategyWinsOverQQQ / results.length) * 100;
-
-    const sortedByStrategy = [...results].sort((a, b) => a.strategyRate - b.strategyRate);
+    const sortedByStrategy = [...analysisResults.resultsWithRates].sort((a, b) => a.strategyRate - b.strategyRate);
     const absoluteWorst = sortedByStrategy[0];
 
-    const sortedByRelative = [...results].sort((a, b) => a.strategyRate - a.qqqRate - (b.strategyRate - b.qqqRate));
+    const sortedByRelative = [...analysisResults.resultsWithRates].sort(
+      (a, b) => a.strategyRate - a.qqqRate - (b.strategyRate - b.qqqRate)
+    );
     const relativeWorst = sortedByRelative[0];
 
     return {
-      averageStrategyRate,
-      averageQQQRate,
-      strategyVsQQQImprovement,
-      winRateVsQQQ,
+      averageStrategyRate: analysisResults.averageStrategyRate,
+      averageQQQRate: analysisResults.averageQQQRate,
+      strategyVsQQQImprovement: analysisResults.strategyVsQQQPercentageImprovement,
+      winRateVsQQQ: analysisResults.winRate,
       absoluteWorst,
       relativeWorst,
     };
-  }, [results]);
+  }, [analysisResults]);
 
   const statistics = calculateStatistics();
 
   const createChart = useCallback(() => {
-    if (!svgRef.current || !containerRef.current || results.length === 0) return;
+    if (!svgRef.current || !containerRef.current || analysisResults.resultsWithRates.length === 0) return;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -87,7 +64,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Parse dates and sort data
-    const parsedData = results
+    const parsedData = analysisResults.resultsWithRates
       .map((d) => ({
         ...d,
         date: new Date(d.startDate),
@@ -161,7 +138,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
     // Add axis labels
     g.append("text")
       .attr("transform", "rotate(-90)")
-      .attr("y", 0 - margin.left + 15)
+      .attr("y", 0 - margin.left + 5)
       .attr("x", 0 - height / 2)
       .attr("dy", "1em")
       .style("text-anchor", "middle")
@@ -171,7 +148,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .text("Annualized Rate");
 
     g.append("text")
-      .attr("transform", `translate(${width / 2}, ${height + margin.bottom - 10})`)
+      .attr("transform", `translate(${width / 2}, ${height + margin.bottom - 25})`)
       .style("text-anchor", "middle")
       .style("font-size", "11px")
       .style("font-family", "system-ui, -apple-system, sans-serif")
@@ -262,10 +239,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .style("box-shadow", "0 2px 4px rgba(0,0,0,0.2)");
 
     // Add interactive crosshair
-    const crosshair = g
-      .append("g")
-      .attr("class", "crosshair")
-      .style("display", "none");
+    const crosshair = g.append("g").attr("class", "crosshair").style("display", "none");
 
     // Vertical crosshair line
     const crosshairLine = crosshair
@@ -403,7 +377,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
     return () => {
       d3.selectAll(".simulation-tooltip").remove();
     };
-  }, [results]);
+  }, [analysisResults]);
 
   useEffect(() => {
     if (open) {
@@ -473,8 +447,9 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
               }}
             />
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: "center", maxWidth: "600px" }}>
-              Running {results.length > 0 ? results.length : "multiple"} independent backtests to validate strategy
-              robustness.
+              Running{" "}
+              {analysisResults.resultsWithRates.length > 0 ? analysisResults.resultsWithRates.length : "multiple"}{" "}
+              independent backtests to validate strategy robustness.
               <br />
               Each simulation starts investing on a different historical date and runs through to today, comparing your
               strategy's annualized returns against the QQQ benchmark.

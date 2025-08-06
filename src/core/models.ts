@@ -76,3 +76,29 @@ export interface ChartPoint {
 export type ChartData = ChartPoint[];
 
 export type MultiSeriesChartData = Record<string, ChartData>;
+export interface D3ChartData {
+  priceChart: MultiSeriesChartData;
+  ratioChart: MultiSeriesChartData;
+  pullbackChart: MultiSeriesChartData;
+  rebalanceLogsMap: Record<string, RebalanceLog>;
+}
+
+export interface AnalysisResults {
+  totalSimulations: number;
+  averageStrategyRate: number;
+  averageQQQRate: number;
+  averageTQQQRate: number;
+  strategyStandardDeviation: number;
+  qqqStandardDeviation: number;
+  tqqqStandardDeviation: number;
+  bestStrategyRate: number;
+  worstStrategyRate: number;
+  winRate: number;
+  strategyVsQQQPercentageImprovement: number;
+  resultsWithRates: Array<{
+    startDate: string;
+    strategyRate: number;
+    qqqRate: number;
+    tqqqRate: number;
+  }>;
+}

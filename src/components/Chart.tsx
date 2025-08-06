@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import * as d3 from "d3";
-import { MultiSeriesChartData, RebalanceLog } from "../core/models";
 import { getRebalanceTypeColor } from "../core/functions";
+import { D3ChartData } from "../core/models";
 
 export const black = "#202124";
 export const yellow = "#FBBC04";
@@ -12,8 +12,7 @@ export const green = "#34A853";
 export const grey = "#848484ff";
 
 interface ChartProps {
-  multiSeriesData?: MultiSeriesChartData;
-  rebalanceLogsMap?: Record<string, RebalanceLog>;
+  d3ChartData: D3ChartData;
   selectedDate: string | null;
   isLogScale?: boolean;
   height: string | number;
@@ -21,8 +20,7 @@ interface ChartProps {
 }
 
 const Chart: React.FC<ChartProps> = ({
-  multiSeriesData,
-  rebalanceLogsMap,
+  d3ChartData,
   selectedDate,
   isLogScale = false,
   height,
@@ -34,8 +32,8 @@ const Chart: React.FC<ChartProps> = ({
 
   // Memoize expensive data processing to prevent unnecessary re-computations
   const chartDataMemo = useMemo(() => {
-    return multiSeriesData || {};
-  }, [multiSeriesData]);
+    return d3ChartData || {};
+  }, [d3ChartData]);
 
   const createD3Chart = useCallback(() => {
     if (!chartContainerRef.current || !svgRef.current) return null;
@@ -141,7 +139,9 @@ const Chart: React.FC<ChartProps> = ({
       const processedData = data.map((d) => ({ ...d, parsedTime: parseTime(d.time) }));
 
       // Filter data to only include rebalance dates for points
-      const rebalanceData = processedData.filter((d) => rebalanceLogsMap && rebalanceLogsMap[d.time]);
+      const rebalanceData = processedData.filter(
+        (d) => seriesData.rebalanceLogsMap && seriesData.rebalanceLogsMap[d.time]
+      );
 
       if (seriesName === "Target") {
         // // Render as points (only for rebalance dates)
@@ -205,7 +205,7 @@ const Chart: React.FC<ChartProps> = ({
               .attr("cx", (d) => xScale(d.parsedTime))
               .attr("cy", (d) => yScale(d.value))
               .attr("r", 3)
-              .attr("fill", (d) => getRebalanceTypeColor(rebalanceLogsMap![d.time]))
+              .attr("fill", (d) => getRebalanceTypeColor(seriesData.rebalanceLogsMap![d.time]))
               .attr("stroke", black)
               .attr("stroke-width", 0);
           } else {
@@ -359,7 +359,7 @@ const Chart: React.FC<ChartProps> = ({
       const dateObj = parseTime(date);
       if (dateObj) {
         const x = xScale(dateObj);
-        const color = getRebalanceTypeColor(rebalanceLogsMap![date]);
+        const color = getRebalanceTypeColor(seriesData.rebalanceLogsMap![date]);
 
         selectedCrosshairLine.attr("x1", x).attr("x2", x).attr("stroke", color);
 
@@ -377,9 +377,9 @@ const Chart: React.FC<ChartProps> = ({
 
     // Helper function to find nearest date
     const findNearestDate = (xPosition: number): string | null => {
-      if (!rebalanceLogsMap) return null;
+      if (!seriesData.rebalanceLogsMap) return null;
 
-      const dates = Object.keys(rebalanceLogsMap).sort();
+      const dates = Object.keys(seriesData.rebalanceLogsMap).sort();
       if (dates.length === 0) return null;
 
       const parseTime = d3.timeParse("%Y-%m-%d");
@@ -609,7 +609,7 @@ const Chart: React.FC<ChartProps> = ({
     };
 
     return { chart: chartLikeObject, mainSeries };
-  }, [isLogScale, chartDataMemo, rebalanceLogsMap, onDateChange, selectedDate]);
+  }, [isLogScale, chartDataMemo, onDateChange, selectedDate]);
 
   // Handle selectedDate changes
   useEffect(() => {
@@ -623,7 +623,7 @@ const Chart: React.FC<ChartProps> = ({
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
-    const hasData = multiSeriesData && Object.keys(multiSeriesData).length > 0;
+    const hasData = d3ChartData && Object.keys(d3ChartData).length > 0;
 
     if (!hasData) return;
 
@@ -666,7 +666,7 @@ const Chart: React.FC<ChartProps> = ({
       window.removeEventListener("resize", handleResize);
       cleanup();
     };
-  }, [createD3Chart, multiSeriesData, selectedDate]);
+  }, [createD3Chart, d3ChartData, selectedDate]);
 
   return (
     <div

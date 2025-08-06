@@ -1,24 +1,23 @@
 import React, { useMemo } from "react";
 import { Box, Typography, Slider } from "@mui/material";
 import { formatValue, getRebalanceTypeColor } from "../core/functions";
-import { Simulation, RebalanceLog, RebalanceTypeExplanation } from "../core/models";
-import { ChartData } from "../hooks";
+import { Simulation, RebalanceLog, RebalanceTypeExplanation, D3ChartData } from "../core/models";
 import RatioBox from "./RatioBox";
 
 interface RebalanceDetailsProps {
   selectedDate: string | null;
   simulation: Simulation;
-  chartData: ChartData;
+  d3ChartData: D3ChartData;
 }
 
-const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simulation, chartData }) => {
+const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simulation, d3ChartData }) => {
   // Get current rebalance log safely
   const currentRebalanceLog = useMemo(() => {
-    if (!selectedDate || !chartData.rebalanceLogsMap || typeof chartData.rebalanceLogsMap !== "object") {
+    if (!selectedDate || !d3ChartData.rebalanceLogsMap || typeof d3ChartData.rebalanceLogsMap !== "object") {
       return null;
     }
-    return (chartData.rebalanceLogsMap as Record<string, RebalanceLog>)[selectedDate] || null;
-  }, [selectedDate, chartData.rebalanceLogsMap]);
+    return (d3ChartData.rebalanceLogsMap as Record<string, RebalanceLog>)[selectedDate] || null;
+  }, [selectedDate, d3ChartData.rebalanceLogsMap]);
 
   // Get rebalance color based on rebalance type
   const getRebalanceColor = useMemo(() => {
