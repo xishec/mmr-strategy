@@ -4,6 +4,7 @@ import { MultiSeriesChartData, RebalanceLog, RebalanceType } from "../core";
 
 export const black = "#202124";
 export const yellow = "#FBBC04";
+export const lightYellow = "#FEEFC3";
 export const blue = "#4285F4";
 export const red = "#EA4335";
 export const green = "#34A853";
@@ -76,7 +77,7 @@ const Chart: React.FC<ChartProps> = ({
     const ratioTop = priceTop + priceHeight + spaceBetweenCharts;
 
     // Separate series by type
-    const priceKeys = ["StrategyTotal", "Target", "MockTotalQQQ", "MockTotalTQQQ"];
+    const priceKeys = ["StrategyTotal", "StrategyTotalAll", "Target", "MockTotalQQQ", "MockTotalTQQQ"];
     const ratioKeys = ["Ratio", "pullback"];
 
     const getSeriesByType = (type: "price" | "ratio") => {
@@ -119,6 +120,7 @@ const Chart: React.FC<ChartProps> = ({
     // Color mapping
     const colorMap = {
       StrategyTotal: yellow,
+      StrategyTotalAll: lightYellow,
       Target: black,
       MockTotalQQQ: green,
       MockTotalTQQQ: red,

@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Simulation, RebalanceLog, PortfolioSnapshot } from '../core';
+import { useMemo } from "react";
+import { Simulation, RebalanceLog, PortfolioSnapshot } from "../core";
 
 export interface ChartData {
   priceChart: Record<string, Array<{ time: string; value: number }>>;
@@ -51,6 +51,10 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
         time: snapshot.date,
         value: snapshot.investments.mockTotalTQQQ,
       })),
+      StrategyTotalAll: simulation.portfolioSnapshots.map((snapshot) => ({
+        time: snapshot.date,
+        value: snapshot.investments.total,
+      })),
       StrategyTotal: simulation.rebalanceLogs.map((rebalanceLog) => ({
         time: rebalanceLog.date,
         value: rebalanceLog.before.investments.total,
@@ -100,7 +104,7 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
     }).forEach(([seriesName, data]) => {
       const dataPoint = data.find((dp: any) => dp.time === selectedDate);
       if (dataPoint) {
-        if (['StrategyTotal', 'Target', 'MockTotalQQQ', 'MockTotalTQQQ'].includes(seriesName)) {
+        if (["StrategyTotal", "Target", "MockTotalQQQ", "MockTotalTQQQ"].includes(seriesName)) {
           priceValues[seriesName] = dataPoint.value;
         } else {
           ratioValues[seriesName] = dataPoint.value;
