@@ -91,8 +91,8 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
     after.nextTarget = before.investments.total * (1 + 0.2);
   } else if (isBigDrop) {
     rebalanceType = RebalanceType.BigDrop;
-    after.investments.TQQQ = before.investments.total * targetRatio * 0.75;
-    after.investments.cash = before.investments.total * (1 - targetRatio * 0.75);
+    after.investments.TQQQ = before.investments.total * targetRatio * 0.5;
+    after.investments.cash = before.investments.total * (1 - targetRatio * 0.5);
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
     after.nextTarget = before.investments.total * (1 + 0.2);
