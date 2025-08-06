@@ -22,30 +22,6 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Use pre-calculated analysis results from functions.ts
-  const calculateStatistics = useCallback(() => {
-    if (!analysisResults || analysisResults.resultsWithRates.length === 0) return null;
-
-    const sortedByStrategy = [...analysisResults.resultsWithRates].sort((a, b) => a.strategyRate - b.strategyRate);
-    const absoluteWorst = sortedByStrategy[0];
-
-    const sortedByRelative = [...analysisResults.resultsWithRates].sort(
-      (a, b) => a.strategyRate - a.qqqRate - (b.strategyRate - b.qqqRate)
-    );
-    const relativeWorst = sortedByRelative[0];
-
-    return {
-      averageStrategyRate: analysisResults.averageStrategyRate,
-      averageQQQRate: analysisResults.averageQQQRate,
-      strategyVsQQQImprovement: analysisResults.strategyVsQQQPercentageImprovement,
-      winRateVsQQQ: analysisResults.winRate,
-      absoluteWorst,
-      relativeWorst,
-    };
-  }, [analysisResults]);
-
-  const statistics = calculateStatistics();
-
   const createChart = useCallback(() => {
     if (!svgRef.current || !containerRef.current || analysisResults.resultsWithRates.length === 0) return;
 
@@ -461,7 +437,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
         ) : (
           <Box>
             {/* Statistics Summary */}
-            {statistics && (
+            {analysisResults && (
               <Box sx={{ m: 4, mt: 2, p: 4, bgcolor: "grey.50", borderRadius: "0.5rem" }}>
                 <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 2 }}>
                   <Box>
@@ -469,7 +445,10 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                       Average QQQ Rate
                     </Typography>
                     <Typography variant="h6" color={blue}>
-                      {(statistics.averageQQQRate * 100).toFixed(2)}%
+                      {(analysisResults.averageQQQRate * 100).toFixed(2)}%
+                    </Typography>
+                    <Typography variant="caption" display="block" color="text.secondary">
+                      ({(analysisResults.qqqStandardDeviation * 100).toFixed(2)}%)
                     </Typography>
                   </Box>
 
@@ -478,7 +457,10 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                       Average Strategy Rate
                     </Typography>
                     <Typography variant="h6" color={yellow}>
-                      {(statistics.averageStrategyRate * 100).toFixed(2)}%
+                      {(analysisResults.averageStrategyRate * 100).toFixed(2)}%
+                    </Typography>
+                    <Typography variant="caption" display="block" color="text.secondary">
+                      ({(analysisResults.strategyStandardDeviation * 100).toFixed(2)}%)
                     </Typography>
                   </Box>
                   <Box>
@@ -487,17 +469,17 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                     </Typography>
                     <Typography
                       variant="h6"
-                      color={statistics.strategyVsQQQImprovement > 0 ? "success.main" : "error.main"}
+                      color={analysisResults.strategyVsQQQImprovement > 0 ? "success.main" : "error.main"}
                     >
-                      {statistics.strategyVsQQQImprovement.toFixed(2)}%
+                      {analysisResults.strategyVsQQQImprovement.toFixed(2)}%
                     </Typography>
                   </Box>
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Win Rate vs QQQ
                     </Typography>
-                    <Typography variant="h6" color={statistics.winRateVsQQQ > 50 ? "success.main" : "error.main"}>
-                      {statistics.winRateVsQQQ.toFixed(2)}%
+                    <Typography variant="h6" color={analysisResults.winRateVsQQQ > 50 ? "success.main" : "error.main"}>
+                      {analysisResults.winRateVsQQQ.toFixed(2)}%
                     </Typography>
                   </Box>
 
@@ -507,11 +489,11 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                     </Typography>
                     <Typography
                       variant="h6"
-                      color={statistics.absoluteWorst.strategyRate > 0 ? "success.main" : "error.main"}
+                      color={analysisResults.absoluteWorstStrategyRate > 0 ? "success.main" : "error.main"}
                     >
-                      {(statistics.absoluteWorst.strategyRate * 100).toFixed(2)}%
+                      {(analysisResults.absoluteWorstStrategyRate * 100).toFixed(2)}%
                       <Typography variant="caption" display="block" color="text.secondary">
-                        ({statistics.absoluteWorst.startDate})
+                        ({analysisResults.absoluteWorstStrategyRateDate})
                       </Typography>
                     </Typography>
                   </Box>
@@ -521,11 +503,11 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                     </Typography>
                     <Typography
                       variant="h6"
-                      color={statistics.relativeWorst.strategyRate > 0 ? "success.main" : "error.main"}
+                      color={analysisResults.relativeWorstStrategyRate > 0 ? "success.main" : "error.main"}
                     >
-                      {(statistics.relativeWorst.strategyRate * 100).toFixed(2)}%
+                      {(analysisResults.relativeWorstStrategyRate * 100).toFixed(2)}%
                       <Typography variant="caption" display="block" color="text.secondary">
-                        ({statistics.relativeWorst.startDate})
+                        ({analysisResults.relativeWorstStrategyRateDate})
                       </Typography>
                     </Typography>
                   </Box>

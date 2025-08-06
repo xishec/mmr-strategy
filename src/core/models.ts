@@ -91,10 +91,12 @@ export interface AnalysisResults {
   strategyStandardDeviation: number;
   qqqStandardDeviation: number;
   tqqqStandardDeviation: number;
-  bestStrategyRate: number;
-  worstStrategyRate: number;
-  winRate: number;
-  strategyVsQQQPercentageImprovement: number;
+  absoluteWorstStrategyRate: number;
+  relativeWorstStrategyRate: number;
+  absoluteWorstStrategyRateDate: string;
+  relativeWorstStrategyRateDate: string;
+  winRateVsQQQ: number;
+  strategyVsQQQImprovement: number;
   resultsWithRates: Array<{
     startDate: string;
     strategyRate: number;

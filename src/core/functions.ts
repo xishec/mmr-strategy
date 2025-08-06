@@ -305,13 +305,15 @@ const calculateSummaryStats = (
       averageStrategyRate: 0,
       averageQQQRate: 0,
       averageTQQQRate: 0,
-      strategyVsQQQPercentageImprovement: 0,
+      strategyVsQQQImprovement: 0,
       strategyStandardDeviation: 0,
       qqqStandardDeviation: 0,
       tqqqStandardDeviation: 0,
-      bestStrategyRate: 0,
-      worstStrategyRate: 0,
-      winRate: 0,
+      absoluteWorstStrategyRate: 0,
+      relativeWorstStrategyRate: 0,
+      absoluteWorstStrategyRateDate: "",
+      relativeWorstStrategyRateDate: "",
+      winRateVsQQQ: 0,
       resultsWithRates: [],
     };
   }
@@ -331,11 +333,13 @@ const calculateSummaryStats = (
     tqqqRates.reduce((sum, rate) => sum + Math.pow(rate - averageTQQQRate, 2), 0) / tqqqRates.length
   );
 
-  const bestStrategyRate = Math.max(...strategyRates);
-  const worstStrategyRate = Math.min(...strategyRates);
+  const absoluteWorstStrategyRate = Math.min(...strategyRates);
+  const relativeWorstStrategyRate = Math.min(...strategyRates.map((rate, index) => rate - qqqRates[index]));
+  const absoluteWorstStrategyRateDate = startDates[strategyRates.indexOf(absoluteWorstStrategyRate)];
+  const relativeWorstStrategyRateDate = startDates[strategyRates.indexOf(relativeWorstStrategyRate)];
 
   // Calculate how much better strategy is than QQQ
-  const strategyVsQQQPercentageImprovement = (averageStrategyRate / averageQQQRate - 1) * 100;
+  const strategyVsQQQImprovement = (averageStrategyRate / averageQQQRate - 1) * 100;
 
   // Count how many times strategy beats QQQ
   const strategyWinsOverQQQ = strategyRates.filter((rate, index) => rate > qqqRates[index]).length;
@@ -353,7 +357,7 @@ const calculateSummaryStats = (
   console.log(`📊 Total simulations: ${strategyRates.length}`);
   console.log(`📈 Average strategy rate: ${(averageStrategyRate * 100).toFixed(2)}%`);
   console.log(`📈 Average QQQ rate: ${(averageQQQRate * 100).toFixed(2)}%`);
-  console.log(`🚀 Strategy vs QQQ improvement: ${strategyVsQQQPercentageImprovement.toFixed(2)}%`);
+  console.log(`🚀 Strategy vs QQQ improvement: ${strategyVsQQQImprovement.toFixed(2)}%`);
   console.log(`🎯 Win rate vs QQQ: ${winRateVsQQQ.toFixed(1)}%`);
 
   return {
@@ -364,10 +368,12 @@ const calculateSummaryStats = (
     strategyStandardDeviation,
     qqqStandardDeviation,
     tqqqStandardDeviation,
-    bestStrategyRate,
-    worstStrategyRate,
-    winRate: winRateVsQQQ,
-    strategyVsQQQPercentageImprovement,
+    absoluteWorstStrategyRate,
+    relativeWorstStrategyRate,
+    absoluteWorstStrategyRateDate,
+    relativeWorstStrategyRateDate,
+    winRateVsQQQ,
+    strategyVsQQQImprovement,
     resultsWithRates,
   };
 };
