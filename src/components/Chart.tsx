@@ -556,9 +556,9 @@ const Chart: React.FC<ChartProps> = ({
       .call(
         d3
           .axisBottom(xScale)
-          .ticks(5)
+          .ticks(20)
           .tickFormat((domainValue) => {
-            return d3.timeFormat("%Y-%m-%d")(domainValue as Date);
+            return d3.timeFormat("%Y")(domainValue as Date);
           })
       );
 
