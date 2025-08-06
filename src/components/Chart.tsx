@@ -47,9 +47,9 @@ const Chart: React.FC<ChartProps> = ({
     svg.on(".drag", null);
 
     // Setup dimensions and data
-    const margin = { top: 0, left: 50, right: 65 };
+    const margin = { top: 20, left: 50, right: 65, bottom: 60 };
     const width = container.clientWidth - margin.left - margin.right;
-    const totalChartHeight = container.clientHeight;
+    const totalChartHeight = container.clientHeight - margin.top - margin.bottom;
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Prepare data
@@ -64,16 +64,12 @@ const Chart: React.FC<ChartProps> = ({
       parsedTime: parseTime(d.time),
     }));
 
-    // Chart layout - always combined view with 3 sections (timeline on top)
+    // Chart layout - combined view with 2 sections (price and ratio)
     const spaceBetweenCharts = 20; // Smart spacing between sections
-    const totalSpacing = spaceBetweenCharts * 2; // Two gaps: timeline-price and price-ratio
-    const rebalanceTimelineHeight = 32; // Height for rebalance timeline
-
-    const availableHeight = totalChartHeight - totalSpacing - rebalanceTimelineHeight;
-    const priceHeight = availableHeight * 0.65;
+    const availableHeight = totalChartHeight - spaceBetweenCharts;
+    const priceHeight = availableHeight * 0.75;
     const ratioHeight = availableHeight * 0.25;
-    const timelineTop = 0; // Timeline at the top
-    const priceTop = rebalanceTimelineHeight + spaceBetweenCharts + rebalanceTimelineHeight / 2;
+    const priceTop = 0;
     const ratioTop = priceTop + priceHeight + spaceBetweenCharts;
 
     // Separate series by type
@@ -202,7 +198,7 @@ const Chart: React.FC<ChartProps> = ({
               .attr("fill", (d) => {
                 const rebalanceLog = rebalanceLogsMap![d.time];
                 return rebalanceLog.rebalanceType === RebalanceType.Shortfall
-                  ? "none"
+                  ? yellow
                   : rebalanceLog.rebalanceType === RebalanceType.BigSpike
                   ? green
                   : red;
@@ -242,85 +238,6 @@ const Chart: React.FC<ChartProps> = ({
       if (!mainSeries) mainSeries = series;
     });
 
-    // Render rebalance timeline
-    if (rebalanceLogsMap) {
-      const rebalanceDates = Object.keys(rebalanceLogsMap);
-      const timelineY = timelineTop + rebalanceTimelineHeight / 2 + 20;
-
-      // Add timeline base line
-      g.append("line")
-        .attr("class", "timeline-base")
-        .attr("x1", 0)
-        .attr("x2", width)
-        .attr("y1", timelineY)
-        .attr("y2", timelineY)
-        .attr("stroke", "#666")
-        .attr("stroke-width", 1)
-        .attr("stroke-dasharray", "3,3");
-
-      // Add rebalance markers
-      rebalanceDates.forEach((dateStr) => {
-        const date = parseTime(dateStr);
-        if (date) {
-          const x = xScale(date);
-          const rebalanceLog = rebalanceLogsMap[dateStr];
-
-          const strokeColor =
-            rebalanceLog?.rebalanceType === RebalanceType.BigSpike
-              ? green
-              : rebalanceLog?.rebalanceType === RebalanceType.Spike
-              ? green
-              : rebalanceLog?.rebalanceType === RebalanceType.Excess
-              ? yellow
-              : rebalanceLog?.rebalanceType === RebalanceType.Shortfall
-              ? yellow
-              : rebalanceLog?.rebalanceType === RebalanceType.Drop
-              ? red
-              : rebalanceLog?.rebalanceType === RebalanceType.BigDrop
-              ? red
-              : black;
-
-          const fillColor =
-            rebalanceLog?.rebalanceType === RebalanceType.BigSpike
-              ? green
-              : rebalanceLog?.rebalanceType === RebalanceType.Spike
-              ? green
-              : rebalanceLog?.rebalanceType === RebalanceType.Excess
-              ? yellow
-              : rebalanceLog?.rebalanceType === RebalanceType.Shortfall
-              ? yellow
-              : rebalanceLog?.rebalanceType === RebalanceType.Drop
-              ? red
-              : rebalanceLog?.rebalanceType === RebalanceType.BigDrop
-              ? red
-              : black;
-
-          const markerY =
-            rebalanceLog?.rebalanceType === RebalanceType.BigSpike
-              ? timelineY - 16
-              : rebalanceLog?.rebalanceType === RebalanceType.Spike
-              ? timelineY - 8
-              : rebalanceLog?.rebalanceType === RebalanceType.Excess
-              ? timelineY
-              : rebalanceLog?.rebalanceType === RebalanceType.Shortfall
-              ? timelineY
-              : rebalanceLog?.rebalanceType === RebalanceType.Drop
-              ? timelineY + 8
-              : rebalanceLog?.rebalanceType === RebalanceType.BigDrop
-              ? timelineY + 16
-              : black;
-
-          g.append("circle")
-            .attr("class", "rebalance-marker")
-            .attr("cx", x)
-            .attr("cy", markerY)
-            .attr("r", 2.5)
-            .attr("fill", fillColor)
-            .attr("stroke", strokeColor);
-        }
-      });
-    }
-
     // Add interactive crosshair with dragging
     const crosshair = g
       .append("g")
@@ -331,7 +248,7 @@ const Chart: React.FC<ChartProps> = ({
       .append("line")
       .attr("x1", 0)
       .attr("x2", 0)
-      .attr("y1", timelineTop)
+      .attr("y1", priceTop)
       .attr("y2", crosshairHeight)
       .attr("stroke", "#666")
       .attr("stroke-width", 2)
@@ -344,7 +261,7 @@ const Chart: React.FC<ChartProps> = ({
       .append("line")
       .attr("x1", 0)
       .attr("x2", 0)
-      .attr("y1", timelineTop)
+      .attr("y1", priceTop)
       .attr("y2", crosshairHeight)
       .attr("stroke-width", 2)
       .attr("stroke-dasharray", "3,3");
