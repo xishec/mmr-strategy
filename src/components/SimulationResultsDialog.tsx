@@ -23,9 +23,15 @@ interface SimulationResultsDialogProps {
   open: boolean;
   onClose: () => void;
   results: SimulationResult[];
-  isLoading?: boolean;
-  progress?: number;
+  isLoading: boolean;
   title?: string;
+  statistics?: {
+    totalSimulations: number;
+    averageStrategyRate: number;
+    averageQQQRate: number;
+    winRate: number;
+    strategyVsQQQPercentageImprovement: number;
+  };
 }
 
 const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
@@ -33,7 +39,6 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
   onClose,
   results,
   isLoading = false,
-  progress = 0,
   title = "Simulation Results",
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -323,48 +328,28 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
               justifyContent: "center",
               minHeight: "300px",
               height: "100%",
-              gap: 10,
+              gap: 3,
             }}
           >
-            <Box sx={{ position: "relative", display: "inline-flex" }}>
-              <CircularProgress
-                variant="determinate"
-                value={progress}
-                size={150}
-                thickness={2}
-                sx={{
-                  color: "primary.main",
-                  "@keyframes pulse": {
-                    "0%": {
-                      opacity: 1,
-                    },
-                    "50%": {
-                      opacity: 0.5,
-                    },
-                    "100%": {
-                      opacity: 1,
-                    },
+            <CircularProgress
+              size={100}
+              thickness={4}
+              sx={{
+                color: "primary.main",
+                "@keyframes pulse": {
+                  "0%": {
+                    opacity: 1,
                   },
-                  animation: "pulse 2s ease-in-out infinite",
-                }}
-              />
-              <Box
-                sx={{
-                  top: 0,
-                  left: 0,
-                  bottom: 0,
-                  right: 0,
-                  position: "absolute",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Typography variant="h6" component="div" color="text.primary">
-                  {`${Math.round(progress)}%`}
-                </Typography>
-              </Box>
-            </Box>
+                  "50%": {
+                    opacity: 0.5,
+                  },
+                  "100%": {
+                    opacity: 1,
+                  },
+                },
+                animation: "pulse 2s ease-in-out infinite",
+              }}
+            />
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: "center", maxWidth: "600px" }}>
               Running {results.length > 0 ? results.length : "multiple"} independent backtests to validate strategy
               robustness.

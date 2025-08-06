@@ -19,7 +19,6 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
     variables,
     simulationResults,
     isRunningMultipleSimulations,
-    simulationProgress,
     updateVariable,
     runMultipleSimulationsHandler,
   } = useSimulation(marketData);
@@ -158,7 +157,6 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         onClose={() => setDialogOpen(false)}
         results={simulationResults}
         isLoading={isRunningMultipleSimulations}
-        progress={simulationProgress}
         title={`Historical Strategy Performance vs QQQ (${variables.simulationYears} year periods)`}
       />
     </Box>
