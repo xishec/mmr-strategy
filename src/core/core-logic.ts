@@ -93,7 +93,7 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
   } else {
     console.log("bug");
   }
-  after.nextTarget = before.investments.total * (1 + 0.1);
+  after.nextTarget = before.investments.total * (1 + 0.2);
   after.nextRebalanceDate = addDaysToDate(before.date, rebalanceDays);
   after.cumulativeRateSinceRebalance = 0;
 
