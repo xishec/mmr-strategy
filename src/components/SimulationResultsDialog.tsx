@@ -464,7 +464,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                   </Box>
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      Strategy vs QQQ
+                      Improvement on QQQ
                     </Typography>
                     <Typography
                       variant="h6"
@@ -484,7 +484,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
 
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      Absolute Worst
+                      Absolute Worst Rate
                     </Typography>
                     <Typography
                       variant="h6"
@@ -498,7 +498,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                   </Box>
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      Relative Worst
+                      Relative Worst Rate
                     </Typography>
                     <Typography
                       variant="h6"

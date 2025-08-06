@@ -333,18 +333,6 @@ const calculateSummaryStats = (
     tqqqRates.reduce((sum, rate) => sum + Math.pow(rate - averageTQQQRate, 2), 0) / tqqqRates.length
   );
 
-  const absoluteWorstStrategyRate = Math.min(...strategyRates);
-  const relativeWorstStrategyRate = Math.min(...strategyRates.map((rate, index) => rate - qqqRates[index]));
-  const absoluteWorstStrategyRateDate = startDates[strategyRates.indexOf(absoluteWorstStrategyRate)];
-  const relativeWorstStrategyRateDate = startDates[strategyRates.indexOf(relativeWorstStrategyRate)];
-
-  // Calculate how much better strategy is than QQQ
-  const strategyVsQQQImprovement = (averageStrategyRate / averageQQQRate - 1) * 100;
-
-  // Count how many times strategy beats QQQ
-  const strategyWinsOverQQQ = strategyRates.filter((rate, index) => rate > qqqRates[index]).length;
-  const winRateVsQQQ = (strategyWinsOverQQQ / strategyRates.length) * 100;
-
   // Create results array for display - only keep what's needed
   const resultsWithRates = strategyRates.map((strategyRate, index) => ({
     startDate: startDates[index],
@@ -352,6 +340,22 @@ const calculateSummaryStats = (
     qqqRate: qqqRates[index],
     tqqqRate: tqqqRates[index],
   }));
+
+  const absoluteWorstStrategyRate = Math.min(...strategyRates);
+  const absoluteWorstStrategyRateDate = startDates[strategyRates.indexOf(absoluteWorstStrategyRate)];
+
+  const relativeWorstStrategy = [...resultsWithRates].sort(
+    (a, b) => a.strategyRate - a.qqqRate - (b.strategyRate - b.qqqRate)
+  )[0];
+  const relativeWorstStrategyRate = relativeWorstStrategy.strategyRate;
+  const relativeWorstStrategyRateDate = relativeWorstStrategy.startDate;
+
+  // Calculate how much better strategy is than QQQ
+  const strategyVsQQQImprovement = (averageStrategyRate / averageQQQRate - 1) * 100;
+
+  // Count how many times strategy beats QQQ
+  const strategyWinsOverQQQ = strategyRates.filter((rate, index) => rate > qqqRates[index]).length;
+  const winRateVsQQQ = (strategyWinsOverQQQ / strategyRates.length) * 100;
 
   console.log(`✅ Analysis complete:`);
   console.log(`📊 Total simulations: ${strategyRates.length}`);
