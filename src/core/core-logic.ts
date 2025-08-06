@@ -68,20 +68,30 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
   } else if (isExcess) {
     rebalanceType = RebalanceType.Excess;
-    const excess = before.investments.total - before.nextTarget;
-    const actualExcess = Math.min(excess, before.investments.TQQQ);
-    after.investments.TQQQ = before.investments.TQQQ - actualExcess;
-    after.investments.cash = before.investments.cash + actualExcess;
+    const newTargetRatio = before.investments.ratio - 0.25;
+    after.investments.TQQQ = before.investments.total * newTargetRatio;
+    after.investments.cash = before.investments.total * (1 - newTargetRatio);
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
+    // const excess = before.investments.total - before.nextTarget;
+    // const actualExcess = Math.min(excess, before.investments.TQQQ);
+    // after.investments.TQQQ = before.investments.TQQQ - actualExcess;
+    // after.investments.cash = before.investments.cash + actualExcess;
+    // after.investments.total = before.investments.total;
+    // after.investments.ratio = after.investments.TQQQ / after.investments.total;
   } else if (isShortfall) {
     rebalanceType = RebalanceType.Shortfall;
-    const shortfall = before.nextTarget - before.investments.total;
-    const actualShortfall = Math.min(shortfall, before.investments.cash);
-    after.investments.TQQQ = before.investments.TQQQ + actualShortfall;
-    after.investments.cash = before.investments.cash - actualShortfall;
+    const newTargetRatio = before.investments.ratio + 0.25;
+    after.investments.TQQQ = before.investments.total * newTargetRatio;
+    after.investments.cash = before.investments.total * (1 - newTargetRatio);
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
+    // const shortfall = before.nextTarget - before.investments.total;
+    // const actualShortfall = Math.min(shortfall, before.investments.cash);
+    // after.investments.TQQQ = before.investments.TQQQ + actualShortfall;
+    // after.investments.cash = before.investments.cash - actualShortfall;
+    // after.investments.total = before.investments.total;
+    // after.investments.ratio = after.investments.TQQQ / after.investments.total;
   } else if (isDrop) {
     rebalanceType = RebalanceType.Drop;
   } else if (isBigDrop) {
