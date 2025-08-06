@@ -47,8 +47,7 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
 
   const isBigSpike = cumulativeRate >= doubleTargetRate;
   const isSpike = cumulativeRate < doubleTargetRate && cumulativeRate >= targetRate;
-  const isExcess = cumulativeRate < targetRate && before.investments.total >= before.nextTarget;
-  const isShortfall = before.investments.total < before.nextTarget && cumulativeRate >= dropRate;
+  const isShortfall = cumulativeRate < targetRate && cumulativeRate >= dropRate;
   const isDrop = cumulativeRate < dropRate && cumulativeRate >= doubleDropRate;
   const isBigDrop = cumulativeRate < doubleDropRate;
 
@@ -66,19 +65,6 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
     after.investments.cash = before.investments.total * (1 - targetRatio * 1.25);
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
-  } else if (isExcess) {
-    rebalanceType = RebalanceType.Excess;
-    const newTargetRatio = before.investments.ratio - 0.25;
-    after.investments.TQQQ = before.investments.total * newTargetRatio;
-    after.investments.cash = before.investments.total * (1 - newTargetRatio);
-    after.investments.total = before.investments.total;
-    after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    // const excess = before.investments.total - before.nextTarget;
-    // const actualExcess = Math.min(excess, before.investments.TQQQ);
-    // after.investments.TQQQ = before.investments.TQQQ - actualExcess;
-    // after.investments.cash = before.investments.cash + actualExcess;
-    // after.investments.total = before.investments.total;
-    // after.investments.ratio = after.investments.TQQQ / after.investments.total;
   } else if (isShortfall) {
     rebalanceType = RebalanceType.Shortfall;
     const newTargetRatio = before.investments.ratio + 0.25;
