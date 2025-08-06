@@ -51,9 +51,9 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
         time: snapshot.date,
         value: snapshot.investments.mockTotalTQQQ,
       })),
-      StrategyTotal: simulation.portfolioSnapshots.map((snapshot) => ({
-        time: snapshot.date,
-        value: snapshot.investments.total,
+      StrategyTotal: simulation.rebalanceLogs.map((rebalanceLog) => ({
+        time: rebalanceLog.date,
+        value: rebalanceLog.before.investments.total,
       })),
       Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
         time: rebalanceLog.date,

@@ -56,18 +56,18 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
 
   if (isBigSpike) {
     rebalanceType = RebalanceType.BigSpike;
-    after.investments.TQQQ = before.investments.total * Math.min(targetRatio * 1.5, 1);
-    after.investments.cash = before.investments.total * (1 - Math.min(targetRatio * 1.5, 1));
+    after.investments.TQQQ = before.investments.total * Math.min(targetRatio * 1, 1);
+    after.investments.cash = before.investments.total * (1 - Math.min(targetRatio * 1, 1));
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    after.nextTarget = before.investments.total * (1 + targetRate * 1.5);
+    after.nextTarget = before.investments.total * 1.1;
   } else if (isSpike) {
     rebalanceType = RebalanceType.Spike;
     after.investments.TQQQ = before.investments.total * targetRatio * 1;
     after.investments.cash = before.investments.total * (1 - targetRatio * 1);
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    after.nextTarget = before.investments.total * (1 + targetRate * 1);
+    after.nextTarget = before.investments.total * 1.1;
   } else if (isExcess) {
     rebalanceType = RebalanceType.Excess;
     const excess = before.investments.total - before.nextTarget;
@@ -76,7 +76,7 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
     after.investments.cash = before.investments.cash + actualExcess;
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    after.nextTarget = before.nextTarget * (1 + targetRate);
+    after.nextTarget = before.nextTarget * 1.1;
   } else if (isShortfall) {
     rebalanceType = RebalanceType.Shortfall;
     const shortfall = before.nextTarget - before.investments.total;
@@ -85,16 +85,16 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
     after.investments.cash = before.investments.cash - actualShortfall;
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    after.nextTarget = before.nextTarget * (1 + targetRate);
+    after.nextTarget = before.nextTarget * 1.1;
   } else if (isDrop) {
     rebalanceType = RebalanceType.Drop;
   } else if (isBigDrop) {
     rebalanceType = RebalanceType.BigDrop;
-    after.investments.TQQQ = before.investments.total * targetRatio * 0.75;
-    after.investments.cash = before.investments.total * (1 - targetRatio * 0.75);
+    after.investments.TQQQ = before.investments.total * targetRatio * 0.5;
+    after.investments.cash = before.investments.total * (1 - targetRatio * 0.5);
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    after.nextTarget = before.investments.total * (1 + targetRate * 0.75);
+    after.nextTarget = before.investments.total * 1.1;
   } else {
     console.log("bug");
   }
