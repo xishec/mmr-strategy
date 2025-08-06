@@ -75,7 +75,14 @@ const Chart: React.FC<ChartProps> = ({
     const ratioTop = priceTop + priceHeight + spaceBetweenCharts;
 
     // Separate series by type
-    const priceKeys = ["StrategyTotal", "StrategyTotalAll", "Target", "MockTotalQQQ", "MockTotalTQQQ"];
+    const priceKeys = [
+      "StrategyTotal",
+      "StrategyTotalAll",
+      "Target",
+      "MockTotalQQQ",
+      "MockTotalTQQQ",
+      "MockTotalNothing",
+    ];
     const ratioKeys = ["Ratio", "pullback"];
 
     const getSeriesByType = (type: "price" | "ratio") => {
@@ -122,6 +129,7 @@ const Chart: React.FC<ChartProps> = ({
       Target: black,
       MockTotalQQQ: green,
       MockTotalTQQQ: red,
+      MockTotalNothing: "#e1e1e1ff",
       Ratio: "#848484ff",
       pullback: red,
       default: "#2962FF",
@@ -272,6 +280,8 @@ const Chart: React.FC<ChartProps> = ({
       .attr("class", "crosshair")
       .style("display", selectedDate ? "block" : "none");
     const crosshairHeight = ratioTop + ratioHeight + spaceBetweenCharts / 2;
+
+    // Vertical crosshair line
     const crosshairLine = crosshair
       .append("line")
       .attr("x1", 0)
@@ -281,6 +291,50 @@ const Chart: React.FC<ChartProps> = ({
       .attr("stroke", "#666")
       .attr("stroke-width", 2)
       .attr("stroke-dasharray", "3,3");
+
+    // Horizontal crosshair line
+    const crosshairHorizontal = crosshair
+      .append("line")
+      .attr("class", "crosshair-horizontal")
+      .attr("x1", 0)
+      .attr("x2", width)
+      .attr("y1", 0)
+      .attr("y2", 0)
+      .attr("stroke", "#666")
+      .attr("stroke-width", 1)
+      .attr("stroke-dasharray", "3,3")
+      .style("display", "none");
+
+    // Value label
+    const valueLabel = crosshair.append("g").attr("class", "value-label").style("display", "none");
+
+    const valueRect = valueLabel.append("rect").attr("fill", "#666").attr("stroke", "#666").attr("rx", 3).attr("ry", 3);
+
+    const valueText = valueLabel
+      .append("text")
+      .attr("fill", "white")
+      .attr("font-size", "11px")
+      .attr("font-family", "monospace")
+      .attr("text-anchor", "start")
+      .attr("dy", "0.35em");
+
+    // Y-axis value label (left side)
+    const yAxisValueLabel = crosshair.append("g").attr("class", "y-axis-value-label").style("display", "none");
+
+    const yAxisValueRect = yAxisValueLabel
+      .append("rect")
+      .attr("fill", "#666")
+      .attr("stroke", "#666")
+      .attr("rx", 3)
+      .attr("ry", 3);
+
+    const yAxisValueText = yAxisValueLabel
+      .append("text")
+      .attr("fill", "white")
+      .attr("font-size", "11px")
+      .attr("font-family", "monospace")
+      .attr("text-anchor", "middle")
+      .attr("dy", "0.35em");
 
     // Add persistent selected date crosshair
     const selectedCrosshair = g.append("g").attr("class", "selected-crosshair").style("display", "none");
@@ -346,10 +400,65 @@ const Chart: React.FC<ChartProps> = ({
     };
 
     // Helper function to update crosshair position
-    const updateCrosshairPosition = (xPosition: number) => {
+    const updateCrosshairPosition = (xPosition: number, mouseY?: number) => {
       const constrainedX = Math.max(0, Math.min(width, xPosition));
       crosshairLine.attr("x1", constrainedX).attr("x2", constrainedX);
       crosshair.style("display", "block");
+
+      // Show horizontal crosshair line at cursor position
+      if (mouseY !== undefined) {
+        crosshairHorizontal.attr("y1", mouseY).attr("y2", mouseY).style("display", "block");
+
+        // Determine which section we're in and show appropriate value
+        let displayValue = "";
+        if (mouseY >= priceTop && mouseY <= priceTop + priceHeight) {
+          // Price section
+          const priceValue = priceYScale.invert(mouseY);
+          displayValue = priceValue.toFixed(1);
+        } else if (mouseY >= ratioTop && mouseY <= ratioTop + ratioHeight) {
+          // Ratio section
+          const ratioValue = ratioYScale.invert(mouseY);
+          displayValue = (ratioValue * 100).toFixed(1) + "%";
+        }
+
+        if (displayValue) {
+          valueText.text(displayValue);
+
+          // Calculate text dimensions for background rect
+          const textBBox = (valueText.node() as SVGTextElement).getBBox();
+          const padding = 4;
+          valueRect
+            .attr("x", width - textBBox.width - padding * 2 - 5)
+            .attr("y", mouseY - textBBox.height / 2 - padding)
+            .attr("width", textBBox.width + padding * 2)
+            .attr("height", textBBox.height + padding * 2);
+
+          valueLabel
+            .attr("transform", `translate(${width - textBBox.width - padding - 5}, ${mouseY})`)
+            .style("display", "block");
+
+          // Y-axis label (left side)
+          yAxisValueText.text(displayValue);
+
+          // Calculate text dimensions for Y-axis label
+          const yAxisTextBBox = (yAxisValueText.node() as SVGTextElement).getBBox();
+          const yAxisPadding = 4;
+          yAxisValueRect
+            .attr("x", -yAxisTextBBox.width / 2 - yAxisPadding)
+            .attr("y", -yAxisTextBBox.height / 2 - yAxisPadding)
+            .attr("width", yAxisTextBBox.width + yAxisPadding * 2)
+            .attr("height", yAxisTextBBox.height + yAxisPadding * 2);
+
+          yAxisValueLabel.attr("transform", `translate(-10, ${mouseY})`).style("display", "block");
+        } else {
+          valueLabel.style("display", "none");
+          yAxisValueLabel.style("display", "none");
+        }
+      } else {
+        crosshairHorizontal.style("display", "none");
+        valueLabel.style("display", "none");
+        yAxisValueLabel.style("display", "none");
+      }
     };
 
     // Add invisible overlay for better mouse interaction
@@ -372,13 +481,17 @@ const Chart: React.FC<ChartProps> = ({
         // Hide crosshair when mouse leaves chart area (unless we have a selected date)
         if (!isDragging) {
           crosshair.style("display", selectedDate ? "block" : "none");
+          // Hide horizontal line and labels when mouse leaves
+          crosshairHorizontal.style("display", "none");
+          valueLabel.style("display", "none");
+          yAxisValueLabel.style("display", "none");
         }
       })
       .on("mousemove", function (event) {
-        const [mouseX] = d3.pointer(event, this);
+        const [mouseX, mouseY] = d3.pointer(event, this);
 
         // Always update crosshair position to follow cursor
-        updateCrosshairPosition(mouseX);
+        updateCrosshairPosition(mouseX, mouseY);
 
         if (isDragging) {
           // Find and set the nearest date when dragging
@@ -421,10 +534,10 @@ const Chart: React.FC<ChartProps> = ({
           // Get mouse position relative to the overlay
           const overlayNode = overlay.node();
           if (overlayNode) {
-            const [mouseX] = d3.pointer(event, overlayNode);
+            const [mouseX, mouseY] = d3.pointer(event, overlayNode);
 
             // Update crosshair position in real-time
-            updateCrosshairPosition(mouseX);
+            updateCrosshairPosition(mouseX, mouseY);
 
             // Find and set the nearest date
             const nearestDate = findNearestDate(mouseX);
