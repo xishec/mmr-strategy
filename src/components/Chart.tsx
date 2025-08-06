@@ -33,12 +33,7 @@ const Chart: React.FC<ChartProps> = ({
   // Memoize expensive data processing to prevent unnecessary re-computations
   const chartDataMemo = useMemo(() => {
     if (!d3ChartData) return { rebalanceLogsMap: {} };
-    console.log({
-      ...d3ChartData.priceChart,
-      ...d3ChartData.ratioChart,
-      ...d3ChartData.pullbackChart,
-      rebalanceLogsMap: d3ChartData.rebalanceLogsMap,
-    })
+
     // Combine all chart data into a single object for easier processing
     return {
       ...d3ChartData.priceChart,
@@ -68,14 +63,14 @@ const Chart: React.FC<ChartProps> = ({
     // Prepare data
     const seriesData = chartDataMemo;
     const allData: any[] = [];
-    
+
     // Collect all data points from all series
-    Object.values(seriesData).forEach(data => {
+    Object.values(seriesData).forEach((data) => {
       if (Array.isArray(data)) {
         allData.push(...data);
       }
     });
-    
+
     if (allData.length === 0) return null;
 
     // Parse dates
