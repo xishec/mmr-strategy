@@ -62,11 +62,12 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
   } else if (isDrop) {
-    rebalanceType = RebalanceType.Drop;
+    rebalanceType = RebalanceType.Shortfall;
   } else if (isBigDrop) {
     rebalanceType = RebalanceType.BigDrop;
-    after.investments.TQQQ = before.investments.total * minRatio;
-    after.investments.cash = before.investments.total * (1 - minRatio);
+    const newTargetRatio = Math.max(before.investments.ratio - stepRatio, minRatio);
+    after.investments.TQQQ = before.investments.total * newTargetRatio;
+    after.investments.cash = before.investments.total * (1 - newTargetRatio);
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
   } else {
