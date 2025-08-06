@@ -1,5 +1,6 @@
 import { addDaysToDate, deepCopyPortfolioSnapshot } from "./functions";
 import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation } from ".";
+import { max } from "d3";
 
 export const computePortfolioSnapshot = (simulation: Simulation, date: string, marketData: MarketData) => {
   const lastInvestmentsSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
@@ -45,62 +46,33 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
   const doubleDropRate = dropRate * 2;
   const cumulativeRate = before.cumulativeRateSinceRebalance;
 
-  const isBigSpike = cumulativeRate >= doubleTargetRate;
-  const isSpike = cumulativeRate < doubleTargetRate && cumulativeRate >= targetRate;
-  const isShortfall = cumulativeRate < targetRate && cumulativeRate >= dropRate;
+  const isGood = cumulativeRate >= dropRate;
   const isDrop = cumulativeRate < dropRate && cumulativeRate >= doubleDropRate;
   const isBigDrop = cumulativeRate < doubleDropRate;
 
   let rebalanceType: RebalanceType = RebalanceType.Excess;
 
-  if (isBigSpike) {
+  const maxRatio = 0.75;
+  const stepRatio = 0.25;
+  const minRatio = 0.25;
+
+  if (isGood) {
     rebalanceType = RebalanceType.BigSpike;
-    after.investments.TQQQ = before.investments.total * Math.min(targetRatio * 1.5, 1);
-    after.investments.cash = before.investments.total * (1 - Math.min(targetRatio * 1.5, 1));
-    after.investments.total = before.investments.total;
-    after.investments.ratio = after.investments.TQQQ / after.investments.total;
-  } else if (isSpike) {
-    rebalanceType = RebalanceType.Spike;
-    after.investments.TQQQ = before.investments.total * targetRatio * 1.25;
-    after.investments.cash = before.investments.total * (1 - targetRatio * 1.25);
-    after.investments.total = before.investments.total;
-    after.investments.ratio = after.investments.TQQQ / after.investments.total;
-  } else if (isShortfall) {
-    rebalanceType = RebalanceType.Shortfall;
-    const newTargetRatio = before.investments.ratio + 0.25;
+    const newTargetRatio = Math.min(before.investments.ratio + stepRatio, maxRatio);
     after.investments.TQQQ = before.investments.total * newTargetRatio;
     after.investments.cash = before.investments.total * (1 - newTargetRatio);
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
-    // const shortfall = before.nextTarget - before.investments.total;
-    // const actualShortfall = Math.min(shortfall, before.investments.cash);
-    // after.investments.TQQQ = before.investments.TQQQ + actualShortfall;
-    // after.investments.cash = before.investments.cash - actualShortfall;
-    // after.investments.total = before.investments.total;
-    // after.investments.ratio = after.investments.TQQQ / after.investments.total;
   } else if (isDrop) {
     rebalanceType = RebalanceType.Drop;
   } else if (isBigDrop) {
     rebalanceType = RebalanceType.BigDrop;
-    after.investments.TQQQ = before.investments.total * targetRatio * 0.25;
-    after.investments.cash = before.investments.total * (1 - targetRatio * 0.25);
+    after.investments.TQQQ = before.investments.total * minRatio;
+    after.investments.cash = before.investments.total * (1 - minRatio);
     after.investments.total = before.investments.total;
     after.investments.ratio = after.investments.TQQQ / after.investments.total;
   } else {
     console.log("bug");
-  }
-
-  if (after.investments.ratio >= 0.75) {
-    after.investments.TQQQ = before.investments.total * 0.75;
-    after.investments.cash = before.investments.total * (1 - 0.75);
-    after.investments.total = before.investments.total;
-    after.investments.ratio = after.investments.TQQQ / after.investments.total;
-  }
-  if (after.investments.ratio < 0.25) {
-    after.investments.TQQQ = before.investments.total * 0.25;
-    after.investments.cash = before.investments.total * (1 - 0.25);
-    after.investments.total = before.investments.total;
-    after.investments.ratio = after.investments.TQQQ / after.investments.total;
   }
 
   after.nextTarget = before.investments.total * (1 + 0.2);
