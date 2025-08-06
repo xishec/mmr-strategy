@@ -1,6 +1,5 @@
 import { addDaysToDate, deepCopyPortfolioSnapshot } from "./functions";
 import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation } from ".";
-import { max } from "d3";
 
 export const computePortfolioSnapshot = (simulation: Simulation, date: string, marketData: MarketData) => {
   const lastInvestmentsSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
@@ -32,7 +31,7 @@ export const computePortfolioSnapshot = (simulation: Simulation, date: string, m
 };
 
 export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, marketData: MarketData) => {
-  const { monthlyNewCash, rebalanceDays, targetRatio, targetRate, dropRate } = simulation.variables;
+  const { monthlyNewCash, rebalanceDays, dropRate } = simulation.variables;
 
   before.investments.cash += (monthlyNewCash / 30) * rebalanceDays;
   before.investments.mockTotalQQQ += (monthlyNewCash / 30) * rebalanceDays;
@@ -42,7 +41,6 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation, mar
 
   const after = deepCopyPortfolioSnapshot(before);
 
-  const doubleTargetRate = targetRate * 2;
   const doubleDropRate = dropRate * 2;
   const cumulativeRate = before.cumulativeRateSinceRebalance;
 
