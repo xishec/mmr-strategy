@@ -7,7 +7,6 @@ import {
   Button,
   Box,
   Typography,
-  CircularProgress,
 } from "@mui/material";
 import * as d3 from "d3";
 import { blue, yellow } from "./Chart";
@@ -324,23 +323,18 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
               gap: 10,
             }}
           >
-            <CircularProgress
-              size={150}
-              thickness={2}
+            <Box
               sx={{
-                color: "primary.main",
-                "@keyframes pulse": {
-                  "0%": {
-                    opacity: 1,
-                  },
-                  "50%": {
-                    opacity: 0.5,
-                  },
-                  "100%": {
-                    opacity: 1,
-                  },
+                width: 80,
+                height: 80,
+                border: "4px solid #f3f3f3",
+                borderTop: "4px solid #d3d3d3ff",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+                "@keyframes spin": {
+                  "0%": { transform: "rotate(0deg)" },
+                  "100%": { transform: "rotate(360deg)" },
                 },
-                animation: "pulse 2s ease-in-out infinite",
               }}
             />
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: "center", maxWidth: "600px" }}>
