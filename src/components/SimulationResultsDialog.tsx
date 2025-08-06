@@ -25,13 +25,6 @@ interface SimulationResultsDialogProps {
   results: SimulationResult[];
   isLoading: boolean;
   title?: string;
-  statistics?: {
-    totalSimulations: number;
-    averageStrategyRate: number;
-    averageQQQRate: number;
-    winRate: number;
-    strategyVsQQQPercentageImprovement: number;
-  };
 }
 
 const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
@@ -328,12 +321,12 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
               justifyContent: "center",
               minHeight: "300px",
               height: "100%",
-              gap: 3,
+              gap: 10,
             }}
           >
             <CircularProgress
-              size={100}
-              thickness={4}
+              size={150}
+              thickness={2}
               sx={{
                 color: "primary.main",
                 "@keyframes pulse": {

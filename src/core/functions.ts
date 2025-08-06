@@ -261,7 +261,7 @@ export const runMultipleSimulations = async (
       }
     }
 
-    const simulationFrequencyDays = 10;
+    const simulationFrequencyDays = 3;
     currentDateString = addDays(currentDateString, simulationFrequencyDays);
 
     // Yield control back to the browser occasionally to keep UI responsive
