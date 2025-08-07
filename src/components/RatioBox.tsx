@@ -3,12 +3,15 @@ import { Box } from "@mui/material";
 import { black } from "./Chart";
 
 interface RatioBoxProps {
-  ratio: number;
+  difference: number;
   cashBackgroundColor: string;
   tqqqBackgroundColor: string;
+  showSign: boolean;
 }
 
-const RatioBox: React.FC<RatioBoxProps> = ({ ratio, cashBackgroundColor, tqqqBackgroundColor }) => {
+const RatioBox: React.FC<RatioBoxProps> = ({ showSign, difference, cashBackgroundColor, tqqqBackgroundColor }) => {
+  const sign = difference >= 0 ? "+" : "-";
+  const ratio = Math.abs(difference);
   return (
     <Box
       sx={{
@@ -47,7 +50,7 @@ const RatioBox: React.FC<RatioBoxProps> = ({ ratio, cashBackgroundColor, tqqqBac
           fontSize: "1rem",
         }}
       >
-        {(ratio * 100).toFixed(2)}%
+        {`${showSign ? sign : ""} ${(ratio * 100).toFixed(2)}%`}
       </Box>
     </Box>
   );

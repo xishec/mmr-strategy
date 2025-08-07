@@ -45,12 +45,11 @@ export enum RebalanceType {
 }
 
 export const RebalanceTypeExplanation = {
-  "Big Spike": "Rebalance with 1.5x factor, usually big spikes comes together",
-  Spike: "Rebalance with 1x factor, basically just restart",
-  Excess: "Sell excess TQQQ to follow the target rate",
-  Shortfall: "Buy more TQQQ to follow the target rate",
-  Drop: "No action taken, maintain current allocation, we don't sell low",
-  "Big Drop": "Rebalance with 0.5x factor, now market is very low, we have to buy something",
+  "On Track":
+    "Market is on track, +25% TQQQ ratio, to maximum 75%. We want to increase exposure to TQQQ, but we don't all-in just in case of a pullback.",
+  Drop: "No action taken, maintain current allocation. There's a drop but we don't sell low, we hold and see.",
+  "Big Drop":
+    "Market is dropping big, -25% TQQQ ratio, to minimum 25%. We want to decrease exposure to TQQQ, but still keep some in case of a bounce back.",
 };
 
 export interface Investments {

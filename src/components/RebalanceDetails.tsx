@@ -45,7 +45,7 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
     const afterRatio = rebalanceLog.after.investments.ratio;
     const beforeTQQQ = rebalanceLog.before.investments.TQQQ;
     const afterTQQQ = rebalanceLog.after.investments.TQQQ;
-    const movedToCash = beforeTQQQ - afterTQQQ;
+    const movedToCash = afterTQQQ - beforeTQQQ;
     const action = movedToCash >= 0 ? "Buying" : "Selling";
 
     // Calculate slider values for better readability
@@ -56,42 +56,32 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
 
     // Mark positions for the slider
     const sliderMarks = [
-      { 
-        value: minRange, 
-        label: (
-          <strong style={{ color: '#EA4335' }}>{`< ${minRange}%`}</strong>
-        )
+      {
+        value: minRange,
+        label: <strong style={{ color: "#EA4335" }}>{`< ${minRange}%`}</strong>,
       }, // red
-      { 
-        value: -20, 
-        label: (
-          <strong style={{ color: '#FBBC04' }}>{`${minRange / 2}%`}</strong>
-        )
+      {
+        value: -20,
+        label: <strong style={{ color: "#FBBC04" }}>{`${minRange / 2}%`}</strong>,
       }, // yellow
-      { 
-        value: 0, 
-        label: (
-          <strong style={{ color: '#34A853' }}>{`0%`}</strong>
-        )
+      {
+        value: 0,
+        label: <strong style={{ color: "#34A853" }}>{`0%`}</strong>,
       }, //green
-      { 
-        value: 20, 
-        label: (
-          <strong style={{ color: '#34A853' }}>{`${maxRange / 2}%`}</strong>
-        )
+      {
+        value: 20,
+        label: <strong style={{ color: "#34A853" }}>{`${maxRange / 2}%`}</strong>,
       }, //green
-      { 
-        value: maxRange, 
-        label: (
-          <strong style={{ color: '#34A853' }}>{`> ${maxRange}%`}</strong>
-        )
+      {
+        value: maxRange,
+        label: <strong style={{ color: "#34A853" }}>{`> ${maxRange}%`}</strong>,
       }, //green
     ];
 
     return (
       <>
         {/* Vertical Slider */}
-        <Box
+        {/* <Box
           sx={{
             width: "100%",
             height: "100%",
@@ -100,83 +90,100 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
             alignItems: "center",
             position: "relative",
             overflow: "visible",
+            mr: 6,
           }}
         >
           <Slider
             orientation="vertical"
-            valueLabelDisplay="on"
-            valueLabelFormat={() => `${actualPercentage.toFixed(2)}%`}
+            valueLabelDisplay="off"
             track={false}
             value={clampedPercentage}
             min={minRange}
             max={maxRange}
             marks={sliderMarks}
             sx={{
-              height: "80%",
+              height: "85%",
               "& .MuiSlider-thumb": {
                 backgroundColor: getRebalanceColor,
-                width: 16,
-                height: 16,
-                "&:hover": {
-                  boxShadow: "none",
-                },
               },
               "& .MuiSlider-mark": {
                 backgroundColor: "grey.400",
-                width: 2,
-                height: 2,
               },
               "& .MuiSlider-markLabel": {
                 fontSize: "1rem",
                 whiteSpace: "nowrap",
               },
-              "& .MuiSlider-valueLabel": {
-                backgroundColor: getRebalanceColor,
-                color: "white",
-                fontWeight: "bold",
-                fontSize: "1rem",
-                borderRadius: "4px",
-                padding: "2px 6px",
-                "&:before": {
-                  borderColor: getRebalanceColor,
-                },
-              },
             }}
             disabled
           />
-        </Box>
+        </Box> */}
 
         {/* Before Ratio Box */}
-        <RatioBox ratio={currentRatio} cashBackgroundColor={"grey.200"} tqqqBackgroundColor={"grey.400"} />
+        <RatioBox
+          difference={currentRatio}
+          cashBackgroundColor={"grey.300"}
+          tqqqBackgroundColor={"grey.400"}
+          showSign={false}
+        />
 
         {/* Delta Ratio Box */}
         <RatioBox
-          ratio={Math.abs(currentRatio - nextRatio)}
-          cashBackgroundColor={"grey.200"}
+          difference={nextRatio - currentRatio}
+          cashBackgroundColor={"grey.300"}
           tqqqBackgroundColor={"grey.400"}
+          showSign={true}
         />
 
         {/* Details Text - Center Column */}
-        <Box sx={{ overflow: "auto", minWidth: 0 }}>
+        <Box
+          sx={{
+            height: "100%",
+            overflow: "auto",
+            minWidth: 0,
+            display: "grid",
+            justifyContent: "start",
+            alignItems: "center",
+          }}
+        >
           <Typography fontSize={"1rem"} gutterBottom>
-            <strong>Rate ({simulation.variables.rebalanceDays}d):</strong> {formatValue(cumulativeRate, true)}
+            Accumulated performance last {simulation.variables.rebalanceDays} days :{" "}
+            <strong style={{ color: getRebalanceColor }}> {formatValue(cumulativeRate, true)} </strong>
           </Typography>
           <Typography fontSize={"1rem"} gutterBottom>
-            <strong>Type:</strong> {rebalanceLog.rebalanceType} -{" "}
-            {RebalanceTypeExplanation[rebalanceLog.rebalanceType as keyof typeof RebalanceTypeExplanation]}
-          </Typography>
-          <Typography fontSize={"1rem"} gutterBottom>
-            <strong>Before:</strong> {formatValue(total)} total with {formatValue(beforeTQQQ)} (
+            Before : <strong>{formatValue(total)} </strong> total with <strong>{formatValue(beforeTQQQ)} </strong> (
             {formatValue(beforeRatio, true)}) in TQQQ
           </Typography>
           <Typography fontSize={"1rem"}>
-            <strong>{action}:</strong> {formatValue(Math.abs(movedToCash))} of TQQQ to have{" "}
-            {formatValue(afterRatio, true)} in TQQQ
+            After :{" "}
+            <strong>
+              {action} {formatValue(Math.abs(movedToCash))}
+            </strong>{" "}
+            of TQQQ to have <strong>{formatValue(afterTQQQ)} </strong> ({formatValue(afterRatio, true)}) in TQQQ
           </Typography>
+          <Box
+            sx={{
+              mt: 2,
+              p: 2,
+              backgroundColor: "rgba(0, 0, 0, 0.03)",
+              borderRadius: "0.5rem",
+              borderLeft: "4px solid",
+              borderRight: "4px solid",
+              borderColor: getRebalanceColor,
+            }}
+          >
+            <Typography fontSize={"0.75rem"} lineHeight={1.5} color="text.primary" sx={{ fontStyle: "italic" }}>
+              {RebalanceTypeExplanation[rebalanceLog.rebalanceType as keyof typeof RebalanceTypeExplanation]}
+            </Typography>
+          </Box>
         </Box>
 
         {/* After Ratio Box */}
-        <RatioBox ratio={nextRatio} cashBackgroundColor={"grey.200"} tqqqBackgroundColor={getRebalanceColor} />
+        <RatioBox
+          difference={nextRatio}
+          cashBackgroundColor={"grey.300"}
+          tqqqBackgroundColor={getRebalanceColor}
+          showSign={false}
+        />
       </>
     );
   };
@@ -185,13 +192,14 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
     <Box
       sx={{
         borderRadius: "0.5rem",
-        border: "2px solid",
-        borderColor: getRebalanceColor,
+        // border: "2px solid",
+        // borderColor: "#d4d4d4ff",
+        backgroundColor: "#f7f7f7ff",
         p: 4,
         mx: 4,
         display: "grid",
-        gridTemplateColumns: "200px minmax(60px, auto) minmax(60px, auto) 1fr minmax(60px, auto)",
-        gap: 2,
+        gridTemplateColumns: "minmax(60px, auto) minmax(60px, auto) 1fr minmax(60px, auto)",
+        gap: 4,
         alignItems: "start",
         minHeight: "200px", // Prevents layout shift
         overflow: "auto", // Allows scrolling if content is too large
