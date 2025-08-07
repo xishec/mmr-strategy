@@ -489,7 +489,7 @@ const Chart: React.FC<ChartProps> = ({
       .attr("height", crosshairHeight)
       .attr("fill", "none")
       .attr("pointer-events", "all")
-      .style("cursor", "grab");
+      .style("cursor", "crosshair");
 
     // Add interaction behavior to the overlay
     overlay
@@ -538,7 +538,7 @@ const Chart: React.FC<ChartProps> = ({
       })
       .on("mouseup", function (event) {
         isDragging = false;
-        d3.select(this).style("cursor", "grab");
+        d3.select(this).style("cursor", "crosshair");
       });
 
     // Add global mouse up and mouse move handlers for better tracking
@@ -546,7 +546,7 @@ const Chart: React.FC<ChartProps> = ({
       .on("mouseup.chart", function (event) {
         if (isDragging) {
           isDragging = false;
-          overlay.style("cursor", "grab");
+          overlay.style("cursor", "crosshair");
         }
       })
       .on("mousemove.chart", function (event) {

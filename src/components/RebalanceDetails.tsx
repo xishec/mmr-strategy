@@ -51,22 +51,41 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
     // Calculate slider values for better readability
     const actualPercentage = currentRebalanceLog.cumulativeRateSinceLastRebalance * 100;
     const minRange = simulation.variables.dropRate * 2 * 100; // Big Drop threshold
-    const maxRange = simulation.variables.targetRate * 2 * 100; // Big Spike threshold
+    const maxRange = -simulation.variables.dropRate * 2 * 100; // Big Spike threshold
     const clampedPercentage = Math.max(minRange, Math.min(maxRange, actualPercentage));
 
     // Mark positions for the slider
     const sliderMarks = [
-      { value: minRange, label: `${minRange}% Big Drop` },
-      {
-        value: simulation.variables.dropRate * 100,
-        label: `${simulation.variables.dropRate * 100}% Drop`,
-      },
-      { value: 0, label: "0%" },
-      {
-        value: simulation.variables.targetRate * 100,
-        label: `${simulation.variables.targetRate * 100}% Spike`,
-      },
-      { value: maxRange, label: `${maxRange}% Big Spike` },
+      { 
+        value: minRange, 
+        label: (
+          <strong style={{ color: '#EA4335' }}>{`< ${minRange}%`}</strong>
+        )
+      }, // red
+      { 
+        value: -20, 
+        label: (
+          <strong style={{ color: '#FBBC04' }}>{`${minRange / 2}%`}</strong>
+        )
+      }, // yellow
+      { 
+        value: 0, 
+        label: (
+          <strong style={{ color: '#34A853' }}>{`0%`}</strong>
+        )
+      }, //green
+      { 
+        value: 20, 
+        label: (
+          <strong style={{ color: '#34A853' }}>{`${maxRange / 2}%`}</strong>
+        )
+      }, //green
+      { 
+        value: maxRange, 
+        label: (
+          <strong style={{ color: '#34A853' }}>{`> ${maxRange}%`}</strong>
+        )
+      }, //green
     ];
 
     return (
@@ -109,7 +128,6 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
               },
               "& .MuiSlider-markLabel": {
                 fontSize: "1rem",
-                color: "text.secondary",
                 whiteSpace: "nowrap",
               },
               "& .MuiSlider-valueLabel": {
