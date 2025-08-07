@@ -40,7 +40,7 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
         value = dataPoint?.value;
       }
       return value !== undefined ? formatValue(value, true) : "";
-    } else if (seriesKey === "Pullback") {
+    } else if (seriesKey === "pullback") {
       const pullbackData = d3ChartData.pullbackChart[seriesKey];
       if (pullbackData) {
         const dataPoint = pullbackData.find((point) => point.time === selectedDate);
@@ -62,7 +62,7 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
   const availableItems = allLegendItems.filter((item) => {
     if (item.seriesKey === "ratio") {
       return d3ChartData.ratioChart[item.seriesKey] && d3ChartData.ratioChart[item.seriesKey].length > 0;
-    } else if (item.seriesKey === "Pullback") {
+    } else if (item.seriesKey === "pullback") {
       return d3ChartData.pullbackChart[item.seriesKey] && d3ChartData.pullbackChart[item.seriesKey].length > 0;
     } else {
       return d3ChartData.priceChart[item.seriesKey] && d3ChartData.priceChart[item.seriesKey].length > 0;
@@ -76,7 +76,7 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
         alignItems: "center",
         gap: 2,
         mb: 1,
-        gridTemplateColumns: "repeat(5, 1fr)",
+        gridTemplateColumns: "repeat(6, 1fr)",
       }}
     >
       {/* Date first */}
@@ -142,7 +142,7 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
                 fontSize: "1rem",
                 fontWeight: "bold",
                 color: item.color,
-                ml: 2.5, // Align with the text above
+                ml: 2.5,
               }}
             >
               {getValueForSeries(item.seriesKey)}

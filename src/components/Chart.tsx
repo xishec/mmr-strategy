@@ -139,6 +139,18 @@ const Chart: React.FC<ChartProps> = ({
       .domain([-1, 1])
       .range([ratioTop + ratioHeight, ratioTop]);
 
+    // Helper function to format price values
+    const formatPriceValue = (domainValue: d3.NumberValue): string => {
+      const value = Number(domainValue);
+      if (value >= 1000000) {
+        return `${(value / 1000000).toFixed(0)}M`;
+      } else if (value >= 1000) {
+        return `${(value / 1000).toFixed(0)}k`;
+      } else {
+        return value.toFixed(0);
+      }
+    };
+
     // Color mapping
     const colorMap = {
       strategyTotal: yellow,
@@ -187,13 +199,23 @@ const Chart: React.FC<ChartProps> = ({
           line.curve(d3.curveStepAfter);
         }
 
-        g.append("path")
-          .datum(processedData)
-          .attr("class", `line series-${seriesName}`)
-          .attr("fill", "none")
-          .attr("stroke", color)
-          .attr("stroke-width", 1)
-          .attr("d", line);
+        if (seriesName === "strategyTotal") {
+          g.append("path")
+            .datum(processedData)
+            .attr("class", `line series-${seriesName}`)
+            .attr("fill", "none")
+            .attr("stroke", color)
+            .attr("stroke-width", 2)
+            .attr("d", line);
+        } else {
+          g.append("path")
+            .datum(processedData)
+            .attr("class", `line series-${seriesName}`)
+            .attr("fill", "none")
+            .attr("stroke", color)
+            .attr("stroke-width", 1)
+            .attr("d", line);
+        }
 
         if (isArea) {
           if (seriesName === "ratio") {
@@ -433,7 +455,7 @@ const Chart: React.FC<ChartProps> = ({
         if (mouseY >= priceTop && mouseY <= priceTop + priceHeight) {
           // Price section
           const priceValue = priceYScale.invert(mouseY);
-          displayValue = priceValue.toFixed(1);
+          displayValue = formatPriceValue(priceValue);
         } else if (mouseY >= ratioTop && mouseY <= ratioTop + ratioHeight) {
           // Ratio section
           const ratioValue = ratioYScale.invert(mouseY);
@@ -581,18 +603,7 @@ const Chart: React.FC<ChartProps> = ({
       );
 
     // Add Y-axes with custom formatting for price values
-    const formatPriceValue = (domainValue: d3.NumberValue): string => {
-      const value = Number(domainValue);
-      if (value >= 1000000) {
-        return `${(value / 1000000).toFixed(0)}M`;
-      } else if (value >= 1000) {
-        return `${(value / 1000).toFixed(0)}k`;
-      } else {
-        return value.toFixed(0);
-      }
-    };
-
-    const yAxisConfig = isLogScale 
+    const yAxisConfig = isLogScale
       ? d3.axisLeft(priceYScale).ticks(4).tickFormat(formatPriceValue)
       : d3.axisLeft(priceYScale).tickFormat(formatPriceValue);
     g.append("g").attr("class", "y-axis-price").attr("transform", `translate(0,0)`).call(yAxisConfig);

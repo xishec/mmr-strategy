@@ -53,16 +53,16 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
         {/* Before Ratio Box */}
         <RatioBox
           difference={currentRatio}
-          cashBackgroundColor={"grey.300"}
-          tqqqBackgroundColor={"grey.400"}
+          cashBackgroundColor={"grey.100"}
+          tqqqBackgroundColor={"grey.300"}
           showSign={false}
         />
 
         {/* Delta Ratio Box */}
         <RatioBox
           difference={nextRatio - currentRatio}
-          cashBackgroundColor={"grey.300"}
-          tqqqBackgroundColor={"grey.400"}
+          cashBackgroundColor={"grey.100"}
+          tqqqBackgroundColor={"grey.300"}
           showSign={true}
         />
 
@@ -111,7 +111,7 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
         {/* After Ratio Box */}
         <RatioBox
           difference={nextRatio}
-          cashBackgroundColor={"grey.300"}
+          cashBackgroundColor={"grey.100"}
           tqqqBackgroundColor={getRebalanceColor}
           showSign={false}
         />

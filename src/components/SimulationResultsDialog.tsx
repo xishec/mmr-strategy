@@ -390,7 +390,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
         paper: {
           sx: {
             height: "80vh",
-            maxHeight: "800px",
+            width: "80vw",
           },
         },
       }}
