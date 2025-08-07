@@ -2,28 +2,22 @@ import React from "react";
 import { Box, Typography, TextField, FormControlLabel, Switch, Button } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { MarketData } from "../core/models";
 
 interface SimulationSetupProps {
   startDate: Date;
   endDate: Date;
   initialMoney: number;
   rebalanceDays: number;
-  targetRate: number;
   cashYearRate: number;
-  targetRatio: number;
   dropRate: number;
   monthlyNewCash: number;
   simulationYears: number;
   isLogScale: boolean;
-  marketData: MarketData;
   onStartDateChange: (date: Date | null) => void;
   onEndDateChange: (date: Date | null) => void;
   onInitialMoneyChange: (value: number) => void;
   onRebalanceDaysChange: (value: number) => void;
-  onTargetRateChange: (value: number) => void;
   onCashYearRateChange: (value: number) => void;
-  onTargetRatioChange: (value: number) => void;
   onDropRateChange: (value: number) => void;
   onMonthlyNewCashChange: (value: number) => void;
   onSimulationYearsChange: (value: number) => void;
@@ -36,21 +30,16 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   endDate,
   initialMoney,
   rebalanceDays,
-  targetRate,
   cashYearRate,
-  targetRatio,
   dropRate,
   monthlyNewCash,
   simulationYears,
   isLogScale,
-  marketData,
   onStartDateChange,
   onEndDateChange,
   onInitialMoneyChange,
   onRebalanceDaysChange,
-  onTargetRateChange,
   onCashYearRateChange,
-  onTargetRatioChange,
   onDropRateChange,
   onMonthlyNewCashChange,
   onSimulationYearsChange,

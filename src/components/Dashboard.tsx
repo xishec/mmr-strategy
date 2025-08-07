@@ -64,14 +64,11 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         endDate={variables.endDate}
         initialMoney={variables.initialMoney}
         rebalanceDays={variables.rebalanceDays}
-        targetRate={variables.targetRate}
         cashYearRate={variables.cashYearRate}
-        targetRatio={variables.targetRatio}
         dropRate={variables.dropRate}
         monthlyNewCash={variables.monthlyNewCash}
         simulationYears={variables.simulationYears}
         isLogScale={variables.isLogScale}
-        marketData={marketData}
         onStartDateChange={(newValue: Date | null) => {
           if (newValue) {
             updateVariable("startDate", newValue);
@@ -84,9 +81,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         }}
         onInitialMoneyChange={(value: number) => updateVariable("initialMoney", value)}
         onRebalanceDaysChange={(value: number) => updateVariable("rebalanceDays", value)}
-        onTargetRateChange={(value: number) => updateVariable("targetRate", value)}
         onCashYearRateChange={(value: number) => updateVariable("cashYearRate", value)}
-        onTargetRatioChange={(value: number) => updateVariable("targetRatio", value)}
         onDropRateChange={(value: number) => updateVariable("dropRate", value)}
         onMonthlyNewCashChange={(value: number) => updateVariable("monthlyNewCash", value)}
         onSimulationYearsChange={(value: number) => updateVariable("simulationYears", value)}
