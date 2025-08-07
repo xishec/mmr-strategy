@@ -75,9 +75,6 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
       <Box sx={{ display: "grid", gridTemplateColumns: "1fr", gap: 2 }}>
         <LocalizationProvider dateAdapter={AdapterDateFns}>
           <DatePicker label="Start Date" value={startDate} onChange={onStartDateChange} format="yyyy-MM-dd" />
-        </LocalizationProvider>
-
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
           <DatePicker label="End Date" value={endDate} onChange={onEndDateChange} format="yyyy-MM-dd" />
         </LocalizationProvider>
 

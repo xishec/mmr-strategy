@@ -31,13 +31,13 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   const [variables, setVariables] = useState<DashboardVariables>({
     startDate: new Date(2000, 0, 1),
     endDate: new Date(),
-    initialMoney: 100,
+    initialMoney: 100000,
     rebalanceDays: 90,
     targetRate: 0.2,
     cashYearRate: 0.0,
     targetRatio: 0.5,
     dropRate: -0.2,
-    monthlyNewCash: 2,
+    monthlyNewCash: 2000,
     simulationYears: 10,
     isLogScale: true,
   });

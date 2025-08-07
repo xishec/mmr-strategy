@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Box, Typography, Slider } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { formatValue, getRebalanceTypeColor } from "../core/functions";
 import { Simulation, RebalanceLog, RebalanceTypeExplanation, D3ChartData } from "../core/models";
 import RatioBox from "./RatioBox";
@@ -48,76 +48,8 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
     const movedToCash = afterTQQQ - beforeTQQQ;
     const action = movedToCash >= 0 ? "Buying" : "Selling";
 
-    // Calculate slider values for better readability
-    const actualPercentage = currentRebalanceLog.cumulativeRateSinceLastRebalance * 100;
-    const minRange = simulation.variables.dropRate * 2 * 100; // Big Drop threshold
-    const maxRange = -simulation.variables.dropRate * 2 * 100; // Big Spike threshold
-    const clampedPercentage = Math.max(minRange, Math.min(maxRange, actualPercentage));
-
-    // Mark positions for the slider
-    const sliderMarks = [
-      {
-        value: minRange,
-        label: <strong style={{ color: "#EA4335" }}>{`< ${minRange}%`}</strong>,
-      }, // red
-      {
-        value: -20,
-        label: <strong style={{ color: "#FBBC04" }}>{`${minRange / 2}%`}</strong>,
-      }, // yellow
-      {
-        value: 0,
-        label: <strong style={{ color: "#34A853" }}>{`0%`}</strong>,
-      }, //green
-      {
-        value: 20,
-        label: <strong style={{ color: "#34A853" }}>{`${maxRange / 2}%`}</strong>,
-      }, //green
-      {
-        value: maxRange,
-        label: <strong style={{ color: "#34A853" }}>{`> ${maxRange}%`}</strong>,
-      }, //green
-    ];
-
     return (
       <>
-        {/* Vertical Slider */}
-        {/* <Box
-          sx={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            position: "relative",
-            overflow: "visible",
-            mr: 6,
-          }}
-        >
-          <Slider
-            orientation="vertical"
-            valueLabelDisplay="off"
-            track={false}
-            value={clampedPercentage}
-            min={minRange}
-            max={maxRange}
-            marks={sliderMarks}
-            sx={{
-              height: "85%",
-              "& .MuiSlider-thumb": {
-                backgroundColor: getRebalanceColor,
-              },
-              "& .MuiSlider-mark": {
-                backgroundColor: "grey.400",
-              },
-              "& .MuiSlider-markLabel": {
-                fontSize: "1rem",
-                whiteSpace: "nowrap",
-              },
-            }}
-            disabled
-          />
-        </Box> */}
-
         {/* Before Ratio Box */}
         <RatioBox
           difference={currentRatio}
