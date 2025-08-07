@@ -15,7 +15,7 @@ const RatioBox: React.FC<RatioBoxProps> = ({ showSign, difference, cashBackgroun
   return (
     <Box
       sx={{
-        borderRadius: "0.5rem",
+        borderRadius: 2,
         height: "100%",
         aspectRatio: "1 / 1",
         display: "flex",

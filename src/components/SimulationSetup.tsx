@@ -1,7 +1,26 @@
 import React from "react";
-import { Box, Typography, TextField, FormControlLabel, Switch, Button } from "@mui/material";
+import { 
+  Box, 
+  Typography, 
+  TextField, 
+  FormControlLabel, 
+  Switch, 
+  Button, 
+  Card, 
+  CardContent, 
+  Paper,
+  InputAdornment
+} from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { 
+  AttachMoney, 
+  Schedule, 
+  TrendingDown, 
+  CalendarMonth, 
+  Analytics,
+  Refresh
+} from "@mui/icons-material";
 
 interface SimulationSetupProps {
   startDate: Date;
@@ -55,134 +74,309 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   onSimulationAnalysisMinusYearsChange,
 }) => {
   return (
-    <Box
-      sx={{
-        display: "grid",
-        gridTemplateRows: "auto 1fr auto",
-        gap: 2,
-        overflow: "auto",
-        minWidth: 0, // Allow shrinking
-        maxWidth: "100%", // Prevent expansion
+    <Paper 
+      elevation={0} 
+      sx={{ 
+        p: 3, 
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: 'background.paper'
       }}
     >
-      <Typography variant="h5" component="h2">
-        Simulation Setup
-      </Typography>
-
-      <Box sx={{ display: "grid", gridTemplateColumns: "1fr", gap: 2 }}>
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <DatePicker label="Start Date" value={startDate} onChange={onStartDateChange} format="yyyy-MM-dd" />
-          <DatePicker label="End Date" value={endDate} onChange={onEndDateChange} format="yyyy-MM-dd" />
-        </LocalizationProvider>
-
-        <TextField
-          size="small"
-          label="Initial Money ($)"
-          type="number"
-          value={initialMoney.toString()}
-          onChange={(e) => onInitialMoneyChange(e.target.value === '' ? 0 : Number(e.target.value))}
-          variant="outlined"
-          slotProps={{
-            htmlInput: { step: 1 },
+      {/* Header */}
+      <Box sx={{ mb: 3, textAlign: 'center' }}>
+        <Typography 
+          variant="h5" 
+          component="h2" 
+          sx={{ 
+            fontWeight: 600,
+            color: 'primary.main',
+            mb: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1
           }}
-        />
-
-        <TextField
-          size="small"
-          label="Monthly new cash"
-          type="number"
-          value={monthlyNewCash.toString()}
-          onChange={(e) => onMonthlyNewCashChange(e.target.value === '' ? 0 : Number(e.target.value))}
-          variant="outlined"
-          slotProps={{
-            htmlInput: { step: 500 },
-          }}
-        />
-
-        <TextField
-          size="small"
-          label="Cash Year Rate"
-          type="number"
-          value={cashYearRate.toString()}
-          onChange={(e) => onCashYearRateChange(e.target.value === '' ? 0 : Number(e.target.value))}
-          variant="outlined"
-          slotProps={{
-            htmlInput: { step: 0.01 },
-          }}
-        />
-
-        <TextField
-          size="small"
-          label="Rebalance Days"
-          type="number"
-          value={rebalanceDays.toString()}
-          onChange={(e) => onRebalanceDaysChange(e.target.value === '' ? 0 : Number(e.target.value))}
-          variant="outlined"
-          slotProps={{
-            htmlInput: { step: 1 },
-          }}
-        />
-
-        <TextField
-          size="small"
-          label="Drop Rate"
-          type="number"
-          value={dropRate.toString()}
-          onChange={(e) => onDropRateChange(e.target.value === '' ? 0 : Number(e.target.value))}
-          variant="outlined"
-          slotProps={{
-            htmlInput: { step: 0.01 },
-          }}
-        />
-
-        <TextField
-          size="small"
-          label="Simulation Years (for Multiple Simulations)"
-          type="number"
-          value={simulationYears.toString()}
-          onChange={(e) => onSimulationYearsChange(e.target.value === '' ? 0 : Number(e.target.value))}
-          variant="outlined"
-          slotProps={{
-            htmlInput: { step: 1, min: 1, max: 25 },
-          }}
-        />
-
-        <TextField
-          size="small"
-          label="Simulation Frequency Days"
-          type="number"
-          value={simulationFrequencyDays.toString()}
-          onChange={(e) => onSimulationFrequencyDaysChange(e.target.value === '' ? 0 : Number(e.target.value))}
-          variant="outlined"
-          slotProps={{
-            htmlInput: { step: 1, min: 1 },
-          }}
-        />
-
-        <TextField
-          size="small"
-          label="Simulation Analysis Minus Years"
-          type="number"
-          value={simulationAnalysisMinusYears.toString()}
-          onChange={(e) => onSimulationAnalysisMinusYearsChange(e.target.value === '' ? 0 : Number(e.target.value))}
-          variant="outlined"
-          slotProps={{
-            htmlInput: { step: 1, min: 0 },
-          }}
-        />
+        >
+          <Analytics />
+          Simulation Setup
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Configure your investment simulation parameters
+        </Typography>
       </Box>
 
-      <Box sx={{ display: "grid", gap: 2 }}>
-        <FormControlLabel
-          control={<Switch checked={isLogScale} onChange={(e) => onLogScaleChange(e.target.checked)} color="primary" />}
-          label="Log Scale"
-        />
+      {/* Main Content */}
+      <Box sx={{ flex: 1, overflow: 'auto' }}>
+        {/* Date Range Section */}
+        <Card sx={{ mb: 3, elevation: 1 }}>
+          <CardContent sx={{ pb: 2 }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mb: 2, 
+                color: 'primary.main',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                fontSize: '1rem'
+              }}
+            >
+              <CalendarMonth fontSize="small" />
+              Date Range
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <DatePicker 
+                  label="Start Date" 
+                  value={startDate} 
+                  onChange={onStartDateChange} 
+                  format="yyyy-MM-dd"
+                  sx={{ width: '100%' }}
+                  slotProps={{ textField: { size: 'small' } }}
+                />
+              </LocalizationProvider>
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <DatePicker 
+                  label="End Date" 
+                  value={endDate} 
+                  onChange={onEndDateChange} 
+                  format="yyyy-MM-dd"
+                  sx={{ width: '100%' }}
+                  slotProps={{ textField: { size: 'small' } }}
+                />
+              </LocalizationProvider>
+            </Box>
+          </CardContent>
+        </Card>
 
-        <Button variant="outlined" color="primary" onClick={onRunMultipleSimulations} fullWidth>
-          Simulation everyday
+        {/* Financial Parameters */}
+        <Card sx={{ mb: 3, elevation: 1 }}>
+          <CardContent sx={{ pb: 2 }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mb: 2, 
+                color: 'primary.main',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                fontSize: '1rem'
+              }}
+            >
+              <AttachMoney fontSize="small" />
+              Financial Parameters
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              <TextField
+                size="small"
+                label="Initial Money"
+                type="number"
+                value={initialMoney.toString()}
+                onChange={(e) => onInitialMoneyChange(e.target.value === '' ? 0 : Number(e.target.value))}
+                variant="outlined"
+                fullWidth
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                }}
+                slotProps={{
+                  htmlInput: { step: 1 },
+                }}
+              />
+              <TextField
+                size="small"
+                label="Monthly New Cash"
+                type="number"
+                value={monthlyNewCash.toString()}
+                onChange={(e) => onMonthlyNewCashChange(e.target.value === '' ? 0 : Number(e.target.value))}
+                variant="outlined"
+                fullWidth
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                }}
+                slotProps={{
+                  htmlInput: { step: 500 },
+                }}
+              />
+              <TextField
+                size="small"
+                label="Cash Year Rate"
+                type="number"
+                value={cashYearRate.toString()}
+                onChange={(e) => onCashYearRateChange(e.target.value === '' ? 0 : Number(e.target.value))}
+                variant="outlined"
+                fullWidth
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                }}
+                slotProps={{
+                  htmlInput: { step: 0.01 },
+                }}
+              />
+              <TextField
+                size="small"
+                label="Drop Rate"
+                type="number"
+                value={dropRate.toString()}
+                onChange={(e) => onDropRateChange(e.target.value === '' ? 0 : Number(e.target.value))}
+                variant="outlined"
+                fullWidth
+                InputProps={{
+                  startAdornment: <InputAdornment position="start"><TrendingDown fontSize="small" /></InputAdornment>,
+                  endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                }}
+                slotProps={{
+                  htmlInput: { step: 0.01 },
+                }}
+              />
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Simulation Parameters */}
+        <Card sx={{ mb: 3, elevation: 1 }}>
+          <CardContent sx={{ pb: 2 }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mb: 2, 
+                color: 'primary.main',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                fontSize: '1rem'
+              }}
+            >
+              <Schedule fontSize="small" />
+              Simulation Parameters
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              <TextField
+                size="small"
+                label="Rebalance Days"
+                type="number"
+                value={rebalanceDays.toString()}
+                onChange={(e) => onRebalanceDaysChange(e.target.value === '' ? 0 : Number(e.target.value))}
+                variant="outlined"
+                fullWidth
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">days</InputAdornment>,
+                }}
+                slotProps={{
+                  htmlInput: { step: 1 },
+                }}
+              />
+              <TextField
+                size="small"
+                label="Simulation Years"
+                type="number"
+                value={simulationYears.toString()}
+                onChange={(e) => onSimulationYearsChange(e.target.value === '' ? 0 : Number(e.target.value))}
+                variant="outlined"
+                fullWidth
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">years</InputAdornment>,
+                }}
+                slotProps={{
+                  htmlInput: { step: 1, min: 1, max: 25 },
+                }}
+              />
+              <TextField
+                size="small"
+                label="Frequency"
+                type="number"
+                value={simulationFrequencyDays.toString()}
+                onChange={(e) => onSimulationFrequencyDaysChange(e.target.value === '' ? 0 : Number(e.target.value))}
+                variant="outlined"
+                fullWidth
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">days</InputAdornment>,
+                }}
+                slotProps={{
+                  htmlInput: { step: 1, min: 1 },
+                }}
+              />
+              <TextField
+                size="small"
+                label="Analysis Minus Years"
+                type="number"
+                value={simulationAnalysisMinusYears.toString()}
+                onChange={(e) => onSimulationAnalysisMinusYearsChange(e.target.value === '' ? 0 : Number(e.target.value))}
+                variant="outlined"
+                fullWidth
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">years</InputAdornment>,
+                }}
+                slotProps={{
+                  htmlInput: { step: 1, min: 0 },
+                }}
+              />
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Display Options */}
+        <Card sx={{ mb: 3, elevation: 1 }}>
+          <CardContent sx={{ pb: 2 }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mb: 2, 
+                color: 'primary.main',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                fontSize: '1rem'
+              }}
+            >
+              <Analytics fontSize="small" />
+              Display Options
+            </Typography>
+            <FormControlLabel
+              control={
+                <Switch 
+                  checked={isLogScale} 
+                  onChange={(e) => onLogScaleChange(e.target.checked)} 
+                  color="primary"
+                  size="medium"
+                />
+              }
+              label={
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  Logarithmic Scale
+                </Typography>
+              }
+              sx={{ ml: 0 }}
+            />
+          </CardContent>
+        </Card>
+      </Box>
+
+      {/* Action Button */}
+      <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={onRunMultipleSimulations} 
+          fullWidth
+          size="large"
+          startIcon={<Refresh />}
+          sx={{
+            py: 1.5,
+            fontWeight: 600,
+            textTransform: 'none',
+            borderRadius: 2,
+            boxShadow: 2,
+            '&:hover': {
+              boxShadow: 4,
+            }
+          }}
+        >
+          Run Daily Simulations
         </Button>
       </Box>
-    </Box>
+    </Paper>
   );
 };
 

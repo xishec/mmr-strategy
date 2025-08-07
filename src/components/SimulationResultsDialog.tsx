@@ -23,9 +23,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
 
   // Helper function to apply consistent text styling
   const applyTextStyle = (selection: any) => {
-    return selection
-      .style("font-size", "11px")
-      .style("font-family", "system-ui, -apple-system, sans-serif");
+    return selection.style("font-size", "11px").style("font-family", "system-ui, -apple-system, sans-serif");
   };
 
   const createChart = useCallback(() => {
@@ -440,7 +438,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
           <Box>
             {/* Statistics Summary */}
             {analysisResults && (
-              <Box sx={{ m: 4, mt: 2, p: 4, bgcolor: "grey.50", borderRadius: "0.5rem" }}>
+              <Box sx={{ m: 4, mt: 2, p: 4, bgcolor: "grey.50", borderRadius: 2 }}>
                 <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 2 }}>
                   <Box>
                     <Typography variant="body2" color="text.secondary">

@@ -56,7 +56,7 @@ const Chart: React.FC<ChartProps> = ({
     svg.on(".drag", null);
 
     // Setup dimensions and data
-    const margin = { top: 20, left: 50, right: 65, bottom: 60 };
+    const margin = { top: 5, left: 35, right: 5, bottom: 40 };
     const width = container.clientWidth - margin.left - margin.right;
     const totalChartHeight = container.clientHeight - margin.top - margin.bottom;
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
@@ -580,8 +580,21 @@ const Chart: React.FC<ChartProps> = ({
           })
       );
 
-    // Add Y-axes
-    const yAxisConfig = isLogScale ? d3.axisLeft(priceYScale).ticks(4, "~g") : d3.axisLeft(priceYScale);
+    // Add Y-axes with custom formatting for price values
+    const formatPriceValue = (domainValue: d3.NumberValue): string => {
+      const value = Number(domainValue);
+      if (value >= 1000000) {
+        return `${(value / 1000000).toFixed(0)}M`;
+      } else if (value >= 1000) {
+        return `${(value / 1000).toFixed(0)}k`;
+      } else {
+        return value.toFixed(0);
+      }
+    };
+
+    const yAxisConfig = isLogScale 
+      ? d3.axisLeft(priceYScale).ticks(4).tickFormat(formatPriceValue)
+      : d3.axisLeft(priceYScale).tickFormat(formatPriceValue);
     g.append("g").attr("class", "y-axis-price").attr("transform", `translate(0,0)`).call(yAxisConfig);
     // Add grid lines
     g.selectAll(".grid-line")

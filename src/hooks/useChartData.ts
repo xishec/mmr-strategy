@@ -7,13 +7,13 @@ export interface LegendValues {
 }
 
 export interface UseChartDataReturn {
-  d3ChatData: D3ChartData;
+  d3ChartData: D3ChartData;
   legendValues: LegendValues;
 }
 
 export const useChartData = (simulation: Simulation, selectedDate: string | null): UseChartDataReturn => {
   // Memoize expensive chart data calculations
-  const d3ChatData = useMemo((): D3ChartData => {
+  const d3ChartData = useMemo((): D3ChartData => {
     if (!simulation || simulation.rebalanceLogs.length === 0) {
       return {
         priceChart: {},
@@ -86,7 +86,7 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
 
   // Calculate legend values for the selected date
   const legendValues = useMemo((): LegendValues => {
-    if (!selectedDate || !d3ChatData) {
+    if (!selectedDate || !d3ChartData) {
       return { priceValues: {}, ratioValues: {} };
     }
 
@@ -95,9 +95,9 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
 
     // Get values for each series at the selected date
     Object.entries({
-      ...d3ChatData.priceChart,
-      ...d3ChatData.ratioChart,
-      ...d3ChatData.pullbackChart,
+      ...d3ChartData.priceChart,
+      ...d3ChartData.ratioChart,
+      ...d3ChartData.pullbackChart,
     }).forEach(([seriesName, data]) => {
       const dataPoint = data.find((dp: any) => dp.time === selectedDate);
       if (dataPoint) {
@@ -110,10 +110,10 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
     });
 
     return { priceValues, ratioValues };
-  }, [selectedDate, d3ChatData]);
+  }, [selectedDate, d3ChartData]);
 
   return {
-    d3ChatData,
+    d3ChartData,
     legendValues,
   };
 };

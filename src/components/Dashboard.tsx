@@ -1,5 +1,6 @@
 import React from "react";
-import { Box } from "@mui/material";
+import { Box, Card, CardContent, Typography, Fade, Container, Chip } from "@mui/material";
+import { Analytics, Assessment, Timeline } from "@mui/icons-material";
 import { MarketData } from "../core/models";
 import SimulationSetup from "./SimulationSetup";
 import Legend from "./Legend";
@@ -23,7 +24,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
   const { selectedDate, availableDates, setSelectedDateIndex } = useDateNavigation(simulation);
 
   // Chart data processing
-  const { d3ChatData, legendValues } = useChartData(simulation, selectedDate);
+  const { d3ChartData, legendValues } = useChartData(simulation, selectedDate);
 
   // Handle date changes from chart interactions
   const handleDateChange = React.useCallback(
@@ -44,115 +45,153 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
     runMultipleSimulationsHandler();
   };
 
-  return (
-    <Box
-      sx={{
-        width: "100%",
-        height: "100vh",
-        display: "grid",
-        gridTemplateColumns: "300px 1fr",
-        gridTemplateRows: "1fr",
-        gap: 2,
-        p: 4,
-        overflow: "hidden",
-        minWidth: 0,
-      }}
-    >
-      {/* Simulation Setup Sidebar */}
-      <SimulationSetup
-        startDate={variables.startDate}
-        endDate={variables.endDate}
-        initialMoney={variables.initialMoney}
-        rebalanceDays={variables.rebalanceDays}
-        cashYearRate={variables.cashYearRate}
-        dropRate={variables.dropRate}
-        monthlyNewCash={variables.monthlyNewCash}
-        simulationYears={variables.simulationYears}
-        isLogScale={variables.isLogScale}
-        simulationFrequencyDays={variables.simulationFrequencyDays}
-        simulationAnalysisMinusYears={variables.simulationAnalysisMinusYears}
-        onStartDateChange={(newValue: Date | null) => {
-          if (newValue) {
-            updateVariable("startDate", newValue);
-          }
-        }}
-        onEndDateChange={(newValue: Date | null) => {
-          if (newValue) {
-            updateVariable("endDate", newValue);
-          }
-        }}
-        onInitialMoneyChange={(value: number) => updateVariable("initialMoney", value)}
-        onRebalanceDaysChange={(value: number) => updateVariable("rebalanceDays", value)}
-        onCashYearRateChange={(value: number) => updateVariable("cashYearRate", value)}
-        onDropRateChange={(value: number) => updateVariable("dropRate", value)}
-        onMonthlyNewCashChange={(value: number) => updateVariable("monthlyNewCash", value)}
-        onSimulationYearsChange={(value: number) => updateVariable("simulationYears", value)}
-        onLogScaleChange={(checked: boolean) => updateVariable("isLogScale", checked)}
-        onSimulationFrequencyDaysChange={(value: number) => updateVariable("simulationFrequencyDays", value)}
-        onSimulationAnalysisMinusYearsChange={(value: number) => updateVariable("simulationAnalysisMinusYears", value)}
-        onRunMultipleSimulations={handleRunMultipleSimulations}
-      />
+  const hasSimulationData = simulation && simulation.portfolioSnapshots.length > 0;
 
-      {/* Main Content Area */}
+  return (
+    <Container maxWidth={false} disableGutters sx={{ height: "100vh", bgcolor: "grey.100" }}>
+      {/* Main Layout */}
       <Box
         sx={{
+          height: "100vh",
           display: "grid",
-          gridTemplateColumns: "1fr",
-          gridTemplateRows: "min-content 1fr min-content",
+          gridTemplateColumns: { xs: "1fr", lg: "350px 1fr" },
+          gridTemplateRows: "1fr",
+          gap: 2,
+          p: 2,
           overflow: "hidden",
-          minWidth: 0,
-          maxWidth: "100%",
         }}
       >
-        {/* Legend */}
-        {simulation && simulation.portfolioSnapshots.length > 0 && (
-          <Box sx={{ px: 2, ml: 6 }}>
-            <Legend
-              d3ChartData={d3ChatData}
-              selectedDate={selectedDate}
-              priceValues={legendValues.priceValues}
-              ratioValues={legendValues.ratioValues}
-            />
-          </Box>
-        )}
-
-        {/* Chart */}
-        {simulation && simulation.portfolioSnapshots.length > 0 && (
-          <Box
-            sx={{
-              minHeight: 0, // Critical: allows grid item to shrink
-              minWidth: 0, // Critical: allows grid item to shrink
-              overflow: "hidden", // Prevents content overflow
-              contain: "layout", // Optimizes layout containment
-              pl: 2,
-            }}
-          >
-            <Chart
-              d3ChartData={d3ChatData}
-              selectedDate={selectedDate}
+        <Fade in={true} timeout={500}>
+          <Box>
+            <SimulationSetup
+              startDate={variables.startDate}
+              endDate={variables.endDate}
+              initialMoney={variables.initialMoney}
+              rebalanceDays={variables.rebalanceDays}
+              cashYearRate={variables.cashYearRate}
+              dropRate={variables.dropRate}
+              monthlyNewCash={variables.monthlyNewCash}
+              simulationYears={variables.simulationYears}
               isLogScale={variables.isLogScale}
-              height="100%"
-              onDateChange={handleDateChange}
+              simulationFrequencyDays={variables.simulationFrequencyDays}
+              simulationAnalysisMinusYears={variables.simulationAnalysisMinusYears}
+              onStartDateChange={(newValue: Date | null) => {
+                if (newValue) {
+                  updateVariable("startDate", newValue);
+                }
+              }}
+              onEndDateChange={(newValue: Date | null) => {
+                if (newValue) {
+                  updateVariable("endDate", newValue);
+                }
+              }}
+              onInitialMoneyChange={(value: number) => updateVariable("initialMoney", value)}
+              onRebalanceDaysChange={(value: number) => updateVariable("rebalanceDays", value)}
+              onCashYearRateChange={(value: number) => updateVariable("cashYearRate", value)}
+              onDropRateChange={(value: number) => updateVariable("dropRate", value)}
+              onMonthlyNewCashChange={(value: number) => updateVariable("monthlyNewCash", value)}
+              onSimulationYearsChange={(value: number) => updateVariable("simulationYears", value)}
+              onLogScaleChange={(checked: boolean) => updateVariable("isLogScale", checked)}
+              onSimulationFrequencyDaysChange={(value: number) => updateVariable("simulationFrequencyDays", value)}
+              onSimulationAnalysisMinusYearsChange={(value: number) =>
+                updateVariable("simulationAnalysisMinusYears", value)
+              }
+              onRunMultipleSimulations={handleRunMultipleSimulations}
             />
           </Box>
-        )}
+        </Fade>
 
-        {/* Rebalance Details */}
-        <Box sx={{ mx: 4 }}>
-          <RebalanceDetails selectedDate={selectedDate} simulation={simulation} d3ChartData={d3ChatData} />
+        {/* Main Content */}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            overflow: "hidden",
+          }}
+        >
+          {hasSimulationData && (
+            <Fade in={true} timeout={750}>
+              <Box sx={{ height: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
+                {/* Legend Section */}
+                <Card
+                  elevation={0}
+                  sx={{
+                    borderRadius: 2,
+                    overflow: "visible",
+                  }}
+                >
+                  <CardContent sx={{ p: 4 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                      <Assessment color="primary" fontSize="small" />
+                      <Typography variant="h6" sx={{ fontSize: "1rem", fontWeight: 600 }}>
+                        Strategy Performance Overview
+                      </Typography>
+                    </Box>
+                    <Legend
+                      d3ChartData={d3ChartData}
+                      selectedDate={selectedDate}
+                      priceValues={legendValues.priceValues}
+                      ratioValues={legendValues.ratioValues}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Chart Section */}
+                <Card
+                  elevation={0}
+                  sx={{
+                    flex: 1,
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <CardContent sx={{ p: 4, pb: 0, flex: 1, display: "flex", flexDirection: "column" }}>
+                    <Box sx={{ flex: 1, minHeight: 0 }}>
+                      <Chart
+                        d3ChartData={d3ChartData}
+                        selectedDate={selectedDate}
+                        isLogScale={variables.isLogScale}
+                        height="100%"
+                        onDateChange={handleDateChange}
+                      />
+                    </Box>
+                  </CardContent>
+                </Card>
+
+                {/* Rebalance Details Section */}
+                <Card
+                  elevation={0}
+                  sx={{
+                    borderRadius: 2,
+                  }}
+                >
+                  <CardContent sx={{ p: 4 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1 }}>
+                      <Analytics color="primary" fontSize="small" />
+                      <Typography variant="h6" sx={{ fontSize: "1rem", fontWeight: 600 }}>
+                        Rebalance Details
+                      </Typography>
+                    </Box>
+                    <RebalanceDetails selectedDate={selectedDate} simulation={simulation} d3ChartData={d3ChartData} />
+                  </CardContent>
+                </Card>
+              </Box>
+            </Fade>
+          )}
         </Box>
       </Box>
 
       {/* Results Dialog */}
-      {
-        <SimulationResultsDialog
-          open={dialogOpen}
-          onClose={() => setDialogOpen(false)}
-          analysisResults={analysisResults}
-          title={`Historical Strategy Performance vs QQQ (${variables.simulationYears} year periods)`}
-        />
-      }
-    </Box>
+      <SimulationResultsDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        analysisResults={analysisResults}
+        title={`Historical Strategy Performance vs QQQ (${variables.simulationYears} year periods)`}
+      />
+    </Container>
   );
 };
 

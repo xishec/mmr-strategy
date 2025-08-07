@@ -95,7 +95,7 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
               mt: 2,
               p: 2,
               backgroundColor: "rgba(0, 0, 0, 0.03)",
-              borderRadius: "0.5rem",
+              borderRadius: 2,
               borderLeft: "4px solid",
               borderRight: "4px solid",
               borderColor: getRebalanceColor,
@@ -122,12 +122,11 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
   return (
     <Box
       sx={{
-        borderRadius: "0.5rem",
+        borderRadius: 2,
         // border: "2px solid",
         // borderColor: "#d4d4d4ff",
-        backgroundColor: "#f7f7f7ff",
-        p: 4,
-        mx: 4,
+        // backgroundColor: "#f7f7f7ff",
+        // mx: 4,
         display: "grid",
         gridTemplateColumns: "minmax(60px, auto) minmax(60px, auto) 1fr minmax(60px, auto)",
         gap: 4,
