@@ -37,11 +37,11 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
     const container = containerRef.current;
     const margin = { top: 20, right: 30, bottom: 70, left: 80 };
     const width = container.clientWidth - margin.left - margin.right;
-    const height = 400 - margin.top - margin.bottom;
+    const height = container.clientHeight - margin.top - margin.bottom;
 
     const g = svg
       .attr("width", container.clientWidth)
-      .attr("height", 400)
+      .attr("height", container.clientHeight)
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -127,7 +127,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .text("Annualized Rate");
 
     g.append("text")
-      .attr("transform", `translate(${width / 2}, ${height + margin.bottom - 25})`)
+      .attr("transform", `translate(${width / 2}, ${height + margin.bottom - 20})`)
       .style("text-anchor", "middle")
       .style("fill", "#666")
       .call(applyTextStyle)
@@ -385,6 +385,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       open={open}
       onClose={isLoading ? undefined : onClose}
       fullWidth
+      maxWidth={false}
       disableEscapeKeyDown={isLoading}
       slotProps={{
         paper: {
@@ -423,7 +424,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                 },
               }}
             />
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: "center", maxWidth: "600px" }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: "center" }}>
               Running multiple independent backtests to validate strategy robustness.
               <br />
               Each simulation starts investing on a different historical date and runs through to today, comparing your
@@ -434,10 +435,10 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
             </Typography>
           </Box>
         ) : (
-          <Box>
+          <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
             {/* Statistics Summary */}
             {analysisResults && (
-              <Box sx={{ m: 4, mt: 2, p: 4, bgcolor: "grey.50", borderRadius: 2 }}>
+              <Box sx={{ mx: 2, mb: 2, p: 3, bgcolor: "grey.50", borderRadius: 2 }}>
                 <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 2 }}>
                   <Box>
                     <Typography variant="body2" color="text.secondary">
@@ -514,19 +515,19 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
               </Box>
             )}
 
-            <Box ref={containerRef} sx={{ width: "100%", height: 400 }}>
+            <Box ref={containerRef} sx={{ width: "100%", flex: 1, minHeight: 500 }}>
               <svg ref={svgRef} style={{ width: "100%", height: "100%" }} />
             </Box>
           </Box>
         )}
       </DialogContent>
-      <DialogActions sx={{ p: 3 }}>
+      {/* <DialogActions sx={{ p: 3 }}>
         {!isLoading && (
           <Button onClick={onClose} disabled={isLoading}>
             Close
           </Button>
         )}
-      </DialogActions>
+      </DialogActions> */}
     </Dialog>
   );
 };
