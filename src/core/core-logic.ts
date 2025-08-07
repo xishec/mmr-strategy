@@ -72,7 +72,7 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation) => 
     // On track or gaining - increase TQQQ allocation
     rebalanceType = RebalanceType.OnTrack;
     const newTargetRatio = Math.min(before.investments.ratio + PORTFOLIO_LIMITS.STEP_RATIO, PORTFOLIO_LIMITS.MAX_RATIO);
-    updatePortfolioAllocation(after, newTargetRatio);
+    updatePortfolioAllocation(after, 0.75);
   } else if (cumulativeRate >= doubleDropRate) {
     // Moderate drop - hold current allocation
     rebalanceType = RebalanceType.Drop;
