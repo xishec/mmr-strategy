@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback } from "react";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, Box, Typography } from "@mui/material";
 import * as d3 from "d3";
-import { blue, yellow } from "./Chart";
+import { blue, yellow, red, black } from "./Chart";
 import { AnalysisResults } from "../core/models";
 
 interface SimulationResultsDialogProps {
@@ -62,8 +62,8 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
     const yScale = d3
       .scaleLinear()
       .domain([
-        d3.min(parsedData, (d) => Math.min(d.strategyRate, d.qqqRate)) as number,
-        d3.max(parsedData, (d) => Math.max(d.strategyRate, d.qqqRate)) as number,
+        d3.min(parsedData, (d) => Math.min(d.strategyRate, d.qqqRate, d.tqqqRate)) as number,
+        d3.max(parsedData, (d) => Math.max(d.strategyRate, d.qqqRate, d.tqqqRate)) as number,
       ])
       .nice()
       .range([height, 0]);
@@ -79,6 +79,12 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .line<(typeof parsedData)[0]>()
       .x((d) => xScale(d.date))
       .y((d) => yScale(d.qqqRate))
+      .curve(d3.curveMonotoneX);
+
+    const tqqqLine = d3
+      .line<(typeof parsedData)[0]>()
+      .x((d) => xScale(d.date))
+      .y((d) => yScale(d.tqqqRate))
       .curve(d3.curveMonotoneX);
 
     // Add grid lines
@@ -148,13 +154,20 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("stroke-width", 1)
       .attr("d", qqqLine);
 
+    g.append("path")
+      .datum(parsedData)
+      .attr("fill", "none")
+      .attr("stroke", red) // for TQQQ
+      .attr("stroke-width", 1)
+      .attr("d", tqqqLine);
+
     // Add legend with better styling
     const legend = g.append("g").attr("transform", `translate(20, 20)`);
 
     legend
       .append("rect")
       .attr("width", 90)
-      .attr("height", 55)
+      .attr("height", 75)
       .attr("fill", "white")
       .attr("stroke", "#d7d7d7ff")
       .attr("stroke-width", 1)
@@ -198,6 +211,25 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .style("font-family", "system-ui, -apple-system, sans-serif")
       .style("fill", "#333")
       .text("QQQ");
+
+    legend
+      .append("line")
+      .attr("x1", 8)
+      .attr("x2", 28)
+      .attr("y1", 58)
+      .attr("y2", 58)
+      .attr("stroke", red)
+      .attr("stroke-width", 2);
+
+    legend
+      .append("text")
+      .attr("x", 32)
+      .attr("y", 58)
+      .attr("dy", "0.35em")
+      .style("font-size", "11px")
+      .style("font-family", "system-ui, -apple-system, sans-serif")
+      .style("fill", "#333")
+      .text("TQQQ");
 
     // Add tooltip with better styling
     const tooltip = d3
@@ -344,7 +376,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
             .html(
               `Date: ${d.startDate}<br/>Strategy: ${(d.strategyRate * 100).toFixed(2)}%<br/>QQQ: ${(
                 d.qqqRate * 100
-              ).toFixed(2)}%`
+              ).toFixed(2)}%<br/>TQQQ: ${(d.tqqqRate * 100).toFixed(2)}%`
             )
             .style("left", event.pageX + 10 + "px")
             .style("top", event.pageY - 28 + "px");
@@ -454,6 +486,18 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
 
                   <Box>
                     <Typography variant="body2" color="text.secondary">
+                      Average TQQQ Rate
+                    </Typography>
+                    <Typography variant="h6" color={red}>
+                      {(analysisResults.averageTQQQRate * 100).toFixed(2)}%
+                    </Typography>
+                    <Typography variant="caption" display="block" color="text.secondary">
+                      (σ:{(analysisResults.tqqqStandardDeviation * 100).toFixed(2)}%)
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
                       Average Strategy Rate
                     </Typography>
                     <Typography variant="h6" color={yellow}>
@@ -489,7 +533,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                     </Typography>
                     <Typography
                       variant="h6"
-                      color={analysisResults.absoluteWorstStrategyRate > 0 ? "success.main" : "error.main"}
+                      color={black}
                     >
                       {(analysisResults.absoluteWorstStrategyRate * 100).toFixed(2)}%
                       <Typography variant="caption" display="block" color="text.secondary">
@@ -503,7 +547,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                     </Typography>
                     <Typography
                       variant="h6"
-                      color={analysisResults.relativeWorstStrategyRate > 0 ? "success.main" : "error.main"}
+                      color={black}
                     >
                       {(analysisResults.relativeWorstStrategyRate * 100).toFixed(2)}%
                       <Typography variant="caption" display="block" color="text.secondary">
