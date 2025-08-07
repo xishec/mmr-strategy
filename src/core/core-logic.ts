@@ -34,7 +34,7 @@ export const computePortfolioSnapshot = (simulation: Simulation, date: string, m
   newPortfolioSnapshot.cumulativeRateSinceRebalance =
     (1 + newPortfolioSnapshot.cumulativeRateSinceRebalance) * tqqqMultiplier - 1;
 
-  if (tqqqDelta < -20) {
+  if (newPortfolioSnapshot.cumulativeRateSinceRebalance < -0.4) {
     newPortfolioSnapshot.nextRebalanceDate = date;
   }
 
