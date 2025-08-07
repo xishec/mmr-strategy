@@ -13,6 +13,8 @@ interface SimulationSetupProps {
   monthlyNewCash: number;
   simulationYears: number;
   isLogScale: boolean;
+  simulationFrequencyDays: number;
+  simulationAnalysisMinusYears: number;
   onStartDateChange: (date: Date | null) => void;
   onEndDateChange: (date: Date | null) => void;
   onInitialMoneyChange: (value: number) => void;
@@ -23,6 +25,8 @@ interface SimulationSetupProps {
   onSimulationYearsChange: (value: number) => void;
   onLogScaleChange: (checked: boolean) => void;
   onRunMultipleSimulations: () => void;
+  onSimulationFrequencyDaysChange: (value: number) => void;
+  onSimulationAnalysisMinusYearsChange: (value: number) => void;
 }
 
 const SimulationSetup: React.FC<SimulationSetupProps> = ({
@@ -35,6 +39,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   monthlyNewCash,
   simulationYears,
   isLogScale,
+  simulationFrequencyDays,
+  simulationAnalysisMinusYears,
   onStartDateChange,
   onEndDateChange,
   onInitialMoneyChange,
@@ -45,6 +51,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   onSimulationYearsChange,
   onLogScaleChange,
   onRunMultipleSimulations,
+  onSimulationFrequencyDaysChange,
+  onSimulationAnalysisMinusYearsChange,
 }) => {
   return (
     <Box
@@ -136,6 +144,30 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
           variant="outlined"
           slotProps={{
             htmlInput: { step: 1, min: 1, max: 25 },
+          }}
+        />
+
+        <TextField
+          size="small"
+          label="Simulation Frequency Days"
+          type="number"
+          value={simulationFrequencyDays}
+          onChange={(e) => onSimulationFrequencyDaysChange(Number(e.target.value))}
+          variant="outlined"
+          slotProps={{
+            htmlInput: { step: 1, min: 1 },
+          }}
+        />
+
+        <TextField
+          size="small"
+          label="Simulation Analysis Minus Years"
+          type="number"
+          value={simulationAnalysisMinusYears}
+          onChange={(e) => onSimulationAnalysisMinusYearsChange(Number(e.target.value))}
+          variant="outlined"
+          slotProps={{
+            htmlInput: { step: 1, min: 0 },
           }}
         />
       </Box>

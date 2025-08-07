@@ -69,6 +69,8 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         monthlyNewCash={variables.monthlyNewCash}
         simulationYears={variables.simulationYears}
         isLogScale={variables.isLogScale}
+        simulationFrequencyDays={variables.simulationFrequencyDays}
+        simulationAnalysisMinusYears={variables.simulationAnalysisMinusYears}
         onStartDateChange={(newValue: Date | null) => {
           if (newValue) {
             updateVariable("startDate", newValue);
@@ -86,6 +88,8 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         onMonthlyNewCashChange={(value: number) => updateVariable("monthlyNewCash", value)}
         onSimulationYearsChange={(value: number) => updateVariable("simulationYears", value)}
         onLogScaleChange={(checked: boolean) => updateVariable("isLogScale", checked)}
+        onSimulationFrequencyDaysChange={(value: number) => updateVariable("simulationFrequencyDays", value)}
+        onSimulationAnalysisMinusYearsChange={(value: number) => updateVariable("simulationAnalysisMinusYears", value)}
         onRunMultipleSimulations={handleRunMultipleSimulations}
       />
 
