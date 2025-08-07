@@ -34,7 +34,7 @@ export const computePortfolioSnapshot = (simulation: Simulation, date: string, m
   newPortfolioSnapshot.cumulativeRateSinceRebalance =
     (1 + newPortfolioSnapshot.cumulativeRateSinceRebalance) * tqqqMultiplier - 1;
 
-  if (newPortfolioSnapshot.cumulativeRateSinceRebalance < -0.4) {
+  if (tqqqDelta < -20) {
     newPortfolioSnapshot.nextRebalanceDate = date;
   }
 
@@ -80,7 +80,7 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation) => 
     // Big drop - reduce TQQQ allocation (buy the dip but with reduced exposure)
     rebalanceType = RebalanceType.BigDrop;
     const newTargetRatio = Math.max(before.investments.ratio - PORTFOLIO_LIMITS.STEP_RATIO, PORTFOLIO_LIMITS.MIN_RATIO);
-    updatePortfolioAllocation(after, newTargetRatio);
+    updatePortfolioAllocation(after, 0);
   }
 
   // Set post-rebalance metadata
