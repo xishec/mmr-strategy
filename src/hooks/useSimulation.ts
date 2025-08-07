@@ -25,7 +25,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     simulationYears: 10,
     isLogScale: true,
     simulationFrequencyDays: 3,
-    simulationAnalysisMinusYears: 6,
+    simulationAnalysisMinusYears: 1,
   });
 
   const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);

@@ -1,7 +1,7 @@
 // Portfolio allocation constants
 export const PORTFOLIO_LIMITS = {
   MAX_RATIO: 1,
-  MIN_RATIO: 0,
+  MIN_RATIO: 1,
 } as const;
 
 // Time constants

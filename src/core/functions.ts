@@ -184,7 +184,7 @@ export const runMultipleSimulations = async (
     // Check if this date exists in market data or find next available date
     const nextAvailableDate = availableDates.find((date) => date >= currentIterationDate);
 
-    if (nextAvailableDate) {
+    if (nextAvailableDate && isGoodDayToStart(nextAvailableDate, marketData, variables)) {
       try {
         // Check if we have at least minimum required days of data after the start date
         const minEndDate = addDays(nextAvailableDate, TIME_CONSTANTS.MIN_DATA_DAYS);
@@ -241,6 +241,40 @@ export const runMultipleSimulations = async (
   const analysisResults = calculateSummaryStats(strategyRates, qqqRates, tqqqRates, startDates);
 
   return { results: [], analysisResults };
+};
+
+export const isGoodDayToStart = (date: string, marketData: MarketData, variables: Variables): boolean => {
+  // Calculate date 90 days before the given date
+  const startDate90DaysAgo = addDays(date, -90);
+
+  // Get all available dates from market data
+  const availableDates = Object.keys(marketData.TQQQ).sort();
+
+  // Find the first available date on or after startDate90DaysAgo
+  const startDate = availableDates.find((d) => d >= startDate90DaysAgo);
+
+  // If we don't have data going back 90 days, return false
+  if (!startDate || startDate >= date) {
+    return false;
+  }
+
+  // Get TQQQ values at start and end dates
+  const startValue = marketData.TQQQ[startDate];
+  const endValue = marketData.TQQQ[date];
+
+  // If either value is missing, return false
+  if (startValue === undefined || endValue === undefined) {
+    return false;
+  }
+
+  // Calculate cumulative rate over the 90-day period
+  // This represents the total return over the period
+  const cumulativeRate = (endValue - startValue) / Math.abs(startValue);
+  console.log(date, cumulativeRate, cumulativeRate > variables.dropRate * 100);
+
+  // Convert dropRate (which is typically negative) to positive for comparison
+  // The cumulative rate should be greater than the drop rate threshold
+  return cumulativeRate > variables.dropRate * 100;
 };
 
 /**
