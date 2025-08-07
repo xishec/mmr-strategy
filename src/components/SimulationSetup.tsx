@@ -79,8 +79,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
           size="small"
           label="Initial Money ($)"
           type="number"
-          value={initialMoney}
-          onChange={(e) => onInitialMoneyChange(Number(e.target.value))}
+          value={initialMoney.toString()}
+          onChange={(e) => onInitialMoneyChange(e.target.value === '' ? 0 : Number(e.target.value))}
           variant="outlined"
           slotProps={{
             htmlInput: { step: 1 },
@@ -91,8 +91,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
           size="small"
           label="Monthly new cash"
           type="number"
-          value={monthlyNewCash}
-          onChange={(e) => onMonthlyNewCashChange(Number(e.target.value))}
+          value={monthlyNewCash.toString()}
+          onChange={(e) => onMonthlyNewCashChange(e.target.value === '' ? 0 : Number(e.target.value))}
           variant="outlined"
           slotProps={{
             htmlInput: { step: 500 },
@@ -103,8 +103,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
           size="small"
           label="Cash Year Rate"
           type="number"
-          value={cashYearRate}
-          onChange={(e) => onCashYearRateChange(Number(e.target.value))}
+          value={cashYearRate.toString()}
+          onChange={(e) => onCashYearRateChange(e.target.value === '' ? 0 : Number(e.target.value))}
           variant="outlined"
           slotProps={{
             htmlInput: { step: 0.01 },
@@ -115,8 +115,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
           size="small"
           label="Rebalance Days"
           type="number"
-          value={rebalanceDays}
-          onChange={(e) => onRebalanceDaysChange(Number(e.target.value))}
+          value={rebalanceDays.toString()}
+          onChange={(e) => onRebalanceDaysChange(e.target.value === '' ? 0 : Number(e.target.value))}
           variant="outlined"
           slotProps={{
             htmlInput: { step: 1 },
@@ -127,8 +127,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
           size="small"
           label="Drop Rate"
           type="number"
-          value={dropRate}
-          onChange={(e) => onDropRateChange(Number(e.target.value))}
+          value={dropRate.toString()}
+          onChange={(e) => onDropRateChange(e.target.value === '' ? 0 : Number(e.target.value))}
           variant="outlined"
           slotProps={{
             htmlInput: { step: 0.01 },
@@ -139,8 +139,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
           size="small"
           label="Simulation Years (for Multiple Simulations)"
           type="number"
-          value={simulationYears}
-          onChange={(e) => onSimulationYearsChange(Number(e.target.value))}
+          value={simulationYears.toString()}
+          onChange={(e) => onSimulationYearsChange(e.target.value === '' ? 0 : Number(e.target.value))}
           variant="outlined"
           slotProps={{
             htmlInput: { step: 1, min: 1, max: 25 },
@@ -151,8 +151,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
           size="small"
           label="Simulation Frequency Days"
           type="number"
-          value={simulationFrequencyDays}
-          onChange={(e) => onSimulationFrequencyDaysChange(Number(e.target.value))}
+          value={simulationFrequencyDays.toString()}
+          onChange={(e) => onSimulationFrequencyDaysChange(e.target.value === '' ? 0 : Number(e.target.value))}
           variant="outlined"
           slotProps={{
             htmlInput: { step: 1, min: 1 },
@@ -163,8 +163,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
           size="small"
           label="Simulation Analysis Minus Years"
           type="number"
-          value={simulationAnalysisMinusYears}
-          onChange={(e) => onSimulationAnalysisMinusYearsChange(Number(e.target.value))}
+          value={simulationAnalysisMinusYears.toString()}
+          onChange={(e) => onSimulationAnalysisMinusYearsChange(e.target.value === '' ? 0 : Number(e.target.value))}
           variant="outlined"
           slotProps={{
             htmlInput: { step: 1, min: 0 },
