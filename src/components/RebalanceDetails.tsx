@@ -138,11 +138,9 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
         <Box
           sx={{
             height: "100%",
+            width: "100%",
             overflow: "auto",
             minWidth: 0,
-            display: "grid",
-            justifyContent: "start",
-            alignItems: "center",
           }}
         >
           <Typography fontSize={"1rem"} gutterBottom>
@@ -169,6 +167,7 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
               borderLeft: "4px solid",
               borderRight: "4px solid",
               borderColor: getRebalanceColor,
+              width: "100%",
             }}
           >
             <Typography fontSize={"0.75rem"} lineHeight={1.5} color="text.primary" sx={{ fontStyle: "italic" }}>
