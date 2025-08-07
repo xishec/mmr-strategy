@@ -41,6 +41,7 @@ export interface PortfolioSnapshot {
   pullback: number;
   lastRebalanceDate: string;
   nextRebalanceDate: string;
+  shouldPanic: boolean;
 }
 
 export interface RebalanceLog {
@@ -55,6 +56,7 @@ export enum RebalanceType {
   OnTrack = "On Track",
   Drop = "Drop",
   BigDrop = "Big Drop",
+  Panic = "Panic",
 }
 
 export const RebalanceTypeExplanation = {

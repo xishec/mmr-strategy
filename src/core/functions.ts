@@ -1,4 +1,4 @@
-import { computePortfolioSnapshot, rebalance } from "./core-logic";
+import { runSingleSimulation } from "./core-logic";
 import {
   AnalysisResults,
   Investments,
@@ -55,6 +55,7 @@ export const setupInitialPortfolio = (simulation: Simulation, marketData: Market
     cumulativeRateSinceRebalance: 0,
     peak: simulation.variables.initialMoney,
     pullback: 0,
+    shouldPanic: false,
     lastRebalanceDate: firstValidDate,
     nextRebalanceDate: addDays(firstValidDate, simulation.variables.rebalanceDays),
   };
@@ -78,50 +79,6 @@ export const startSimulation = (
 ) => {
   const result = runSingleSimulation(simulation, marketData);
   setSimulation(result);
-};
-
-/**
- * Runs a single simulation with the given parameters
- * @param simulation - The simulation configuration
- * @param marketData - The market data
- * @param endDate - Optional end date to limit the simulation (format: YYYY-MM-DD)
- * @returns The completed simulation
- */
-export const runSingleSimulation = (simulation: Simulation, marketData: MarketData): Simulation => {
-  // Create a shallow copy of the simulation to avoid mutations
-  const newSimulation: Simulation = {
-    ...simulation,
-    portfolioSnapshots: [],
-    rebalanceLogs: [],
-    variables: { ...simulation.variables },
-  };
-
-  setupInitialPortfolio(newSimulation, marketData);
-
-  // Get sorted dates within our range for better performance
-  const marketDates = Object.keys(marketData.TQQQ).filter(
-    (date) => date > newSimulation.variables.startDate && date <= newSimulation.variables.endDate
-  );
-
-  for (const date of marketDates) {
-    const portfolioSnapshot = computePortfolioSnapshot(newSimulation, date, marketData);
-
-    if (date >= portfolioSnapshot.nextRebalanceDate) {
-      const rebalancedSnapshot = rebalance(portfolioSnapshot, newSimulation);
-      newSimulation.portfolioSnapshots.push(rebalancedSnapshot);
-    } else {
-      newSimulation.portfolioSnapshots.push(portfolioSnapshot);
-    }
-  }
-
-  // Final rebalance and calculate rates
-  if (newSimulation.portfolioSnapshots.length > 0) {
-    const lastSnapshot = newSimulation.portfolioSnapshots[newSimulation.portfolioSnapshots.length - 1];
-    rebalance(lastSnapshot, newSimulation);
-    calculateAnnualizedRates(newSimulation);
-  }
-
-  return newSimulation;
 };
 
 export const calculateAnnualizedRates = (simulation: Simulation) => {

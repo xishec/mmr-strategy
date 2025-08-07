@@ -1,7 +1,44 @@
-import { addDays } from "./date-utils";
-import { deepCopyPortfolioSnapshot } from "./functions";
+import { addDays, daysBetween } from "./date-utils";
+import { calculateAnnualizedRates, deepCopyPortfolioSnapshot, setupInitialPortfolio } from "./functions";
 import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation } from "./models";
 import { PORTFOLIO_LIMITS, TIME_CONSTANTS } from "./constants";
+
+export const runSingleSimulation = (simulation: Simulation, marketData: MarketData): Simulation => {
+  // Create a shallow copy of the simulation to avoid mutations
+  const newSimulation: Simulation = {
+    ...simulation,
+    portfolioSnapshots: [],
+    rebalanceLogs: [],
+    variables: { ...simulation.variables },
+  };
+
+  setupInitialPortfolio(newSimulation, marketData);
+
+  // Get sorted dates within our range for better performance
+  const marketDates = Object.keys(marketData.TQQQ).filter(
+    (date) => date > newSimulation.variables.startDate && date <= newSimulation.variables.endDate
+  );
+
+  for (const date of marketDates) {
+    const portfolioSnapshot = computePortfolioSnapshot(newSimulation, date, marketData);
+
+    if (date >= portfolioSnapshot.nextRebalanceDate) {
+      const rebalancedSnapshot = rebalance(portfolioSnapshot, newSimulation);
+      newSimulation.portfolioSnapshots.push(rebalancedSnapshot);
+    } else {
+      newSimulation.portfolioSnapshots.push(portfolioSnapshot);
+    }
+  }
+
+  // Final rebalance and calculate rates
+  if (newSimulation.portfolioSnapshots.length > 0) {
+    const lastSnapshot = newSimulation.portfolioSnapshots[newSimulation.portfolioSnapshots.length - 1];
+    rebalance(lastSnapshot, newSimulation);
+    calculateAnnualizedRates(newSimulation);
+  }
+
+  return newSimulation;
+};
 
 export const computePortfolioSnapshot = (simulation: Simulation, date: string, marketData: MarketData) => {
   const lastSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
@@ -35,6 +72,7 @@ export const computePortfolioSnapshot = (simulation: Simulation, date: string, m
     (1 + newPortfolioSnapshot.cumulativeRateSinceRebalance) * tqqqMultiplier - 1;
 
   if (tqqqDelta < -20) {
+    newPortfolioSnapshot.shouldPanic = true;
     newPortfolioSnapshot.nextRebalanceDate = date;
   }
 
@@ -50,13 +88,16 @@ const updatePortfolioAllocation = (snapshot: PortfolioSnapshot, newTargetRatio: 
 
 export const rebalance = (before: PortfolioSnapshot, simulation: Simulation) => {
   const { monthlyNewCash, rebalanceDays, dropRate } = simulation.variables;
-  const dailyNewCash = (monthlyNewCash / TIME_CONSTANTS.DAYS_IN_MONTH) * rebalanceDays;
 
-  // Add new cash to all investment types
-  before.investments.cash += dailyNewCash;
-  before.investments.mockTotalQQQ += dailyNewCash;
-  before.investments.mockTotalTQQQ += dailyNewCash;
-  before.investments.mockTotalNothing += dailyNewCash;
+  const daysSinceRebalance = daysBetween(
+    simulation.rebalanceLogs[simulation.rebalanceLogs.length - 1]?.date || before.date,
+    before.date
+  );
+  const newCash = (monthlyNewCash / TIME_CONSTANTS.DAYS_IN_MONTH) * daysSinceRebalance;
+  before.investments.cash += newCash;
+  before.investments.mockTotalQQQ += newCash;
+  before.investments.mockTotalTQQQ += newCash;
+  before.investments.mockTotalNothing += newCash;
   before.investments.total = before.investments.cash + before.investments.TQQQ;
   before.investments.ratio = before.investments.TQQQ / before.investments.total;
 
@@ -67,13 +108,11 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation) => 
   const doubleDropRate = dropRate * 2;
 
   let rebalanceType: RebalanceType;
-
-  if (cumulativeRate >= dropRate) {
+  if (cumulativeRate >= dropRate && !before.shouldPanic) {
     // On track or gaining - increase TQQQ allocation
     rebalanceType = RebalanceType.OnTrack;
-    const newTargetRatio = Math.min(before.investments.ratio + PORTFOLIO_LIMITS.STEP_RATIO, PORTFOLIO_LIMITS.MAX_RATIO);
-    updatePortfolioAllocation(after, 0.8);
-  } else if (cumulativeRate >= doubleDropRate) {
+    updatePortfolioAllocation(after, 1);
+  } else if (cumulativeRate >= doubleDropRate  && !before.shouldPanic) {
     // Moderate drop - hold current allocation
     rebalanceType = RebalanceType.Drop;
   } else {
@@ -81,10 +120,12 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation) => 
     rebalanceType = RebalanceType.BigDrop;
     updatePortfolioAllocation(after, 0);
   }
+  if (before.shouldPanic) rebalanceType = RebalanceType.Panic;
 
   // Set post-rebalance metadata
   after.nextRebalanceDate = addDays(before.date, rebalanceDays);
   after.cumulativeRateSinceRebalance = 0;
+  after.shouldPanic = false;
 
   const rebalanceLog: RebalanceLog = {
     date: before.date,
