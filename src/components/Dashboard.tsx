@@ -1,6 +1,6 @@
 import React from "react";
-import { Box, Card, CardContent, Typography, Fade, Container, Chip } from "@mui/material";
-import { Analytics, Assessment, Timeline } from "@mui/icons-material";
+import { Box, Card, CardContent, Typography, Fade, Container } from "@mui/material";
+import { Analytics, Assessment } from "@mui/icons-material";
 import { MarketData } from "../core/models";
 import SimulationSetup from "./SimulationSetup";
 import Legend from "./Legend";
@@ -24,7 +24,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
   const { selectedDate, availableDates, setSelectedDateIndex } = useDateNavigation(simulation);
 
   // Chart data processing
-  const { d3ChartData, legendValues } = useChartData(simulation, selectedDate);
+  const d3ChartData = useChartData(simulation, selectedDate);
 
   // Handle date changes from chart interactions
   const handleDateChange = React.useCallback(
@@ -121,19 +121,14 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
                     overflow: "visible",
                   }}
                 >
-                  <CardContent sx={{ p: 4 }}>
+                  <CardContent sx={{ p: 4, pt: 3 }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
                       <Assessment color="primary" fontSize="small" />
                       <Typography variant="h6" sx={{ fontSize: "1rem", fontWeight: 600 }}>
                         Strategy Performance Overview
                       </Typography>
                     </Box>
-                    <Legend
-                      d3ChartData={d3ChartData}
-                      selectedDate={selectedDate}
-                      priceValues={legendValues.priceValues}
-                      ratioValues={legendValues.ratioValues}
-                    />
+                    <Legend d3ChartData={d3ChartData} selectedDate={selectedDate} />
                   </CardContent>
                 </Card>
 
@@ -168,7 +163,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
                     borderRadius: 2,
                   }}
                 >
-                  <CardContent sx={{ p: 4 }}>
+                  <CardContent sx={{ p: 4, pt: 3 }}>
                     <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1 }}>
                       <Analytics color="primary" fontSize="small" />
                       <Typography variant="h6" sx={{ fontSize: "1rem", fontWeight: 600 }}>

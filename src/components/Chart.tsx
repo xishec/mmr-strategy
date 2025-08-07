@@ -91,14 +91,14 @@ const Chart: React.FC<ChartProps> = ({
 
     // Separate series by type
     const priceKeys = [
-      "StrategyTotal",
-      "StrategyTotalAll",
-      "Target",
-      "MockTotalQQQ",
-      "MockTotalTQQQ",
-      "MockTotalNothing",
+      "strategyTotal",
+      "strategyTotalAll",
+      "target",
+      "mockTotalQQQ",
+      "mockTotalTQQQ",
+      "mockTotalNothing",
     ];
-    const ratioKeys = ["Ratio", "pullback"];
+    const ratioKeys = ["ratio", "pullback"];
 
     const getSeriesByType = (type: "price" | "ratio") => {
       const keys = type === "price" ? priceKeys : ratioKeys;
@@ -141,13 +141,13 @@ const Chart: React.FC<ChartProps> = ({
 
     // Color mapping
     const colorMap = {
-      StrategyTotal: yellow,
-      StrategyTotalAll: lightYellow,
-      Target: black,
-      MockTotalQQQ: green,
-      MockTotalTQQQ: red,
-      MockTotalNothing: "#ecececff",
-      Ratio: "#d0d0d0ff",
+      strategyTotal: yellow,
+      strategyTotalAll: lightYellow,
+      target: black,
+      mockTotalQQQ: green,
+      mockTotalTQQQ: red,
+      mockTotalNothing: "#ecececff",
+      ratio: "#d0d0d0ff",
       pullback: red,
       default: "#2962FF",
     };
@@ -196,7 +196,7 @@ const Chart: React.FC<ChartProps> = ({
           .attr("d", line);
 
         if (isArea) {
-          if (seriesName === "Ratio") {
+          if (seriesName === "ratio") {
             const area = d3
               .area<any>()
               .x((d) => xScale(d.parsedTime))

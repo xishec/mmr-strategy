@@ -81,7 +81,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: 'background.paper'
+        backgroundColor: 'background.paper',
+        borderRadius: 2,
       }}
     >
       {/* Header */}

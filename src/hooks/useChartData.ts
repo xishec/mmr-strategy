@@ -1,17 +1,7 @@
 import { useMemo } from "react";
 import { Simulation, RebalanceLog, PortfolioSnapshot, D3ChartData } from "../core/models";
 
-export interface LegendValues {
-  priceValues: { [key: string]: number };
-  ratioValues: { [key: string]: number };
-}
-
-export interface UseChartDataReturn {
-  d3ChartData: D3ChartData;
-  legendValues: LegendValues;
-}
-
-export const useChartData = (simulation: Simulation, selectedDate: string | null): UseChartDataReturn => {
+export const useChartData = (simulation: Simulation, selectedDate: string | null): D3ChartData => {
   // Memoize expensive chart data calculations
   const d3ChartData = useMemo((): D3ChartData => {
     if (!simulation || simulation.rebalanceLogs.length === 0) {
@@ -36,23 +26,23 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
     });
 
     const priceChart = {
-      MockTotalQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
+      mockTotalQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
         value: snapshot.investments.mockTotalQQQ,
       })),
-      MockTotalTQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
+      mockTotalTQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
         value: snapshot.investments.mockTotalTQQQ,
       })),
-      MockTotalNothing: simulation.portfolioSnapshots.map((snapshot) => ({
+      mockTotalNothing: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
         value: snapshot.investments.mockTotalNothing,
       })),
-      StrategyTotalAll: simulation.portfolioSnapshots.map((snapshot) => ({
+      strategyTotalAll: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
         value: snapshot.investments.total,
       })),
-      StrategyTotal: simulation.rebalanceLogs.map((rebalanceLog) => ({
+      strategyTotal: simulation.rebalanceLogs.map((rebalanceLog) => ({
         time: rebalanceLog.date,
         value: rebalanceLog.before.investments.total,
       })),
@@ -63,7 +53,7 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
     };
 
     const ratioChart = {
-      Ratio: simulation.portfolioSnapshots.map((snapshot) => ({
+      ratio: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
         value: snapshot.investments.ratio,
       })),
@@ -84,36 +74,5 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
     };
   }, [simulation]);
 
-  // Calculate legend values for the selected date
-  const legendValues = useMemo((): LegendValues => {
-    if (!selectedDate || !d3ChartData) {
-      return { priceValues: {}, ratioValues: {} };
-    }
-
-    const priceValues: { [key: string]: number } = {};
-    const ratioValues: { [key: string]: number } = {};
-
-    // Get values for each series at the selected date
-    Object.entries({
-      ...d3ChartData.priceChart,
-      ...d3ChartData.ratioChart,
-      ...d3ChartData.pullbackChart,
-    }).forEach(([seriesName, data]) => {
-      const dataPoint = data.find((dp: any) => dp.time === selectedDate);
-      if (dataPoint) {
-        if (["StrategyTotal", "Target", "MockTotalQQQ", "MockTotalTQQQ"].includes(seriesName)) {
-          priceValues[seriesName] = dataPoint.value;
-        } else {
-          ratioValues[seriesName] = dataPoint.value;
-        }
-      }
-    });
-
-    return { priceValues, ratioValues };
-  }, [selectedDate, d3ChartData]);
-
-  return {
-    d3ChartData,
-    legendValues,
-  };
+  return d3ChartData;
 };
