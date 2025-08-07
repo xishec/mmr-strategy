@@ -92,25 +92,13 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
 
         <TextField
           size="small"
-          label="Rebalance Days"
+          label="Monthly new cash"
           type="number"
-          value={rebalanceDays}
-          onChange={(e) => onRebalanceDaysChange(Number(e.target.value))}
+          value={monthlyNewCash}
+          onChange={(e) => onMonthlyNewCashChange(Number(e.target.value))}
           variant="outlined"
           slotProps={{
-            htmlInput: { step: 1 },
-          }}
-        />
-
-        <TextField
-          size="small"
-          label="Target Rate"
-          type="number"
-          value={targetRate}
-          onChange={(e) => onTargetRateChange(Number(e.target.value))}
-          variant="outlined"
-          slotProps={{
-            htmlInput: { step: 0.01 },
+            htmlInput: { step: 500 },
           }}
         />
 
@@ -128,13 +116,13 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
 
         <TextField
           size="small"
-          label="Target Ratio"
+          label="Rebalance Days"
           type="number"
-          value={targetRatio}
-          onChange={(e) => onTargetRatioChange(Number(e.target.value))}
+          value={rebalanceDays}
+          onChange={(e) => onRebalanceDaysChange(Number(e.target.value))}
           variant="outlined"
           slotProps={{
-            htmlInput: { step: 0.1 },
+            htmlInput: { step: 1 },
           }}
         />
 
@@ -147,18 +135,6 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
           variant="outlined"
           slotProps={{
             htmlInput: { step: 0.01 },
-          }}
-        />
-
-        <TextField
-          size="small"
-          label="Monthly new cash"
-          type="number"
-          value={monthlyNewCash}
-          onChange={(e) => onMonthlyNewCashChange(Number(e.target.value))}
-          variant="outlined"
-          slotProps={{
-            htmlInput: { step: 500 },
           }}
         />
 

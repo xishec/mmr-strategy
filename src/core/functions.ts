@@ -33,9 +33,9 @@ export const loadData = async (
 export const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) => {
   const investments: Investments = {
     total: simulation.variables.initialMoney,
-    TQQQ: simulation.variables.initialMoney * simulation.variables.targetRatio,
-    cash: simulation.variables.initialMoney * (1 - simulation.variables.targetRatio),
-    ratio: simulation.variables.targetRatio,
+    TQQQ: simulation.variables.initialMoney * 0.5,
+    cash: simulation.variables.initialMoney * 0.5,
+    ratio: 0.5,
     mockTotalQQQ: simulation.variables.initialMoney,
     mockTotalTQQQ: simulation.variables.initialMoney,
     mockTotalNothing: simulation.variables.initialMoney,
@@ -53,7 +53,6 @@ export const setupInitialPortfolio = (simulation: Simulation, marketData: Market
     date: firstValidDate,
     investments: investments,
     cumulativeRateSinceRebalance: 0,
-    nextTarget: simulation.variables.initialMoney * (1 + simulation.variables.targetRate),
     peak: simulation.variables.initialMoney,
     pullback: 0,
     lastRebalanceDate: firstValidDate,
@@ -215,7 +214,7 @@ export const runMultipleSimulations = async (
   const todayString = today();
 
   // End 3 years before the last available date to ensure we have enough data
-  const endDate = addYears(lastAvailableDate, -3.5);
+  const endDate = addYears(lastAvailableDate, -variables.simulationAnalysisMinusYears);
   const finalDate = endDate < todayString ? endDate : todayString;
 
   let currentDateString = startDate;
@@ -272,7 +271,7 @@ export const runMultipleSimulations = async (
       }
     }
 
-    const simulationFrequencyDays = TIME_CONSTANTS.SIMULATION_FREQUENCY_DAYS;
+    const simulationFrequencyDays = variables.simulationFrequencyDays;
     currentDateString = addDays(currentDateString, simulationFrequencyDays);
 
     // Yield control back to the browser occasionally to keep UI responsive

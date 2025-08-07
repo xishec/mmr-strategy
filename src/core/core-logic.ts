@@ -80,7 +80,6 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation) => 
   }
 
   // Set post-rebalance metadata
-  after.nextTarget = before.investments.total * TIME_CONSTANTS.GROWTH_TARGET_MULTIPLIER;
   after.nextRebalanceDate = addDays(before.date, rebalanceDays);
   after.cumulativeRateSinceRebalance = 0;
 

@@ -9,8 +9,6 @@ export const PORTFOLIO_LIMITS = {
 export const TIME_CONSTANTS = {
   DAYS_IN_MONTH: 30,
   DAYS_IN_YEAR: 365,
-  GROWTH_TARGET_MULTIPLIER: 1.2, // 20% growth target
-  SIMULATION_FREQUENCY_DAYS: 3,
   MIN_DATA_DAYS: 30,
 } as const;
 

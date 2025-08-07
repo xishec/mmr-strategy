@@ -1,21 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Simulation, MarketData, AnalysisResults } from "../core/models";
+import { Simulation, MarketData, AnalysisResults, DashboardVariables } from "../core/models";
 import { convertAnnualRateToDaily, startSimulation, runMultipleSimulations } from "../core/functions";
 import { formatDate } from "../core/date-utils";
-
-export interface DashboardVariables {
-  startDate: Date;
-  endDate: Date;
-  initialMoney: number;
-  rebalanceDays: number;
-  targetRate: number;
-  cashYearRate: number;
-  targetRatio: number;
-  dropRate: number;
-  monthlyNewCash: number;
-  simulationYears: number;
-  isLogScale: boolean;
-}
 
 export interface UseSimulationReturn {
   simulation: Simulation;
@@ -33,13 +19,13 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     endDate: new Date(),
     initialMoney: 100000,
     rebalanceDays: 90,
-    targetRate: 0.2,
     cashYearRate: 0.0,
-    targetRatio: 0.5,
     dropRate: -0.2,
     monthlyNewCash: 2000,
     simulationYears: 10,
     isLogScale: true,
+    simulationFrequencyDays: 3,
+    simulationAnalysisMinusYears: 2,
   });
 
   const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
@@ -52,11 +38,11 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
       startDate: formatDate(variables.startDate),
       endDate: formatDate(variables.endDate),
       rebalanceDays: variables.rebalanceDays,
-      targetRate: variables.targetRate,
       cashDayRate: convertAnnualRateToDaily(variables.cashYearRate),
-      targetRatio: variables.targetRatio,
       dropRate: variables.dropRate,
       monthlyNewCash: variables.monthlyNewCash,
+      simulationFrequencyDays: 3,
+      simulationAnalysisMinusYears: 2,
     },
   });
 
@@ -109,11 +95,11 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
         startDate: formatDate(variables.startDate),
         endDate: formatDate(variables.endDate),
         rebalanceDays: variables.rebalanceDays,
-        targetRate: variables.targetRate,
         cashDayRate: convertAnnualRateToDaily(variables.cashYearRate),
-        targetRatio: variables.targetRatio,
         dropRate: variables.dropRate,
         monthlyNewCash: variables.monthlyNewCash,
+        simulationFrequencyDays: variables.simulationFrequencyDays,
+        simulationAnalysisMinusYears: variables.simulationAnalysisMinusYears,
       },
     }));
   }, [
@@ -121,11 +107,11 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     variables.endDate,
     variables.initialMoney,
     variables.rebalanceDays,
-    variables.targetRate,
     variables.cashYearRate,
-    variables.targetRatio,
     variables.dropRate,
     variables.monthlyNewCash,
+    variables.simulationFrequencyDays,
+    variables.simulationAnalysisMinusYears,
   ]);
 
   // Run simulation when parameters change

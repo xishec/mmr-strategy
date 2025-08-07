@@ -12,18 +12,31 @@ export interface Variables {
   startDate: string;
   endDate: string;
   rebalanceDays: number;
-  targetRate: number;
   cashDayRate: number;
-  targetRatio: number;
   dropRate: number;
   monthlyNewCash: number;
+  simulationFrequencyDays: number;
+  simulationAnalysisMinusYears: number;
+}
+
+export interface DashboardVariables {
+  startDate: Date;
+  endDate: Date;
+  initialMoney: number;
+  rebalanceDays: number;
+  cashYearRate: number;
+  dropRate: number;
+  monthlyNewCash: number;
+  simulationYears: number;
+  isLogScale: boolean;
+  simulationFrequencyDays: number;
+  simulationAnalysisMinusYears: number;
 }
 
 export interface PortfolioSnapshot {
   date: string;
   investments: Investments;
   cumulativeRateSinceRebalance: number;
-  nextTarget: number;
   peak: number;
   pullback: number;
   lastRebalanceDate: string;
