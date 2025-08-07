@@ -79,7 +79,6 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation) => 
   } else {
     // Big drop - reduce TQQQ allocation (buy the dip but with reduced exposure)
     rebalanceType = RebalanceType.BigDrop;
-    const newTargetRatio = Math.max(before.investments.ratio - PORTFOLIO_LIMITS.STEP_RATIO, PORTFOLIO_LIMITS.MIN_RATIO);
     updatePortfolioAllocation(after, 0);
   }
 
