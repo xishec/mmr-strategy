@@ -6,14 +6,13 @@ import {
   FormControlLabel,
   Switch,
   Button,
-  Card,
   CardContent,
   Paper,
   InputAdornment,
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { AttachMoney, Schedule, TrendingDown, CalendarMonth, Analytics, Refresh } from "@mui/icons-material";
+import { AttachMoney, Schedule, CalendarMonth, Analytics, Refresh } from "@mui/icons-material";
 
 interface SimulationSetupProps {
   startDate: Date;

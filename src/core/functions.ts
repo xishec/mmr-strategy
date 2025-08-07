@@ -213,7 +213,6 @@ export const runMultipleSimulations = async (
   const startDate = firstAvailableDate >= "2000-01-01" ? firstAvailableDate : "2000-01-01";
   const todayString = today();
 
-  // End 3 years before the last available date to ensure we have enough data
   const endDate = addYears(lastAvailableDate, -variables.simulationAnalysisMinusYears);
   const finalDate = endDate < todayString ? endDate : todayString;
 
