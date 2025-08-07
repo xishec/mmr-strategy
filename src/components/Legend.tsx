@@ -76,12 +76,12 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
         alignItems: "center",
         gap: 2,
         mb: 1,
-        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+        gridTemplateColumns: "repeat(5, 1fr)",
       }}
     >
       {/* Date first */}
       {selectedDate && (
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: "100px" }}>
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
           <Typography variant="body2" sx={{ fontSize: "1rem", fontWeight: "normal", color: "text.secondary" }}>
             Date
           </Typography>

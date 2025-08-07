@@ -54,7 +54,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         sx={{
           height: "100vh",
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", lg: "350px 1fr" },
+          gridTemplateColumns: "400px 1fr",
           gridTemplateRows: "1fr",
           gap: 2,
           p: 2,

@@ -128,11 +128,10 @@ const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simul
         // backgroundColor: "#f7f7f7ff",
         // mx: 4,
         display: "grid",
-        gridTemplateColumns: "minmax(60px, auto) minmax(60px, auto) 1fr minmax(60px, auto)",
+        gridTemplateColumns: "min-content min-content 1fr min-content",
         gap: 4,
         alignItems: "start",
-        minHeight: "200px", // Prevents layout shift
-        overflow: "auto", // Allows scrolling if content is too large
+        maxHeight: "200px",
       }}
     >
       {renderRebalanceContent()}

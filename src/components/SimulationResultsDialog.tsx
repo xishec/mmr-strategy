@@ -384,7 +384,6 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
     <Dialog
       open={open}
       onClose={isLoading ? undefined : onClose}
-      maxWidth="lg"
       fullWidth
       disableEscapeKeyDown={isLoading}
       slotProps={{
