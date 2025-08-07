@@ -147,7 +147,7 @@ const Chart: React.FC<ChartProps> = ({
       MockTotalQQQ: green,
       MockTotalTQQQ: red,
       MockTotalNothing: "#ecececff",
-      Ratio: "#848484ff",
+      Ratio: "#d0d0d0ff",
       pullback: red,
       default: "#2962FF",
     };
@@ -211,8 +211,7 @@ const Chart: React.FC<ChartProps> = ({
             g.append("path")
               .datum(processedData)
               .attr("class", `area series-${seriesName}`)
-              .attr("fill", color)
-              .attr("fill-opacity", 0.1)
+              .attr("fill", "#ecececff")
               .attr("d", area);
 
             g.append("g")
@@ -223,7 +222,7 @@ const Chart: React.FC<ChartProps> = ({
               .append("circle")
               .attr("cx", (d) => xScale(d.parsedTime))
               .attr("cy", (d) => yScale(d.value))
-              .attr("r", 3)
+              .attr("r", 2.5)
               .attr("fill", (d) => getRebalanceTypeColor(seriesData.rebalanceLogsMap![d.time]))
               .attr("stroke", black)
               .attr("stroke-width", 0);
