@@ -37,6 +37,7 @@ export interface PortfolioSnapshot {
   date: string;
   investments: Investments;
   cumulativeRateSinceRebalance: number;
+  cumulativeRate: number;
   peak: number;
   pullback: number;
   lastRebalanceDate: string;

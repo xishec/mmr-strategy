@@ -53,6 +53,7 @@ export const setupInitialPortfolio = (simulation: Simulation, marketData: Market
     date: firstValidDate,
     investments: investments,
     cumulativeRateSinceRebalance: 0,
+    cumulativeRate: 0,
     peak: simulation.variables.initialMoney,
     pullback: 0,
     shouldPanic: false,
@@ -63,14 +64,14 @@ export const setupInitialPortfolio = (simulation: Simulation, marketData: Market
 
   simulation.portfolioSnapshots = [portfolioSnapshot];
 
-  const rebalanceLog: RebalanceLog = {
-    date: firstValidDate,
-    before: portfolioSnapshot,
-    after: portfolioSnapshot,
-    cumulativeRateSinceLastRebalance: 0,
-    rebalanceType: RebalanceType.OnTrack,
-  };
-  simulation.rebalanceLogs = [rebalanceLog];
+  // const rebalanceLog: RebalanceLog = {
+  //   date: firstValidDate,
+  //   before: portfolioSnapshot,
+  //   after: portfolioSnapshot,
+  //   cumulativeRateSinceLastRebalance: 0,
+  //   rebalanceType: RebalanceType.OnTrack,
+  // };
+  // simulation.rebalanceLogs = [rebalanceLog];
 };
 
 export const startSimulation = (
@@ -185,7 +186,7 @@ export const runMultipleSimulations = async (
     // Check if this date exists in market data or find next available date
     const nextAvailableDate = availableDates.find((date) => date >= currentIterationDate);
 
-    if (nextAvailableDate && calculateCumulativeRate(nextAvailableDate, marketData) >= 0) {
+    if (nextAvailableDate) {
       try {
         // Check if we have at least minimum required days of data after the start date
         const minEndDate = addDays(nextAvailableDate, TIME_CONSTANTS.MIN_DATA_DAYS);
@@ -274,10 +275,10 @@ export const calculateCumulativeRate = (date: string, marketData: MarketData): n
     if (dailyRate === undefined) {
       return -100;
     }
-    
+
     // Convert percentage to decimal and add 1 to get multiplier
     // e.g., -20.58% becomes 0.7942 (1 + (-20.58/100))
-    const dailyMultiplier = 1 + (dailyRate / 100);
+    const dailyMultiplier = 1 + dailyRate / 100;
     cumulativeMultiplier *= dailyMultiplier;
   }
 

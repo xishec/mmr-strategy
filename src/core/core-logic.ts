@@ -1,9 +1,5 @@
 import { addDays, daysBetween } from "./date-utils";
-import {
-  calculateAnnualizedRates,
-  deepCopyPortfolioSnapshot,
-  setupInitialPortfolio,
-} from "./functions";
+import { calculateAnnualizedRates, deepCopyPortfolioSnapshot, setupInitialPortfolio } from "./functions";
 import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation } from "./models";
 import { PORTFOLIO_LIMITS, TIME_CONSTANTS } from "./constants";
 
@@ -41,6 +37,7 @@ export const runSingleSimulation = (simulation: Simulation, marketData: MarketDa
   };
 
   setupInitialPortfolio(newSimulation, marketData);
+  rebalance(newSimulation.portfolioSnapshots[0], newSimulation);
 
   // Get relevant market dates within our simulation range
   const marketDates = getRelevantMarketDates(
