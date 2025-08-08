@@ -2,24 +2,24 @@ import React, { useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogTitle, DialogContent, Box, Typography } from "@mui/material";
 import * as d3 from "d3";
 import { blue, yellow, red, black } from "./Chart";
-import { AnalysisResults } from "../core/models";
+import { MultiSimulationResults } from "../core/models";
 
 interface SimulationResultsDialogProps {
   open: boolean;
   onClose: () => void;
-  analysisResults: AnalysisResults | null;
+  multiSimulationResults: MultiSimulationResults | null;
   title?: string;
 }
 
 const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
   open,
   onClose,
-  analysisResults,
+  multiSimulationResults,
   title = "Simulation Results",
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const isLoading = analysisResults === null;
+  const isLoading = multiSimulationResults === null;
 
   // Helper function to apply consistent text styling
   const applyTextStyle = (selection: any) => {
@@ -27,9 +27,9 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
   };
 
   const createChart = useCallback(() => {
-    if (!analysisResults) return;
+    if (!multiSimulationResults) return;
 
-    if (!svgRef.current || !containerRef.current || analysisResults.resultsWithRates.length === 0) return;
+    if (!svgRef.current || !containerRef.current || multiSimulationResults.resultsWithRates.length === 0) return;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -46,12 +46,10 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Parse dates and sort data
-    const parsedData = analysisResults.resultsWithRates
-      .map((d) => ({
-        ...d,
-        date: new Date(d.startDate),
-      }))
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
+    const parsedData = multiSimulationResults.resultsWithRates.map((d) => ({
+      ...d,
+      date: new Date(d.startDate),
+    }));
 
     // Scales
     const xScale = d3
@@ -123,7 +121,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .text("Simulation Start Date");
 
     // Add scatter plot markers instead of lines
-    
+
     // Strategy rate markers
     g.selectAll(".strategy-dot")
       .data(parsedData)
@@ -389,7 +387,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
     return () => {
       d3.selectAll(".simulation-tooltip").remove();
     };
-  }, [analysisResults]);
+  }, [multiSimulationResults]);
 
   useEffect(() => {
     if (open) {
@@ -471,7 +469,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
             {/* Statistics Summary */}
-            {analysisResults && (
+            {multiSimulationResults && (
               <Box sx={{ mx: 2, mb: 2, p: 3, bgcolor: "grey.50", borderRadius: 2 }}>
                 <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 2 }}>
                   <Box>
@@ -479,10 +477,10 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                       Average QQQ Rate
                     </Typography>
                     <Typography variant="h6" color={blue}>
-                      {(analysisResults.averageQQQRate * 100).toFixed(2)}%
+                      {(multiSimulationResults.averageQQQRate * 100).toFixed(2)}%
                     </Typography>
                     <Typography variant="caption" display="block" color="text.secondary">
-                      (σ:{(analysisResults.qqqStandardDeviation * 100).toFixed(2)}%)
+                      (σ:{(multiSimulationResults.qqqStandardDeviation * 100).toFixed(2)}%)
                     </Typography>
                   </Box>
 
@@ -491,10 +489,10 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                       Average TQQQ Rate
                     </Typography>
                     <Typography variant="h6" color={red}>
-                      {(analysisResults.averageTQQQRate * 100).toFixed(2)}%
+                      {(multiSimulationResults.averageTQQQRate * 100).toFixed(2)}%
                     </Typography>
                     <Typography variant="caption" display="block" color="text.secondary">
-                      (σ:{(analysisResults.tqqqStandardDeviation * 100).toFixed(2)}%)
+                      (σ:{(multiSimulationResults.tqqqStandardDeviation * 100).toFixed(2)}%)
                     </Typography>
                   </Box>
 
@@ -503,10 +501,10 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                       Average Strategy Rate
                     </Typography>
                     <Typography variant="h6" color={yellow}>
-                      {(analysisResults.averageStrategyRate * 100).toFixed(2)}%
+                      {(multiSimulationResults.averageStrategyRate * 100).toFixed(2)}%
                     </Typography>
                     <Typography variant="caption" display="block" color="text.secondary">
-                      (σ:{(analysisResults.strategyStandardDeviation * 100).toFixed(2)}%)
+                      (σ:{(multiSimulationResults.strategyStandardDeviation * 100).toFixed(2)}%)
                     </Typography>
                   </Box>
                   <Box>
@@ -515,17 +513,20 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                     </Typography>
                     <Typography
                       variant="h6"
-                      color={analysisResults.strategyVsQQQImprovement > 0 ? "success.main" : "error.main"}
+                      color={multiSimulationResults.strategyVsQQQImprovement > 0 ? "success.main" : "error.main"}
                     >
-                      {analysisResults.strategyVsQQQImprovement.toFixed(2)}%
+                      {multiSimulationResults.strategyVsQQQImprovement.toFixed(2)}%
                     </Typography>
                   </Box>
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Win Rate vs QQQ
                     </Typography>
-                    <Typography variant="h6" color={analysisResults.winRateVsQQQ > 50 ? "success.main" : "error.main"}>
-                      {analysisResults.winRateVsQQQ.toFixed(2)}%
+                    <Typography
+                      variant="h6"
+                      color={multiSimulationResults.winRateVsQQQ > 50 ? "success.main" : "error.main"}
+                    >
+                      {multiSimulationResults.winRateVsQQQ.toFixed(2)}%
                     </Typography>
                   </Box>
 
@@ -533,13 +534,10 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                     <Typography variant="body2" color="text.secondary">
                       Absolute Worst Rate
                     </Typography>
-                    <Typography
-                      variant="h6"
-                      color={black}
-                    >
-                      {(analysisResults.absoluteWorstStrategyRate * 100).toFixed(2)}%
+                    <Typography variant="h6" color={black}>
+                      {(multiSimulationResults.absoluteWorstStrategyRate * 100).toFixed(2)}%
                       <Typography variant="caption" display="block" color="text.secondary">
-                        ({analysisResults.absoluteWorstStrategyRateDate})
+                        ({multiSimulationResults.absoluteWorstStrategyRateDate})
                       </Typography>
                     </Typography>
                   </Box>
@@ -547,13 +545,10 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                     <Typography variant="body2" color="text.secondary">
                       Relative Worst Rate
                     </Typography>
-                    <Typography
-                      variant="h6"
-                      color={black}
-                    >
-                      {(analysisResults.relativeWorstStrategyRate * 100).toFixed(2)}%
+                    <Typography variant="h6" color={black}>
+                      {(multiSimulationResults.relativeWorstStrategyRate * 100).toFixed(2)}%
                       <Typography variant="caption" display="block" color="text.secondary">
-                        ({analysisResults.relativeWorstStrategyRateDate})
+                        ({multiSimulationResults.relativeWorstStrategyRateDate})
                       </Typography>
                     </Typography>
                   </Box>

@@ -96,7 +96,7 @@ export const runMultipleSimulations = async (
   const startDates: string[] = [];
 
   // Get all available dates from market data (sorted)
-  const availableDates = Object.keys(marketData.TQQQ).sort();
+  const availableDates = Object.keys(marketData.TQQQ);
   const firstAvailableDate = availableDates[0];
   const lastAvailableDate = availableDates[availableDates.length - 1];
 

@@ -235,7 +235,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
       <SimulationResultsDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        analysisResults={multiSimulationResults}
+        multiSimulationResults={multiSimulationResults}
         title={`Historical Strategy Performance vs QQQ (${dashboardVariables.multiSimulationVariables.simulationDurationYears} year periods)`}
       />
     </Container>

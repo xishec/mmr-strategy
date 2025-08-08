@@ -242,21 +242,6 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
               <TextField
                 size="small"
-                label="Rebalance Days"
-                type="number"
-                value={rebalanceDays.toString()}
-                onChange={(e) => onRebalanceDaysChange(e.target.value === "" ? 0 : Number(e.target.value))}
-                variant="outlined"
-                fullWidth
-                slotProps={{
-                  input: {
-                    endAdornment: <InputAdornment position="end">days</InputAdornment>,
-                  },
-                  htmlInput: { step: 1 },
-                }}
-              />
-              <TextField
-                size="small"
                 label="Simulation Years"
                 type="number"
                 value={simulationYears.toString()}

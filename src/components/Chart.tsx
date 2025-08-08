@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import * as d3 from "d3";
-import { getRebalanceTypeColor } from "../core/functions";
 import { D3ChartData } from "../core/models";
 import { CHART_LAYOUT } from "../core/constants";
 
@@ -40,7 +39,6 @@ const Chart: React.FC<ChartProps> = ({
       ...d3ChartData.priceChart,
       ...d3ChartData.ratioChart,
       ...d3ChartData.pullbackChart,
-      rebalanceLogsMap: d3ChartData.rebalanceLogsMap,
     };
   }, [d3ChartData]);
 
@@ -169,11 +167,6 @@ const Chart: React.FC<ChartProps> = ({
       const color = colorMap[seriesName as keyof typeof colorMap] || colorMap.default;
       const processedData = data.map((d) => ({ ...d, parsedTime: parseTime(d.time) }));
 
-      // Filter data to only include rebalance dates for points
-      const rebalanceData = processedData.filter(
-        (d) => seriesData.rebalanceLogsMap && seriesData.rebalanceLogsMap[d.time]
-      );
-
       if (seriesName === "Target") {
         // // Render as points (only for rebalance dates)
         // g.append("g")
@@ -235,19 +228,6 @@ const Chart: React.FC<ChartProps> = ({
               .attr("class", `area series-${seriesName}`)
               .attr("fill", "#ecececff")
               .attr("d", area);
-
-            g.append("g")
-              .attr("class", `points series-${seriesName}`)
-              .selectAll("circle")
-              .data(rebalanceData)
-              .enter()
-              .append("circle")
-              .attr("cx", (d) => xScale(d.parsedTime))
-              .attr("cy", (d) => yScale(d.value))
-              .attr("r", 2.5)
-              .attr("fill", (d) => getRebalanceTypeColor(seriesData.rebalanceLogsMap![d.time]))
-              .attr("stroke", black)
-              .attr("stroke-width", 0);
           } else {
             const area = d3
               .area<any>()
@@ -399,9 +379,8 @@ const Chart: React.FC<ChartProps> = ({
       const dateObj = parseTime(date);
       if (dateObj) {
         const x = xScale(dateObj);
-        const color = getRebalanceTypeColor(seriesData.rebalanceLogsMap![date]);
 
-        selectedCrosshairLine.attr("x1", x).attr("x2", x).attr("stroke", color);
+        selectedCrosshairLine.attr("x1", x).attr("x2", x).attr("stroke", "black");
 
         selectedCrosshair.style("display", "block");
       }
@@ -419,7 +398,7 @@ const Chart: React.FC<ChartProps> = ({
     const findNearestDate = (xPosition: number): string | null => {
       if (!seriesData.rebalanceLogsMap) return null;
 
-      const dates = Object.keys(seriesData.rebalanceLogsMap).sort();
+      const dates = Object.keys(seriesData.rebalanceLogsMap);
       if (dates.length === 0) return null;
 
       const parseTime = d3.timeParse("%Y-%m-%d");
