@@ -68,13 +68,6 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .nice()
       .range([height, 0]);
 
-    // Line generators
-    const strategyLine = d3
-      .line<(typeof parsedData)[0]>()
-      .x((d) => xScale(d.date))
-      .y((d) => yScale(d.strategyRate))
-      .curve(d3.curveMonotoneX);
-
     const qqqLine = d3
       .line<(typeof parsedData)[0]>()
       .x((d) => xScale(d.date))
@@ -85,6 +78,13 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .line<(typeof parsedData)[0]>()
       .x((d) => xScale(d.date))
       .y((d) => yScale(d.tqqqRate))
+      .curve(d3.curveMonotoneX);
+
+    // Line generators
+    const strategyLine = d3
+      .line<(typeof parsedData)[0]>()
+      .x((d) => xScale(d.date))
+      .y((d) => yScale(d.strategyRate))
       .curve(d3.curveMonotoneX);
 
     // Add grid lines
@@ -144,8 +144,8 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .datum(parsedData)
       .attr("fill", "none")
       .attr("stroke", yellow) // for strategy
-      .attr("stroke-width", 1)
-      .attr("d", strategyLine);
+      .attr("stroke-width", 2)
+      .attr("d", strategyLine)
 
     g.append("path")
       .datum(parsedData)
@@ -531,10 +531,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                     <Typography variant="body2" color="text.secondary">
                       Absolute Worst Rate
                     </Typography>
-                    <Typography
-                      variant="h6"
-                      color={black}
-                    >
+                    <Typography variant="h6" color={black}>
                       {(analysisResults.absoluteWorstStrategyRate * 100).toFixed(2)}%
                       <Typography variant="caption" display="block" color="text.secondary">
                         ({analysisResults.absoluteWorstStrategyRateDate})
@@ -545,10 +542,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                     <Typography variant="body2" color="text.secondary">
                       Relative Worst Rate
                     </Typography>
-                    <Typography
-                      variant="h6"
-                      color={black}
-                    >
+                    <Typography variant="h6" color={black}>
                       {(analysisResults.relativeWorstStrategyRate * 100).toFixed(2)}%
                       <Typography variant="caption" display="block" color="text.secondary">
                         ({analysisResults.relativeWorstStrategyRateDate})

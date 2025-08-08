@@ -122,7 +122,7 @@ export const computePortfolioSnapshot = (
   newSnapshot.cumulativeRateSinceRebalance = (1 + newSnapshot.cumulativeRateSinceRebalance) * multipliers.tqqq - 1;
 
   // Check for panic conditions
-  if (tqqqDelta < PANIC_THRESHOLD || newSnapshot.cumulativeRateSinceRebalance < PANIC_THRESHOLD) {
+  if (tqqqDelta < PANIC_THRESHOLD || newSnapshot.cumulativeRateSinceRebalance < -0.4) {
     newSnapshot.shouldPanic = true;
     newSnapshot.nextRebalanceDate = date;
   }
@@ -145,20 +145,29 @@ const updatePortfolioAllocation = (snapshot: PortfolioSnapshot, newTargetRatio: 
 const determineRebalanceStrategy = (
   cumulativeRate: number,
   dropRate: number,
-  shouldPanic: boolean
-): { type: RebalanceType; targetRatio?: number } => {
-  if (shouldPanic) {
-    return { type: RebalanceType.Panic, targetRatio: 0 };
-  }
-
+  shouldPanic: boolean,
+  baseRebalanceDays: number
+): { type: RebalanceType; targetRatio?: number; rebalanceDays: number } => {
   const doubleDropRate = dropRate * DOUBLE_DROP_MULTIPLIER;
 
-  if (cumulativeRate >= dropRate) {
-    return { type: RebalanceType.OnTrack, targetRatio: PORTFOLIO_LIMITS.MAX_RATIO };
-  } else if (cumulativeRate >= doubleDropRate) {
-    return { type: RebalanceType.Drop };
+  if (shouldPanic) {
+    if (cumulativeRate >= dropRate) {
+      return { type: RebalanceType.OnTrack, targetRatio: 0, rebalanceDays: baseRebalanceDays * 1 };
+    } else if (cumulativeRate >= -0.4) {
+      return { type: RebalanceType.Drop, targetRatio: 0, rebalanceDays: baseRebalanceDays * 1 };
+    } else {
+      return {
+        type: RebalanceType.BigDrop,
+        targetRatio: 0,
+        rebalanceDays: baseRebalanceDays * 1,
+      };
+    }
+  }
+
+  if (cumulativeRate >= 0) {
+    return { type: RebalanceType.OnTrack, targetRatio: 1, rebalanceDays: baseRebalanceDays * 100000000000 };
   } else {
-    return { type: RebalanceType.BigDrop, targetRatio: PORTFOLIO_LIMITS.MIN_RATIO };
+    return { type: RebalanceType.Drop, targetRatio: 0, rebalanceDays: baseRebalanceDays * 1 };
   }
 };
 
@@ -174,13 +183,13 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation): Po
   const after = deepCopyPortfolioSnapshot(before);
   const cumulativeRate = before.cumulativeRateSinceRebalance;
 
-  const strategy = determineRebalanceStrategy(cumulativeRate, dropRate, before.shouldPanic);
+  const strategy = determineRebalanceStrategy(cumulativeRate, dropRate, before.shouldPanic, rebalanceDays);
   if (strategy.targetRatio !== undefined) {
     updatePortfolioAllocation(after, strategy.targetRatio);
   }
 
   // Set post-rebalance metadata
-  after.nextRebalanceDate = addDays(before.date, rebalanceDays);
+  after.nextRebalanceDate = addDays(before.date, strategy.rebalanceDays);
   after.cumulativeRateSinceRebalance = 0;
   after.shouldPanic = false;
 

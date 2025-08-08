@@ -33,9 +33,9 @@ export const loadData = async (
 export const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) => {
   const investments: Investments = {
     total: simulation.variables.initialMoney,
-    TQQQ: simulation.variables.initialMoney * 0.5,
-    cash: simulation.variables.initialMoney * 0.5,
-    ratio: 0.5,
+    TQQQ: simulation.variables.initialMoney * 1,
+    cash: simulation.variables.initialMoney * 0,
+    ratio: 1,
     mockTotalQQQ: simulation.variables.initialMoney,
     mockTotalTQQQ: simulation.variables.initialMoney,
     mockTotalNothing: simulation.variables.initialMoney,
@@ -57,7 +57,7 @@ export const setupInitialPortfolio = (simulation: Simulation, marketData: Market
     pullback: 0,
     shouldPanic: false,
     lastRebalanceDate: firstValidDate,
-    nextRebalanceDate: addDays(firstValidDate, simulation.variables.rebalanceDays),
+    nextRebalanceDate: addDays(firstValidDate, simulation.variables.rebalanceDays * 10000000000000),
   };
 
   simulation.portfolioSnapshots = [portfolioSnapshot];
