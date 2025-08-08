@@ -1,8 +1,5 @@
-import React, { useMemo } from "react";
-import { Box, Typography } from "@mui/material";
-import { formatValue } from "../core/functions";
+import React from "react";
 import { Simulation, D3ChartData } from "../core/models";
-import RatioBox from "./RatioBox";
 
 interface RebalanceDetailsProps {
   selectedDate: string | null;
