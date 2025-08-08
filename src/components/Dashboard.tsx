@@ -17,7 +17,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
   // Unified simulation state management - now handles both single and multiple simulations
-  const { simulation, variables, analysisResults, updateVariable, runMultipleSimulationsHandler } =
+  const { simulation, dashboardVariables, multiSimulationResults, updateVariable, runMultipleSimulationsHandler } =
     useSimulation(marketData);
 
   // Date navigation
@@ -64,38 +64,90 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         <Fade in={true} timeout={500}>
           <Box>
             <SimulationSetup
-              startDate={variables.startDate}
-              endDate={variables.endDate}
-              initialMoney={variables.initialMoney}
-              rebalanceDays={variables.rebalanceDays}
-              cashYearRate={variables.cashYearRate}
-              dropRate={variables.dropRate}
-              monthlyNewCash={variables.monthlyNewCash}
-              simulationYears={variables.simulationYears}
-              isLogScale={variables.isLogScale}
-              simulationFrequencyDays={variables.simulationFrequencyDays}
-              simulationAnalysisMinusYears={variables.simulationAnalysisMinusYears}
+              startDate={new Date(dashboardVariables.simulationVariables.startDate)}
+              endDate={new Date(dashboardVariables.simulationVariables.endDate)}
+              initialMoney={dashboardVariables.simulationVariables.initialMoney}
+              cashYearRate={dashboardVariables.simulationVariables.cashYearRate}
+              dropRate={dashboardVariables.simulationVariables.SMADownMargin * 100} // Convert to percentage
+              monthlyNewCash={dashboardVariables.simulationVariables.monthlyNewCash}
+              simulationYears={dashboardVariables.multiSimulationVariables.simulationDurationYears}
+              isLogScale={dashboardVariables.uiVariables.isLogScale}
+              simulationFrequencyDays={dashboardVariables.multiSimulationVariables.simulationFrequencyDays}
+              simulationAnalysisMinusYears={dashboardVariables.multiSimulationVariables.simulationAnalysisMinusYears}
               onStartDateChange={(newValue: Date | null) => {
                 if (newValue) {
-                  updateVariable("startDate", newValue);
+                  const updatedSimulationVariables = {
+                    ...dashboardVariables.simulationVariables,
+                    startDate: newValue.toISOString().split('T')[0],
+                  };
+                  updateVariable("simulationVariables", updatedSimulationVariables);
                 }
               }}
               onEndDateChange={(newValue: Date | null) => {
                 if (newValue) {
-                  updateVariable("endDate", newValue);
+                  const updatedSimulationVariables = {
+                    ...dashboardVariables.simulationVariables,
+                    endDate: newValue.toISOString().split('T')[0],
+                  };
+                  updateVariable("simulationVariables", updatedSimulationVariables);
                 }
               }}
-              onInitialMoneyChange={(value: number) => updateVariable("initialMoney", value)}
-              onRebalanceDaysChange={(value: number) => updateVariable("rebalanceDays", value)}
-              onCashYearRateChange={(value: number) => updateVariable("cashYearRate", value)}
-              onDropRateChange={(value: number) => updateVariable("dropRate", value)}
-              onMonthlyNewCashChange={(value: number) => updateVariable("monthlyNewCash", value)}
-              onSimulationYearsChange={(value: number) => updateVariable("simulationYears", value)}
-              onLogScaleChange={(checked: boolean) => updateVariable("isLogScale", checked)}
-              onSimulationFrequencyDaysChange={(value: number) => updateVariable("simulationFrequencyDays", value)}
-              onSimulationAnalysisMinusYearsChange={(value: number) =>
-                updateVariable("simulationAnalysisMinusYears", value)
-              }
+              onInitialMoneyChange={(value: number) => {
+                const updatedSimulationVariables = {
+                  ...dashboardVariables.simulationVariables,
+                  initialMoney: value,
+                };
+                updateVariable("simulationVariables", updatedSimulationVariables);
+              }}
+              onCashYearRateChange={(value: number) => {
+                const updatedSimulationVariables = {
+                  ...dashboardVariables.simulationVariables,
+                  cashYearRate: value,
+                };
+                updateVariable("simulationVariables", updatedSimulationVariables);
+              }}
+              onDropRateChange={(value: number) => {
+                const updatedSimulationVariables = {
+                  ...dashboardVariables.simulationVariables,
+                  SMADownMargin: value / 100, // Convert from percentage
+                };
+                updateVariable("simulationVariables", updatedSimulationVariables);
+              }}
+              onMonthlyNewCashChange={(value: number) => {
+                const updatedSimulationVariables = {
+                  ...dashboardVariables.simulationVariables,
+                  monthlyNewCash: value,
+                };
+                updateVariable("simulationVariables", updatedSimulationVariables);
+              }}
+              onSimulationYearsChange={(value: number) => {
+                const updatedMultiSimulationVariables = {
+                  ...dashboardVariables.multiSimulationVariables,
+                  simulationDurationYears: value,
+                };
+                updateVariable("multiSimulationVariables", updatedMultiSimulationVariables);
+              }}
+              onLogScaleChange={(checked: boolean) => {
+                const updatedUIVariables = {
+                  ...dashboardVariables.uiVariables,
+                  isLogScale: checked,
+                };
+                updateVariable("uiVariables", updatedUIVariables);
+              }}
+              onSimulationFrequencyDaysChange={(value: number) => {
+                const updatedMultiSimulationVariables = {
+                  ...dashboardVariables.multiSimulationVariables,
+                  simulationFrequencyDays: value,
+                };
+                updateVariable("multiSimulationVariables", updatedMultiSimulationVariables);
+              }}
+              onSimulationAnalysisMinusYearsChange={(value: number) => {
+                const updatedMultiSimulationVariables = {
+                  ...dashboardVariables.multiSimulationVariables,
+                  simulationAnalysisMinusYears: value,
+                };
+                updateVariable("multiSimulationVariables", updatedMultiSimulationVariables);
+              }}
               onRunMultipleSimulations={handleRunMultipleSimulations}
             />
           </Box>
@@ -148,7 +200,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
                       <Chart
                         d3ChartData={d3ChartData}
                         selectedDate={selectedDate}
-                        isLogScale={variables.isLogScale}
+                        isLogScale={dashboardVariables.uiVariables.isLogScale}
                         height="100%"
                         onDateChange={handleDateChange}
                       />
@@ -183,8 +235,8 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
       <SimulationResultsDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        analysisResults={analysisResults}
-        title={`Historical Strategy Performance vs QQQ (${variables.simulationYears} year periods)`}
+        analysisResults={multiSimulationResults}
+        title={`Historical Strategy Performance vs QQQ (${dashboardVariables.multiSimulationVariables.simulationDurationYears} year periods)`}
       />
     </Container>
   );

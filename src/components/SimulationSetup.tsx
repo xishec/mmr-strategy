@@ -18,7 +18,6 @@ interface SimulationSetupProps {
   startDate: Date;
   endDate: Date;
   initialMoney: number;
-  rebalanceDays: number;
   cashYearRate: number;
   dropRate: number;
   monthlyNewCash: number;
@@ -29,7 +28,6 @@ interface SimulationSetupProps {
   onStartDateChange: (date: Date | null) => void;
   onEndDateChange: (date: Date | null) => void;
   onInitialMoneyChange: (value: number) => void;
-  onRebalanceDaysChange: (value: number) => void;
   onCashYearRateChange: (value: number) => void;
   onDropRateChange: (value: number) => void;
   onMonthlyNewCashChange: (value: number) => void;
@@ -44,7 +42,6 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   startDate,
   endDate,
   initialMoney,
-  rebalanceDays,
   cashYearRate,
   dropRate,
   monthlyNewCash,
@@ -55,7 +52,6 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   onStartDateChange,
   onEndDateChange,
   onInitialMoneyChange,
-  onRebalanceDaysChange,
   onCashYearRateChange,
   onDropRateChange,
   onMonthlyNewCashChange,

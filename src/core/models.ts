@@ -35,6 +35,11 @@ export interface MultiSimulationVariables {
 export interface DashboardVariables {
   simulationVariables: SimulationVariables;
   multiSimulationVariables: MultiSimulationVariables;
+  uiVariables: UIVariables;
+}
+
+export interface UIVariables {
+  isLogScale: boolean;
 }
 
 export interface MultiSimulationResults {
