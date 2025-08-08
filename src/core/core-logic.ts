@@ -2,11 +2,12 @@ import { addDays, daysBetween } from "./date-utils";
 import {
   calculateAnnualizedRates,
   calculateCumulativeRate,
+  calculateSMA,
   deepCopyPortfolioSnapshot,
   setupInitialPortfolio,
 } from "./functions";
 import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation } from "./models";
-import { PORTFOLIO_LIMITS, TIME_CONSTANTS } from "./constants";
+import { TIME_CONSTANTS } from "./constants";
 
 // Trading constants
 const PANIC_THRESHOLD = -20; // Percentage drop that triggers panic mode
@@ -100,7 +101,6 @@ export const computePortfolioSnapshot = (
     mockTotalQQQ: lastSnapshot.investments.mockTotalQQQ * multipliers.qqq,
     mockTotalTQQQ: lastSnapshot.investments.mockTotalTQQQ * multipliers.tqqq,
     mockTotalNothing: lastSnapshot.investments.mockTotalNothing,
-    sma200: calculateCumulativeRate(date, marketData),
   };
 
   // Update snapshot with new values

@@ -58,7 +58,6 @@ export const setupInitialPortfolio = (simulation: Simulation, marketData: Market
     mockTotalQQQ: simulation.variables.initialMoney,
     mockTotalTQQQ: simulation.variables.initialMoney,
     mockTotalNothing: simulation.variables.initialMoney,
-    sma200: calculateSMA(firstValidDate, marketData, 200),
   };
 
   const portfolioSnapshot: PortfolioSnapshot = {

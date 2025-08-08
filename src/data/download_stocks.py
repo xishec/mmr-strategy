@@ -16,29 +16,29 @@ def download_stock(ticker):
     end_date = datetime.today().strftime("%Y-%m-%d")
 
     try:
-        # Download TQQQ data - letting yfinance handle the session
-        print(f"Downloading {ticker} data from {start_date} to {end_date}...")
-        df = yf.download(
-            ticker,
-            start=start_date,
-            end=end_date,
-            auto_adjust=False,
-            progress=True,
-            rounding=False,
-            # Removed session parameter to let yfinance handle it internally
-        )
+        # # Download TQQQ data - letting yfinance handle the session
+        # print(f"Downloading {ticker} data from {start_date} to {end_date}...")
+        # df = yf.download(
+        #     ticker,
+        #     start=start_date,
+        #     end=end_date,
+        #     auto_adjust=False,
+        #     progress=True,
+        #     rounding=False,
+        #     # Removed session parameter to let yfinance handle it internally
+        # )
 
-        if df.empty:
-            print(f"No data found for {ticker}")
-            return False
+        # if df.empty:
+        #     print(f"No data found for {ticker}")
+        #     return False
 
         output_dir = os.path.join(os.path.dirname(DIR), "./data")
-        os.makedirs(output_dir, exist_ok=True)
+        # os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, f"{ticker}_raw.json")
-        df.to_json(output_path)
+        # df.to_json(output_path)
 
-        print(f"Successfully saved {ticker} data to {output_path}")
-        print(f"Total rows: {len(df)}")
+        # print(f"Successfully saved {ticker} data to {output_path}")
+        # print(f"Total rows: {len(df)}")
 
         # Inside download_stock function, after loading the JSON data
         with open(output_path, "r") as f:
@@ -66,15 +66,27 @@ def download_stock(ticker):
                     # Sort by date
                     date_values.sort(key=lambda x: x[0])
 
-                    # Calculate percentage changes and store both rate and close price
+                    # Calculate percentage changes, SMA200, and store data
                     prev_value = None
-                    for date_str, value in date_values:
+                    close_prices = [item[1] for item in date_values]  # Extract close prices for SMA calculation
+                    
+                    for i, (date_str, value) in enumerate(date_values):
                         if prev_value is None:
                             pct_change = 0
                         else:
                             pct_change = (value - prev_value) / prev_value * 100
 
-                        stock_data[date_str] = {"rate": pct_change, "close": value}
+                        # Calculate SMA200 (Simple Moving Average over 200 days)
+                        if i < 199:  # Not enough data for 200-day SMA
+                            sma200 = None
+                        else:
+                            sma200 = sum(close_prices[i-199:i+1]) / 200
+
+                        stock_data[date_str] = {
+                            "rate": pct_change, 
+                            "close": value,
+                            "sma200": sma200
+                        }
                         prev_value = value
 
                     break
@@ -85,7 +97,7 @@ def download_stock(ticker):
                 json.dump(stock_data, f)
 
             print(
-                f"Saved daily percentage changes and close prices for {ticker} to {output_path}"
+                f"Saved daily percentage changes, close prices, and SMA200 for {ticker} to {output_path}"
             )
 
         return True
@@ -132,18 +144,27 @@ def simulate_TQQQ():
 
     # Start TQQQ simulation with 3x the starting price of QQQ
     tqqq_close = starting_close * 3
+    tqqq_close_prices = []  # Track TQQQ close prices for SMA calculation
 
-    for date, data_obj in sorted(QQQ_data.items()):
+    for i, (date, data_obj) in enumerate(sorted(QQQ_data.items())):
         # Extract the rate from QQQ data and multiply by 3 for TQQQ
         qqq_rate = data_obj["rate"] if isinstance(data_obj, dict) else data_obj
         tqqq_rate = qqq_rate * 3
 
         # Calculate new TQQQ close price based on the leveraged rate
         tqqq_close = tqqq_close * (1 + tqqq_rate / 100)
+        tqqq_close_prices.append(tqqq_close)
+
+        # Calculate SMA200 for TQQQ (Simple Moving Average over 200 days)
+        if i < 199:  # Not enough data for 200-day SMA
+            tqqq_sma200 = None
+        else:
+            tqqq_sma200 = sum(tqqq_close_prices[i-199:i+1]) / 200
 
         simulated_TQQQ_data[date] = {
             "rate": round(tqqq_rate, 2),
             "close": round(tqqq_close, 2),
+            "sma200": round(tqqq_sma200, 2) if tqqq_sma200 is not None else None
         }
 
     # Replace TQQQ_data with simulated data
@@ -163,14 +184,15 @@ def simulate_TQQQ():
     with open(csv_path, "w", newline="") as csvfile:
         csv_writer = csv.writer(csvfile)
         # Write header row
-        csv_writer.writerow(["Date", "Percentage_Change", "Close_Price"])
+        csv_writer.writerow(["Date", "Percentage_Change", "Close_Price", "SMA200"])
         # Write data rows
         for date, data_obj in sorted(sorted_TQQQ_data.items()):
             if isinstance(data_obj, dict):
-                csv_writer.writerow([date, data_obj["rate"], data_obj["close"]])
+                sma200_value = data_obj.get("sma200", "N/A")
+                csv_writer.writerow([date, data_obj["rate"], data_obj["close"], sma200_value])
             else:
                 # Handle old format if it exists
-                csv_writer.writerow([date, data_obj, "N/A"])
+                csv_writer.writerow([date, data_obj, "N/A", "N/A"])
 
     print(f"Simulated TQQQ data saved to {csv_path}")
 
