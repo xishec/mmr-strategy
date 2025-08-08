@@ -1,10 +1,5 @@
 import { runSingleSimulation } from "./core-logic";
-import {
-  DashboardVariables,
-  MarketData,
-  PortfolioSnapshot,
-  Simulation,
-} from "./models";
+import { DashboardVariables, MarketData, MultiSimulationResults, PortfolioSnapshot, Simulation } from "./models";
 import { addDays, yearsBetween, addYears, today } from "./date-utils";
 import { TIME_CONSTANTS } from "./constants";
 
@@ -18,12 +13,6 @@ export const loadData = async (
       QQQ: (await import("../data/QQQ.json")).default,
       TQQQ: (await import("../data/TQQQ.json")).default,
     };
-
-    // Initialize cumulative rate cache for performance
-    initializeCumulativeRateCache(marketData);
-
-    // Initialize SMA cache for performance (200-day period)
-    initializeSMACache(marketData, 200);
 
     setMarketData(marketData);
   } catch (error) {
@@ -50,7 +39,7 @@ const calculateAnnualizedRate = (
   const nbYears = yearsBetween(initialDateString, endDateString);
 
   // Ensure we have at least some time period to avoid division by zero
-  if (nbYears <= 0) { 
+  if (nbYears <= 0) {
     return 0;
   }
 
@@ -63,31 +52,26 @@ export const calculateAnnualizedRates = (simulation: Simulation) => {
 
   simulation.simulationResults = {
     annualizedStrategyRate: calculateAnnualizedRate(
-    lastPortfolioSnapshot.investments.mockTotalNothing,
-    simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.total,
-    simulation.simulationVariables.startDate,
-    endDate
-  ),
+      lastPortfolioSnapshot.investments.mockTotalNothing,
+      simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.total,
+      simulation.simulationVariables.startDate,
+      endDate
+    ),
     annualizedQQQRate: calculateAnnualizedRate(
-    lastPortfolioSnapshot.investments.mockTotalNothing,
-    simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.mockTotalQQQ,
-    simulation.simulationVariables.startDate,
-    endDate
-  ),
+      lastPortfolioSnapshot.investments.mockTotalNothing,
+      simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.mockTotalQQQ,
+      simulation.simulationVariables.startDate,
+      endDate
+    ),
     annualizedTQQQRate: calculateAnnualizedRate(
-    lastPortfolioSnapshot.investments.mockTotalNothing,
-    simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.mockTotalTQQQ,
-    simulation.simulationVariables.startDate,
-    endDate
-  ),
-
+      lastPortfolioSnapshot.investments.mockTotalNothing,
+      simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.mockTotalTQQQ,
+      simulation.simulationVariables.startDate,
+      endDate
+    ),
+  };
 };
 
-/**
- * Creates a deep copy of a PortfolioSnapshot object
- * @param snapshot - The PortfolioSnapshot to copy
- * @returns A new PortfolioSnapshot with all nested objects copied
- */
 export const deepCopyPortfolioSnapshot = (snapshot: PortfolioSnapshot): PortfolioSnapshot => {
   return {
     ...snapshot,
@@ -96,8 +80,6 @@ export const deepCopyPortfolioSnapshot = (snapshot: PortfolioSnapshot): Portfoli
     },
   };
 };
-
-
 
 export const convertAnnualRateToDaily = (annualRate: number): number => {
   return Math.pow(1 + annualRate, 1 / TIME_CONSTANTS.DAYS_IN_YEAR) - 1;
@@ -199,209 +181,12 @@ export const runMultipleSimulations = async (
   return { results: [], analysisResults };
 };
 
-let cumulativeRateCache: { [date: string]: number } = {};
-let cacheInitialized = false;
-
-// Cache for pre-computed SMA values to improve performance
-let smaCache: { [date: string]: number } = {};
-let smaCacheInitialized = false;
-
-export const initializeCumulativeRateCache = (marketData: MarketData): void => {
-  cumulativeRateCache = {};
-  const availableDates = Object.keys(marketData.TQQQ).sort();
-
-  for (let i = 0; i < availableDates.length; i++) {
-    const currentDate = availableDates[i];
-
-    const startDate90DaysAgo = addDays(currentDate, -400);
-    let startIndex = -1;
-
-    // Find the first date on or after startDate90DaysAgo
-    for (let j = 0; j < i; j++) {
-      if (availableDates[j] >= startDate90DaysAgo) {
-        startIndex = j;
-        break;
-      }
-    }
-
-    if (startIndex === -1 || startIndex >= i) {
-      cumulativeRateCache[currentDate] = -1; // Return -100% if not enough data
-      continue;
-    }
-
-    const startDate = availableDates[startIndex];
-    const startData = marketData.TQQQ[startDate];
-    const endData = marketData.TQQQ[currentDate];
-
-    if (!startData || !endData) {
-      cumulativeRateCache[currentDate] = -1;
-      continue;
-    }
-
-    // Extract close prices from the new data structure
-    const startClose = typeof startData === "object" ? startData.close : startData;
-    const endClose = typeof endData === "object" ? endData.close : endData;
-
-    if (startClose === undefined || endClose === undefined || startClose <= 0) {
-      cumulativeRateCache[currentDate] = -1;
-      continue;
-    }
-
-    // Calculate cumulative rate: (end_price - start_price) / start_price
-    const cumulativeRate = (endClose - startClose) / startClose;
-    cumulativeRateCache[currentDate] = cumulativeRate;
-  }
-
-  cacheInitialized = true;
-};
-
-/**
- * Pre-computes all SMA values for better performance
- * This should be called once when market data is loaded
- */
-export const initializeSMACache = (marketData: MarketData, period: number = 90): void => {
-  smaCache = {};
-  const availableDates = Object.keys(marketData.TQQQ).sort();
-
-  for (let i = 0; i < availableDates.length; i++) {
-    const currentDate = availableDates[i];
-
-    // Need at least 'period' days of data for SMA calculation
-    if (i < period - 1) {
-      smaCache[currentDate] = -1; // Not enough data
-      continue;
-    }
-
-    // Get the last 'period' days including current date
-    const startIndex = i - period + 1;
-    const endIndex = i + 1; // exclusive
-
-    let sum = 0;
-    let validDays = 0;
-
-    for (let j = startIndex; j < endIndex; j++) {
-      const date = availableDates[j];
-      const data = marketData.TQQQ[date];
-
-      if (data) {
-        const closePrice = typeof data === "object" ? data.close : data;
-        if (closePrice !== undefined && closePrice > 0) {
-          sum += closePrice;
-          validDays++;
-        }
-      }
-    }
-
-    if (validDays === period) {
-      smaCache[currentDate] = sum / period;
-    } else {
-      smaCache[currentDate] = -1; // Not enough valid data
-    }
-  }
-
-  smaCacheInitialized = true;
-};
-
-export const calculateCumulativeRate = (date: string, marketData: MarketData): number => {
-  // Initialize cache if not done yet
-  if (!cacheInitialized) {
-    initializeCumulativeRateCache(marketData);
-  }
-
-  // Return cached value if available
-  if (cumulativeRateCache[date] !== undefined) {
-    return cumulativeRateCache[date] === -1 ? -1 : cumulativeRateCache[date];
-  }
-
-  // Fallback to original calculation for dates not in cache
-  // Calculate date 90 days before the given date
-  const startDate90DaysAgo = addDays(date, -90);
-
-  // Get all available dates from market data
-  const availableDates = Object.keys(marketData.TQQQ).sort();
-
-  // Find the first available date on or after startDate90DaysAgo
-  const startDate = availableDates.find((d) => d >= startDate90DaysAgo);
-
-  if (!startDate || startDate >= date) {
-    return -1;
-  }
-
-  // Get the start and end close prices
-  const startData = marketData.TQQQ[startDate];
-  const endData = marketData.TQQQ[date];
-
-  if (!startData || !endData) {
-    return -1;
-  }
-
-  // Extract close prices from the new data structure
-  const startClose = typeof startData === "object" ? startData.close : startData;
-  const endClose = typeof endData === "object" ? endData.close : endData;
-
-  if (startClose === undefined || endClose === undefined || startClose <= 0) {
-    return -1;
-  }
-
-  // Calculate cumulative rate: (end_price - start_price) / start_price
-  const cumulativeRate = (endClose - startClose) / startClose;
-
-  return cumulativeRate;
-};
-
-export const calculateSMA = (date: string, marketData: MarketData, period: number = 90): number => {
-  // Initialize cache if not done yet
-  if (!smaCacheInitialized) {
-    initializeSMACache(marketData, period);
-  }
-
-  // Return cached value if available
-  if (smaCache[date] !== undefined) {
-    return smaCache[date] === -1 ? -1 : smaCache[date];
-  }
-
-  // Fallback to original calculation for dates not in cache
-  const availableDates = Object.keys(marketData.TQQQ).sort();
-  const dateIndex = availableDates.indexOf(date);
-
-  if (dateIndex === -1 || dateIndex < period - 1) {
-    return -1; // Not enough data
-  }
-
-  // Calculate SMA for the specified period
-  let sum = 0;
-  let validDays = 0;
-
-  for (let i = dateIndex - period + 1; i <= dateIndex; i++) {
-    const currentDate = availableDates[i];
-    const data = marketData.TQQQ[currentDate];
-
-    if (data) {
-      const closePrice = typeof data === "object" ? data.close : data;
-      if (closePrice !== undefined && closePrice > 0) {
-        sum += closePrice;
-        validDays++;
-      }
-    }
-  }
-
-  if (validDays === period) {
-    return sum / period;
-  }
-
-  return -1; // Not enough valid data
-};
-
-/**
- * Calculate summary statistics from arrays of rates
- * Memory-efficient approach that doesn't store full simulation objects
- */
 const calculateSummaryStats = (
   strategyRates: number[],
   qqqRates: number[],
   tqqqRates: number[],
   startDates: string[]
-): AnalysisResults => {
+): MultiSimulationResults => {
   if (strategyRates.length === 0) {
     return {
       totalSimulations: 0,
