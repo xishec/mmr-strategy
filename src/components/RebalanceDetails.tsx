@@ -1,6 +1,6 @@
 import React from "react";
 import { Simulation } from "../core/models";
-import { Box } from "@mui/material";
+import { Box, Typography, Card, CardContent, Chip, Stack, Divider } from "@mui/material";
 
 interface RebalanceDetailsProps {
   selectedDate: string | null;
@@ -9,17 +9,44 @@ interface RebalanceDetailsProps {
 
 const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simulation }) => {
   const currentSnapshot = simulation.portfolioSnapshots.find((snapshot) => snapshot.date === selectedDate);
+
+  if (!currentSnapshot) {
+    return (
+      <Box sx={{ p: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          No rebalance data available for the selected date.
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
-    <Box>
-      {currentSnapshot ? (
-        <div>
-          <h3>Rebalance Details for {currentSnapshot.date}</h3>
-          <p>Big Drop Last 30 Days: {currentSnapshot.signal.bigDropLast30Days ? "TRUE" : "FALSE"}</p>
-          <p>Is Below SMA200: {currentSnapshot.signal.isBelowSMA200 ? "TRUE" : "FALSE"}</p>
-        </div>
-      ) : (
-        <p>No rebalance data available for the selected date.</p>
-      )}
+    <Box sx={{ p: 2 }}>
+      <Stack spacing={2}>
+        <Box display="flex" alignItems="center" gap={1}>
+          <Typography variant="body1" fontWeight="medium" mt={0.25}>
+            Big Drop Last 30 Days:
+          </Typography>
+          <Chip
+            label={currentSnapshot.signal.bigDropLast30Days ? "TRUE" : "FALSE"}
+            color={currentSnapshot.signal.bigDropLast30Days ? "warning" : "success"}
+            variant="outlined"
+            size="small"
+          />
+        </Box>
+
+        <Box display="flex" alignItems="center" gap={1}>
+          <Typography variant="body1" fontWeight="medium" mt={0.25}>
+            Is Below SMA200:
+          </Typography>
+          <Chip
+            label={currentSnapshot.signal.isBelowSMA200 ? "TRUE" : "FALSE"}
+            color={currentSnapshot.signal.isBelowSMA200 ? "error" : "success"}
+            variant="outlined"
+            size="small"
+          />
+        </Box>
+      </Stack>
     </Box>
   );
 };
