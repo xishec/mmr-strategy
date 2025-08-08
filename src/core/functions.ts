@@ -103,14 +103,6 @@ export const convertAnnualRateToDaily = (annualRate: number): number => {
   return Math.pow(1 + annualRate, 1 / TIME_CONSTANTS.DAYS_IN_YEAR) - 1;
 };
 
-/**
- * Runs multiple simulations starting every 10 days from 2000-01-01 to today
- * Memory-efficient version that only keeps essential rate data
- * @param variables - The simulation variables (including initialMoney and all required fields)
- * @param marketData - The market data containing QQQ and TQQQ prices
- * @param nbYear - Number of years to run each simulation (default: 5)
- * @returns Object containing array of simulation results with their starting dates and analysis results
- */
 export const runMultipleSimulations = async (
   variables: Variables,
   marketData: MarketData,

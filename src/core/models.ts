@@ -8,7 +8,7 @@ export interface SimulationVariables {
   initialMoney: number;
   startDate: string;
   endDate: string;
-  cashDayRate: number;
+  cashYearRate: number;
   SMAUpMargin: number;
   SMADownMargin: number;
   monthlyNewCash: number;
@@ -32,7 +32,10 @@ export interface MultiSimulationVariables {
   simulationAnalysisMinusYears: number;
 }
 
-export interface DashboardVariables extends SimulationVariables, MultiSimulationVariables {}
+export interface DashboardVariables {
+  simulationVariables: SimulationVariables;
+  multiSimulationVariables: MultiSimulationVariables;
+}
 
 export interface MultiSimulationResults {
   totalSimulations: number;

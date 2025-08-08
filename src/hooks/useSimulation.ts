@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Simulation, MarketData, AnalysisResults, DashboardVariables } from "../core/models";
-import { convertAnnualRateToDaily, startSimulation, runMultipleSimulations } from "../core/functions";
+import { Simulation, MarketData, DashboardVariables, MultiSimulationResults, MultiSimulation } from "../core/models";
+import { startSimulation, runMultipleSimulations } from "../core/functions";
 import { formatDate } from "../core/date-utils";
 
 export interface UseSimulationReturn {
   simulation: Simulation;
-  variables: DashboardVariables;
-  analysisResults: AnalysisResults | null;
+  dashboardVariables: DashboardVariables;
+  multiSimulationResults: MultiSimulationResults | null;
   updateVariable: <K extends keyof DashboardVariables>(key: K, value: DashboardVariables[K]) => void;
   runMultipleSimulationsHandler: () => void;
   cancelSimulation: () => void;
@@ -14,60 +14,91 @@ export interface UseSimulationReturn {
 
 export const useSimulation = (marketData: MarketData | null): UseSimulationReturn => {
   // Simulation variables
-  const [variables, setVariables] = useState<DashboardVariables>({
-    startDate: new Date(1998, 0, 1),
-    endDate: new Date(),
-    initialMoney: 100000,
-    rebalanceDays: 90,
-    cashYearRate: 0.0,
-    dropRate: -0.2,
-    monthlyNewCash: 2000,
-    simulationYears: 10,
-    isLogScale: true,
-    simulationFrequencyDays: 3,
-    simulationAnalysisMinusYears: 1,
-  });
-
-  const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
-
-  const [simulation, setSimulation] = useState<Simulation>({
-    portfolioSnapshots: [],
-    rebalanceLogs: [],
-    variables: {
-      initialMoney: variables.initialMoney,
-      startDate: formatDate(variables.startDate),
-      endDate: formatDate(variables.endDate),
-      rebalanceDays: variables.rebalanceDays,
-      cashDayRate: convertAnnualRateToDaily(variables.cashYearRate),
-      dropRate: variables.dropRate,
-      monthlyNewCash: variables.monthlyNewCash,
+  const [dashboardVariables, setDashboardVariables] = useState<DashboardVariables>({
+    simulationVariables: {
+      initialMoney: 100000,
+      startDate: formatDate(new Date(1998, 0, 1)),
+      endDate: formatDate(new Date()),
+      cashYearRate: 0.0,
+      SMAUpMargin: 0.05,
+      SMADownMargin: 0.05,
+      monthlyNewCash: 2000,
+    },
+    multiSimulationVariables: {
       simulationFrequencyDays: 3,
-      simulationAnalysisMinusYears: 2,
+      simulationDurationYears: 10,
+      simulationAnalysisMinusYears: 1,
     },
   });
 
-  // Track when simulation needs to be run
-  const lastSimulationParams = useRef<string>("");
+  const [simulation, setSimulation] = useState<Simulation>({
+    portfolioSnapshots: [],
+    simulationVariables: {
+      initialMoney: dashboardVariables.simulationVariables.initialMoney,
+      startDate: dashboardVariables.simulationVariables.startDate,
+      endDate: dashboardVariables.simulationVariables.endDate,
+      cashYearRate: dashboardVariables.simulationVariables.cashYearRate,
+      SMAUpMargin: dashboardVariables.simulationVariables.SMAUpMargin,
+      SMADownMargin: dashboardVariables.simulationVariables.SMADownMargin,
+      monthlyNewCash: dashboardVariables.simulationVariables.monthlyNewCash,
+    },
+    simulationResults: undefined,
+  });
 
-  // Update variable function
+  const [multiSimulation, setMultiSimulation] = useState<MultiSimulation>({
+    simulations: [],
+    multiSimulationVariables: {
+      simulationFrequencyDays: dashboardVariables.multiSimulationVariables.simulationFrequencyDays,
+      simulationDurationYears: dashboardVariables.multiSimulationVariables.simulationDurationYears,
+      simulationAnalysisMinusYears: dashboardVariables.multiSimulationVariables.simulationAnalysisMinusYears,
+    },
+    multiSimulationResults: undefined,
+  });
+
+  const [multiSimulationResults, setMultiSimulationResults] = useState<MultiSimulationResults | null>(null);
+
+  useEffect(() => {
+    setMultiSimulation((prev) => ({
+      ...prev,
+      multiSimulationVariables: {
+        simulationFrequencyDays: dashboardVariables.multiSimulationVariables.simulationFrequencyDays,
+        simulationDurationYears: dashboardVariables.multiSimulationVariables.simulationDurationYears,
+        simulationAnalysisMinusYears: dashboardVariables.multiSimulationVariables.simulationAnalysisMinusYears,
+      },
+    }));
+  }, [dashboardVariables.multiSimulationVariables]);
+
+  useEffect(() => {
+    setSimulation((prev) => ({
+      ...prev,
+      simulationVariables: {
+        initialMoney: dashboardVariables.simulationVariables.initialMoney,
+        startDate: dashboardVariables.simulationVariables.startDate,
+        endDate: dashboardVariables.simulationVariables.endDate,
+        cashYearRate: dashboardVariables.simulationVariables.cashYearRate,
+        SMAUpMargin: dashboardVariables.simulationVariables.SMAUpMargin,
+        SMADownMargin: dashboardVariables.simulationVariables.SMADownMargin,
+        monthlyNewCash: dashboardVariables.simulationVariables.monthlyNewCash,
+      },
+    }));
+  }, [dashboardVariables.simulationVariables]);
+
   const updateVariable = useCallback(<K extends keyof DashboardVariables>(key: K, value: DashboardVariables[K]) => {
-    setVariables((prev) => ({ ...prev, [key]: value }));
+    setDashboardVariables((prev) => ({ ...prev, [key]: value }));
   }, []);
 
   // Handle multiple simulations - simple approach
   const runMultipleSimulationsHandler = useCallback(async () => {
-    if (marketData && simulation.variables) {
+    if (marketData && multiSimulation) {
       try {
-        console.log(`Starting multiple simulations for ${variables.simulationYears} years each...`);
+        console.log(
+          `Starting multiple simulations for ${multiSimulation.multiSimulationVariables.simulationDurationYears} years each...`
+        );
 
         // Clear previous results
-        setAnalysisResults(null);
+        setMultiSimulationResults(null);
 
-        const { analysisResults } = await runMultipleSimulations(
-          simulation.variables,
-          marketData,
-          variables.simulationYears
-        );
+        await runMultipleSimulations(multiSimulation, marketData);
 
         // Set the analysis results and the individual results
         setAnalysisResults(analysisResults);
@@ -81,43 +112,14 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     }
   }, [marketData, simulation.variables, variables.simulationYears]);
 
-  // Simple cancel function (just resets state)
   const cancelSimulation = useCallback(() => {
     console.log("Simulation state reset");
   }, []);
 
-  // Auto-update simulation when variables change
-  useEffect(() => {
-    setSimulation((prevSimulation) => ({
-      ...prevSimulation,
-      variables: {
-        initialMoney: variables.initialMoney,
-        startDate: formatDate(variables.startDate),
-        endDate: formatDate(variables.endDate),
-        rebalanceDays: variables.rebalanceDays,
-        cashDayRate: convertAnnualRateToDaily(variables.cashYearRate),
-        dropRate: variables.dropRate,
-        monthlyNewCash: variables.monthlyNewCash,
-        simulationFrequencyDays: variables.simulationFrequencyDays,
-        simulationAnalysisMinusYears: variables.simulationAnalysisMinusYears,
-      },
-    }));
-  }, [
-    variables.startDate,
-    variables.endDate,
-    variables.initialMoney,
-    variables.rebalanceDays,
-    variables.cashYearRate,
-    variables.dropRate,
-    variables.monthlyNewCash,
-    variables.simulationFrequencyDays,
-    variables.simulationAnalysisMinusYears,
-  ]);
-
-  // Run simulation when parameters change
+  const lastSimulationParams = useRef<string>("");
   useEffect(() => {
     if (marketData && simulation) {
-      const currentParams = JSON.stringify(simulation.variables);
+      const currentParams = JSON.stringify(simulation.simulationVariables);
       if (currentParams !== lastSimulationParams.current) {
         lastSimulationParams.current = currentParams;
         startSimulation(simulation, setSimulation, marketData);
