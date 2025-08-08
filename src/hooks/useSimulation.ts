@@ -98,7 +98,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
         // Clear previous results
         setMultiSimulationResults(null);
 
-        await runMultipleSimulations(multiSimulation, marketData);
+        await runMultipleSimulations(dashboardVariables, marketData);
 
         // Set the analysis results and the individual results
         setAnalysisResults(analysisResults);

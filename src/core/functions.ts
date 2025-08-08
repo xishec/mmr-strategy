@@ -1,15 +1,11 @@
 import { runSingleSimulation } from "./core-logic";
 import {
-  AnalysisResults,
+  DashboardVariables,
   MarketData,
   PortfolioSnapshot,
-  RebalanceLog,
-  RebalanceType,
   Simulation,
-  Variables,
 } from "./models";
 import { addDays, yearsBetween, addYears, today } from "./date-utils";
-import { green, red, yellow, black } from "../components/Chart";
 import { TIME_CONSTANTS } from "./constants";
 
 export const loadData = async (
@@ -45,28 +41,46 @@ export const startSimulation = (
   setSimulation(runSingleSimulation(simulation, marketData));
 };
 
+const calculateAnnualizedRate = (
+  initial: number,
+  end: number,
+  initialDateString: string,
+  endDateString: string
+): number => {
+  const nbYears = yearsBetween(initialDateString, endDateString);
+
+  // Ensure we have at least some time period to avoid division by zero
+  if (nbYears <= 0) { 
+    return 0;
+  }
+
+  return (end / initial) ** (1 / nbYears) - 1;
+};
+
 export const calculateAnnualizedRates = (simulation: Simulation) => {
   const endDate = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].date;
-  const lastRebalanceLog = simulation.rebalanceLogs[simulation.rebalanceLogs.length - 1];
+  const lastPortfolioSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
 
-  simulation.annualizedStrategyRate = calculateAnnualizedRate(
-    lastRebalanceLog.before.investments.mockTotalNothing,
+  simulation.simulationResults = {
+    annualizedStrategyRate: calculateAnnualizedRate(
+    lastPortfolioSnapshot.investments.mockTotalNothing,
     simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.total,
-    simulation.variables.startDate,
+    simulation.simulationVariables.startDate,
     endDate
-  );
-  simulation.annualizedQQQRate = calculateAnnualizedRate(
-    lastRebalanceLog.before.investments.mockTotalNothing,
+  ),
+    annualizedQQQRate: calculateAnnualizedRate(
+    lastPortfolioSnapshot.investments.mockTotalNothing,
     simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.mockTotalQQQ,
-    simulation.variables.startDate,
+    simulation.simulationVariables.startDate,
     endDate
-  );
-  simulation.annualizedTQQQRate = calculateAnnualizedRate(
-    lastRebalanceLog.before.investments.mockTotalNothing,
+  ),
+    annualizedTQQQRate: calculateAnnualizedRate(
+    lastPortfolioSnapshot.investments.mockTotalNothing,
     simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].investments.mockTotalTQQQ,
-    simulation.variables.startDate,
+    simulation.simulationVariables.startDate,
     endDate
-  );
+  ),
+
 };
 
 /**
@@ -83,28 +97,14 @@ export const deepCopyPortfolioSnapshot = (snapshot: PortfolioSnapshot): Portfoli
   };
 };
 
-export const calculateAnnualizedRate = (
-  initial: number,
-  end: number,
-  initialDateString: string,
-  endDateString: string
-): number => {
-  const nbYears = yearsBetween(initialDateString, endDateString);
 
-  // Ensure we have at least some time period to avoid division by zero
-  if (nbYears <= 0) {
-    return 0;
-  }
-
-  return (end / initial) ** (1 / nbYears) - 1;
-};
 
 export const convertAnnualRateToDaily = (annualRate: number): number => {
   return Math.pow(1 + annualRate, 1 / TIME_CONSTANTS.DAYS_IN_YEAR) - 1;
 };
 
 export const runMultipleSimulations = async (
-  variables: Variables,
+  dashboardVariables: DashboardVariables,
   marketData: MarketData,
   nbYear: number
 ): Promise<{
@@ -126,7 +126,10 @@ export const runMultipleSimulations = async (
   const startDate = firstAvailableDate >= "2000-01-01" ? firstAvailableDate : "2000-01-01";
   const todayString = today();
 
-  const endDate = addYears(lastAvailableDate, -variables.simulationAnalysisMinusYears);
+  const endDate = addYears(
+    lastAvailableDate,
+    -dashboardVariables.multiSimulationVariables.simulationAnalysisMinusYears
+  );
   const finalDate = endDate < todayString ? endDate : todayString;
 
   let currentDateString = startDate;
@@ -153,9 +156,8 @@ export const runMultipleSimulations = async (
           // Create simulation configuration
           const simulation: Simulation = {
             portfolioSnapshots: [],
-            rebalanceLogs: [],
-            variables: {
-              ...variables,
+            simulationVariables: {
+              ...dashboardVariables.simulationVariables,
               startDate: nextAvailableDate,
               endDate: simulationEndDateString,
             },
@@ -166,16 +168,15 @@ export const runMultipleSimulations = async (
 
           if (completedSimulation.portfolioSnapshots.length > 0) {
             // Extract only the essential data we need
-            strategyRates.push(completedSimulation.annualizedStrategyRate || 0);
-            qqqRates.push(completedSimulation.annualizedQQQRate || 0);
-            tqqqRates.push(completedSimulation.annualizedTQQQRate || 0);
+            strategyRates.push(completedSimulation.simulationResults?.annualizedStrategyRate || 0);
+            qqqRates.push(completedSimulation.simulationResults?.annualizedQQQRate || 0);
+            tqqqRates.push(completedSimulation.simulationResults?.annualizedTQQQRate || 0);
             startDates.push(nextAvailableDate);
 
             simulationCount++;
 
             // Immediately clear simulation data to free memory
             completedSimulation.portfolioSnapshots = [];
-            completedSimulation.rebalanceLogs = [];
           }
         }
       } catch (error) {
@@ -183,8 +184,7 @@ export const runMultipleSimulations = async (
       }
     }
 
-    const simulationFrequencyDays = variables.simulationFrequencyDays;
-    currentDateString = addDays(currentDateString, simulationFrequencyDays);
+    currentDateString = addDays(currentDateString, dashboardVariables.multiSimulationVariables.simulationFrequencyDays);
 
     // Yield control back to the browser occasionally to keep UI responsive
     if (loopIterations % 50 === 0) {
@@ -501,18 +501,3 @@ export const formatValue = (value: number, isPercentage = false): string => {
     maximumFractionDigits: 0,
   }).format(value);
 };
-
-// export const getRebalanceTypeColor = (rebalanceLog: RebalanceLog): string => {
-//   const rebalanceType = rebalanceLog.rebalanceType;
-
-//   switch (rebalanceType) {
-//     case RebalanceType.OnTrack:
-//       return green;
-//     case RebalanceType.Drop:
-//       return yellow;
-//     case RebalanceType.BigDrop:
-//       return red;
-//     default:
-//       return black;
-//   }
-// };
