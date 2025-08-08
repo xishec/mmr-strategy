@@ -68,6 +68,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
               endDate={new Date(dashboardVariables.simulationVariables.endDate)}
               initialMoney={dashboardVariables.simulationVariables.initialMoney}
               cashYearRate={dashboardVariables.simulationVariables.cashYearRate}
+              upMargin={dashboardVariables.simulationVariables.SMAUpMargin * 100} // Convert to percentage
               dropRate={dashboardVariables.simulationVariables.SMADownMargin * 100} // Convert to percentage
               monthlyNewCash={dashboardVariables.simulationVariables.monthlyNewCash}
               simulationYears={dashboardVariables.multiSimulationVariables.simulationDurationYears}
@@ -78,7 +79,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
                 if (newValue) {
                   const updatedSimulationVariables = {
                     ...dashboardVariables.simulationVariables,
-                    startDate: newValue.toISOString().split('T')[0],
+                    startDate: newValue.toISOString().split("T")[0],
                   };
                   updateVariable("simulationVariables", updatedSimulationVariables);
                 }
@@ -87,7 +88,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
                 if (newValue) {
                   const updatedSimulationVariables = {
                     ...dashboardVariables.simulationVariables,
-                    endDate: newValue.toISOString().split('T')[0],
+                    endDate: newValue.toISOString().split("T")[0],
                   };
                   updateVariable("simulationVariables", updatedSimulationVariables);
                 }
@@ -106,7 +107,14 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
                 };
                 updateVariable("simulationVariables", updatedSimulationVariables);
               }}
-              onDropRateChange={(value: number) => {
+              onSMAUpMarginChange={(value: number) => {
+                const updatedSimulationVariables = {
+                  ...dashboardVariables.simulationVariables,
+                  SMAUpMargin: value / 100, // Convert from percentage
+                };
+                updateVariable("simulationVariables", updatedSimulationVariables);
+              }}
+              onSMADownMarginChange={(value: number) => {
                 const updatedSimulationVariables = {
                   ...dashboardVariables.simulationVariables,
                   SMADownMargin: value / 100, // Convert from percentage
