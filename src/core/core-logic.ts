@@ -59,7 +59,7 @@ const getSignal = (
     date,
     bigDropLast30Days: last30DaysFromCurrent.some((d) => marketData.TQQQ[d].rate < -20),
     isAboveSMA200: marketData.QQQ[date].close >= marketData.QQQ[date].sma200! * (1 + simulationVariables.SMAUpMargin),
-    isBelowSMA200: marketData.QQQ[date].close < marketData.QQQ[date].sma200! * (1 - simulationVariables.SMADownMargin),
+    isBelowSMA200: marketData.QQQ[date].close < marketData.QQQ[date].sma200! * (1 + simulationVariables.SMADownMargin),
   };
 };
 

@@ -120,8 +120,11 @@ export const runMultipleSimulations = async (
 
   let currentDateString = startDate;
   let simulationCount = 0;
+  let loopIterations = 0;
 
   while (currentDateString <= finalDate) {
+    loopIterations++;
+
     // Use binary search to find next available date more efficiently
     const nextAvailableDate = findNextAvailableDate(availableDates, currentDateString);
 
@@ -167,8 +170,11 @@ export const runMultipleSimulations = async (
 
     currentDateString = addDays(currentDateString, simulationFrequencyDays);
 
-    // Yielding removed for maximum speed - simulations will run at full speed
-    // but may block the UI until completion
+    // Periodic yielding to prevent "Page Unresponsive" dialog
+    // Less frequent than before but enough to keep the browser happy
+    if (loopIterations % 500 === 0) {
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    }
   }
 
   console.log(`Completed ${simulationCount} simulations`);

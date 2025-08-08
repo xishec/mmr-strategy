@@ -205,7 +205,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
                   input: {
                     endAdornment: <InputAdornment position="end">%</InputAdornment>,
                   },
-                  htmlInput: { step: 0.01 },
+                  htmlInput: { step: 0.5 },
                 }}
               />
               <TextField
@@ -220,7 +220,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
                   input: {
                     endAdornment: <InputAdornment position="end">%</InputAdornment>,
                   },
-                  htmlInput: { step: 0.01 },
+                  htmlInput: { step: 0.5 },
                 }}
               />
               <TextField
@@ -235,7 +235,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
                   input: {
                     endAdornment: <InputAdornment position="end">%</InputAdornment>,
                   },
-                  htmlInput: { step: 0.01 },
+                  htmlInput: { step: 0.5 },
                 }}
               />
             </Box>
