@@ -288,7 +288,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("text-anchor", "start")
       .attr("dy", "0.35em");
 
-    // Y-axis value label (right side)
+    // Y-axis value label (left side)
     const yAxisValueLabel = crosshair.append("g").attr("class", "y-axis-value-label").style("display", "none");
 
     const yAxisValueRect = yAxisValueLabel
@@ -307,6 +307,89 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("text-anchor", "start")
       .attr("dy", "0.35em");
 
+    // X-axis date label
+    const xAxisValueLabel = crosshair.append("g").attr("class", "x-axis-value-label").style("display", "none");
+
+    const xAxisValueRect = xAxisValueLabel
+      .append("rect")
+      .attr("fill", "#666")
+      .attr("stroke", "#666")
+      .attr("rx", 3)
+      .attr("ry", 3);
+
+    const xAxisValueText = xAxisValueLabel
+      .append("text")
+      .attr("fill", "white")
+      .attr("font-size", "11px")
+      .attr("font-family", "monospace")
+      .attr("font-weight", "bold")
+      .attr("text-anchor", "middle")
+      .attr("dy", "0.35em");
+
+    // Add persistent crosshair for selected point
+    const persistentCrosshair = g.append("g").attr("class", "persistent-crosshair").style("display", "none");
+
+    // Persistent vertical crosshair line
+    const persistentCrosshairLine = persistentCrosshair
+      .append("line")
+      .attr("x1", 0)
+      .attr("x2", 0)
+      .attr("y1", 0)
+      .attr("y2", height)
+      .attr("stroke", "#333")
+      .attr("stroke-width", 2)
+      .attr("stroke-dasharray", "3,3");
+
+    // Persistent horizontal crosshair line
+    const persistentCrosshairHorizontal = persistentCrosshair
+      .append("line")
+      .attr("class", "persistent-crosshair-horizontal")
+      .attr("x1", 0)
+      .attr("x2", width)
+      .attr("y1", 0)
+      .attr("y2", 0)
+      .attr("stroke", "#333")
+      .attr("stroke-width", 2)
+      .attr("stroke-dasharray", "3,3");
+
+    // Persistent Y-axis value label (left side)
+    const persistentYAxisValueLabel = persistentCrosshair.append("g").attr("class", "persistent-y-axis-value-label");
+
+    const persistentYAxisValueRect = persistentYAxisValueLabel
+      .append("rect")
+      .attr("fill", "#333")
+      .attr("stroke", "#333")
+      .attr("rx", 3)
+      .attr("ry", 3);
+
+    const persistentYAxisValueText = persistentYAxisValueLabel
+      .append("text")
+      .attr("fill", "white")
+      .attr("font-size", "11px")
+      .attr("font-family", "monospace")
+      .attr("font-weight", "bold")
+      .attr("text-anchor", "start")
+      .attr("dy", "0.35em");
+
+    // Persistent X-axis date label
+    const persistentXAxisValueLabel = persistentCrosshair.append("g").attr("class", "persistent-x-axis-value-label");
+
+    const persistentXAxisValueRect = persistentXAxisValueLabel
+      .append("rect")
+      .attr("fill", "#333")
+      .attr("stroke", "#333")
+      .attr("rx", 3)
+      .attr("ry", 3);
+
+    const persistentXAxisValueText = persistentXAxisValueLabel
+      .append("text")
+      .attr("fill", "white")
+      .attr("font-size", "11px")
+      .attr("font-family", "monospace")
+      .attr("font-weight", "bold")
+      .attr("text-anchor", "middle")
+      .attr("dy", "0.35em");
+
     // Add invisible overlay for mouse events
     g.append("rect")
       .attr("width", width)
@@ -322,6 +405,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
         crosshair.style("display", "none");
         valueLabel.style("display", "none");
         yAxisValueLabel.style("display", "none");
+        xAxisValueLabel.style("display", "none");
         tooltip.transition().duration(500).style("opacity", 0);
       })
       .on("mousemove", function (event) {
@@ -363,6 +447,23 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
 
         yAxisValueLabel.attr("transform", `translate(10, ${mouseY})`).style("display", "block");
 
+        // Show x-axis date label
+        const dateString = d3.timeFormat("%Y-%m-%d")(dateAtMouse);
+        xAxisValueText.text(dateString);
+
+        // Calculate text dimensions for X-axis label
+        const xAxisTextBBox = (xAxisValueText.node() as SVGTextElement).getBBox();
+        const xAxisPadding = 4;
+        xAxisValueRect
+          .attr("x", -xAxisTextBBox.width / 2 - xAxisPadding)
+          .attr("y", -xAxisTextBBox.height / 2 - xAxisPadding)
+          .attr("width", xAxisTextBBox.width + xAxisPadding * 2)
+          .attr("height", xAxisTextBBox.height + xAxisPadding * 2);
+
+        xAxisValueLabel
+          .attr("transform", `translate(${mouseX}, ${height + 25})`)
+          .style("display", "block");
+
         // Find closest data point for tooltip
         const bisectDate = d3.bisector((d: (typeof parsedData)[0]) => d.date).left;
         const index = bisectDate(parsedData, dateAtMouse, 1);
@@ -381,6 +482,49 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
             .style("left", event.pageX + 10 + "px")
             .style("top", event.pageY - 28 + "px");
         }
+      })
+      .on("click", function (event) {
+        const [mouseX, mouseY] = d3.pointer(event, this);
+        const dateAtMouse = xScale.invert(mouseX);
+        
+        // Update persistent crosshair position
+        persistentCrosshairLine.attr("x1", mouseX).attr("x2", mouseX);
+        persistentCrosshairHorizontal.attr("y1", mouseY).attr("y2", mouseY);
+        persistentCrosshair.style("display", "block");
+
+        // Show persistent value labels
+        const yValue = yScale.invert(mouseY);
+        const displayValue = (yValue * 100).toFixed(1) + "%";
+
+        // Update persistent y-axis value label
+        persistentYAxisValueText.text(displayValue);
+        const persistentYAxisTextBBox = (persistentYAxisValueText.node() as SVGTextElement).getBBox();
+        const persistentYAxisPadding = 4;
+        persistentYAxisValueRect
+          .attr("x", -persistentYAxisPadding)
+          .attr("y", -persistentYAxisTextBBox.height / 2 - persistentYAxisPadding)
+          .attr("width", persistentYAxisTextBBox.width + persistentYAxisPadding * 2)
+          .attr("height", persistentYAxisTextBBox.height + persistentYAxisPadding * 2);
+
+        persistentYAxisValueLabel.attr("transform", `translate(10, ${mouseY})`);
+
+        // Show persistent x-axis date label
+        const dateString = d3.timeFormat("%Y-%m-%d")(dateAtMouse);
+        persistentXAxisValueText.text(dateString);
+
+        // Calculate text dimensions for persistent X-axis label
+        const persistentXAxisTextBBox = (persistentXAxisValueText.node() as SVGTextElement).getBBox();
+        const persistentXAxisPadding = 4;
+        persistentXAxisValueRect
+          .attr("x", -persistentXAxisTextBBox.width / 2 - persistentXAxisPadding)
+          .attr("y", -persistentXAxisTextBBox.height / 2 - persistentXAxisPadding)
+          .attr("width", persistentXAxisTextBBox.width + persistentXAxisPadding * 2)
+          .attr("height", persistentXAxisTextBBox.height + persistentXAxisPadding * 2);
+
+        persistentXAxisValueLabel.attr("transform", `translate(${mouseX}, ${height + 25})`);
+        
+        event.preventDefault();
+        event.stopPropagation();
       });
 
     // Cleanup tooltip on component unmount

@@ -54,7 +54,6 @@ const getSignal = (
 ): Signal => {
   const currentDateIndex = marketDates.indexOf(date);
   const last30DaysFromCurrent = marketDates.slice(Math.max(0, currentDateIndex - 30), currentDateIndex);
-  console.log(simulationVariables.SMAUpMargin, simulationVariables.SMADownMargin);
   return {
     date,
     bigDropLast30Days: last30DaysFromCurrent.some((d) => marketData.TQQQ[d].rate < -20),
@@ -82,6 +81,7 @@ const updateStrategyToSnapshot = (newSnapshot: PortfolioSnapshot, marketData: Ma
   newSnapshot.investments.TQQQ *= TQQQRate / 100 + 1;
   newSnapshot.investments.cash *= 1;
   newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
+  newSnapshot.signal = signal;
 };
 
 const updateMockToSnapshot = (newSnapshot: PortfolioSnapshot, marketData: MarketData) => {

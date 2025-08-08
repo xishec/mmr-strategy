@@ -230,7 +230,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
                         Rebalance Details
                       </Typography>
                     </Box>
-                    <RebalanceDetails selectedDate={selectedDate} simulation={simulation} d3ChartData={d3ChartData} />
+                    <RebalanceDetails selectedDate={selectedDate} simulation={simulation} />
                   </CardContent>
                 </Card>
               </Box>
