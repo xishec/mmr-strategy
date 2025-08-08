@@ -510,17 +510,17 @@ export const formatValue = (value: number, isPercentage = false): string => {
   }).format(value);
 };
 
-export const getRebalanceTypeColor = (rebalanceLog: RebalanceLog): string => {
-  const rebalanceType = rebalanceLog.rebalanceType;
+// export const getRebalanceTypeColor = (rebalanceLog: RebalanceLog): string => {
+//   const rebalanceType = rebalanceLog.rebalanceType;
 
-  switch (rebalanceType) {
-    case RebalanceType.OnTrack:
-      return green;
-    case RebalanceType.Drop:
-      return yellow;
-    case RebalanceType.BigDrop:
-      return red;
-    default:
-      return black;
-  }
-};
+//   switch (rebalanceType) {
+//     case RebalanceType.OnTrack:
+//       return green;
+//     case RebalanceType.Drop:
+//       return yellow;
+//     case RebalanceType.BigDrop:
+//       return red;
+//     default:
+//       return black;
+//   }
+// };

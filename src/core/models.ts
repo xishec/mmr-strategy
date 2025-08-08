@@ -1,6 +1,5 @@
 export interface Simulation {
   portfolioSnapshots: PortfolioSnapshot[];
-  rebalanceLogs: RebalanceLog[];
   variables: Variables;
   annualizedTQQQRate?: number;
   annualizedQQQRate?: number;
@@ -36,22 +35,9 @@ export interface DashboardVariables {
 export interface PortfolioSnapshot {
   date: string;
   investments: Investments;
-  cumulativeRateSinceRebalance: number;
-  cumulativeRate: number;
   peak: number;
   pullback: number;
-  lastRebalanceDate: string;
-  nextRebalanceDate: string;
-  shouldPanic: boolean;
-  shouldEnter: boolean;
-}
-
-export interface RebalanceLog {
-  date: string;
-  before: PortfolioSnapshot;
-  after: PortfolioSnapshot;
-  note?: string;
-  rebalanceType: RebalanceType;
+  signal: Signal;
 }
 
 export interface Signal {
@@ -60,21 +46,6 @@ export interface Signal {
   isAboveSMA200: boolean;
   isBelowSMA200: boolean;
 }
-
-export enum RebalanceType {
-  OnTrack = "On Track",
-  Drop = "Drop",
-  BigDrop = "Big Drop",
-  Panic = "Panic",
-}
-
-export const RebalanceTypeExplanation = {
-  "On Track":
-    "Market is on track, +25% TQQQ ratio, to maximum 75%. We want to increase exposure to TQQQ, but we don't all-in just in case of a pullback.",
-  Drop: "No action taken, maintain current allocation. There's a drop but we don't sell low, we hold and see.",
-  "Big Drop":
-    "Market is dropping big, -25% TQQQ ratio, to minimum 25%. We want to decrease exposure to TQQQ, but still keep some in case of a bounce back.",
-};
 
 export interface Investments {
   total: number;
@@ -109,7 +80,6 @@ export interface D3ChartData {
   priceChart: MultiSeriesChartData;
   ratioChart: MultiSeriesChartData;
   pullbackChart: MultiSeriesChartData;
-  rebalanceLogsMap: Record<string, RebalanceLog>;
 }
 
 export interface AnalysisResults {
