@@ -19,10 +19,15 @@ export const loadData = async (
 ) => {
   try {
     setDataLoading(true);
-    setMarketData({
+    const marketData = {
       QQQ: (await import("../data/QQQ.json")).default,
       TQQQ: (await import("../data/TQQQ.json")).default,
-    });
+    };
+    
+    // Initialize cumulative rate cache for performance
+    initializeCumulativeRateCache(marketData);
+    
+    setMarketData(marketData);
   } catch (error) {
     console.error("Error loading data:", error);
   } finally {
@@ -245,7 +250,76 @@ export const runMultipleSimulations = async (
   return { results: [], analysisResults };
 };
 
+// Cache for pre-computed cumulative rates to improve performance
+let cumulativeRateCache: { [date: string]: number } = {};
+let cacheInitialized = false;
+
+/**
+ * Pre-computes all cumulative rates for better performance
+ * This should be called once when market data is loaded
+ */
+export const initializeCumulativeRateCache = (marketData: MarketData): void => {
+  cumulativeRateCache = {};
+  const availableDates = Object.keys(marketData.TQQQ).sort();
+  
+  for (let i = 0; i < availableDates.length; i++) {
+    const currentDate = availableDates[i];
+    
+    // Find start date (90 days ago or closest available)
+    const startDate90DaysAgo = addDays(currentDate, -90);
+    let startIndex = -1;
+    
+    // Find the first date on or after startDate90DaysAgo
+    for (let j = 0; j < i; j++) {
+      if (availableDates[j] >= startDate90DaysAgo) {
+        startIndex = j;
+        break;
+      }
+    }
+    
+    if (startIndex === -1 || startIndex >= i) {
+      cumulativeRateCache[currentDate] = -1; // Return -100% if not enough data
+      continue;
+    }
+    
+    const startDate = availableDates[startIndex];
+    const startData = marketData.TQQQ[startDate];
+    const endData = marketData.TQQQ[currentDate];
+    
+    if (!startData || !endData) {
+      cumulativeRateCache[currentDate] = -1;
+      continue;
+    }
+    
+    // Extract close prices from the new data structure
+    const startClose = typeof startData === 'object' ? startData.close : startData;
+    const endClose = typeof endData === 'object' ? endData.close : endData;
+    
+    if (startClose === undefined || endClose === undefined || startClose <= 0) {
+      cumulativeRateCache[currentDate] = -1;
+      continue;
+    }
+    
+    // Calculate cumulative rate: (end_price - start_price) / start_price
+    const cumulativeRate = (endClose - startClose) / startClose;
+    cumulativeRateCache[currentDate] = cumulativeRate;
+  }
+  
+  cacheInitialized = true;
+};
+
 export const calculateCumulativeRate = (date: string, marketData: MarketData): number => {
+  // Initialize cache if not done yet
+  if (!cacheInitialized) {
+    initializeCumulativeRateCache(marketData);
+  }
+  
+  // Return cached value if available
+  if (cumulativeRateCache[date] !== undefined) {
+    return cumulativeRateCache[date] === -1 ? -1 : cumulativeRateCache[date];
+  }
+  
+  // Fallback to original calculation for dates not in cache
   // Calculate date 90 days before the given date
   const startDate90DaysAgo = addDays(date, -90);
 
@@ -256,7 +330,7 @@ export const calculateCumulativeRate = (date: string, marketData: MarketData): n
   const startDate = availableDates.find((d) => d >= startDate90DaysAgo);
 
   if (!startDate || startDate >= date) {
-    return -100;
+    return -1;
   }
 
   // Get the start and end close prices
@@ -264,7 +338,7 @@ export const calculateCumulativeRate = (date: string, marketData: MarketData): n
   const endData = marketData.TQQQ[date];
 
   if (!startData || !endData) {
-    return -100;
+    return -1;
   }
 
   // Extract close prices from the new data structure
@@ -272,7 +346,7 @@ export const calculateCumulativeRate = (date: string, marketData: MarketData): n
   const endClose = typeof endData === 'object' ? endData.close : endData;
 
   if (startClose === undefined || endClose === undefined || startClose <= 0) {
-    return -100;
+    return -1;
   }
 
   // Calculate cumulative rate: (end_price - start_price) / start_price

@@ -1,5 +1,10 @@
 import { addDays, daysBetween } from "./date-utils";
-import { calculateAnnualizedRates, deepCopyPortfolioSnapshot, setupInitialPortfolio } from "./functions";
+import {
+  calculateAnnualizedRates,
+  calculateCumulativeRate,
+  deepCopyPortfolioSnapshot,
+  setupInitialPortfolio,
+} from "./functions";
 import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation } from "./models";
 import { PORTFOLIO_LIMITS, TIME_CONSTANTS } from "./constants";
 
@@ -115,10 +120,13 @@ export const computePortfolioSnapshot = (
   newSnapshot.investments = investments;
   newSnapshot.peak = Math.max(lastSnapshot.peak, newTotal);
   newSnapshot.pullback = -(newSnapshot.peak - newTotal) / newSnapshot.peak;
+
+  // Calculate rolling 90-day cumulative rate
+  newSnapshot.cumulativeRate = calculateCumulativeRate(date, marketData);
   newSnapshot.cumulativeRateSinceRebalance = (1 + newSnapshot.cumulativeRateSinceRebalance) * multipliers.tqqq - 1;
 
   // Check for panic conditions
-  if (tqqqDelta < PANIC_THRESHOLD) {
+  if (tqqqDelta < PANIC_THRESHOLD || newSnapshot.cumulativeRate < -0.4) {
     newSnapshot.shouldPanic = true;
     newSnapshot.nextRebalanceDate = date;
   }
