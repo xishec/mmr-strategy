@@ -145,20 +145,21 @@ const updatePortfolioAllocation = (snapshot: PortfolioSnapshot, newTargetRatio: 
 const determineRebalanceStrategy = (
   cumulativeRate: number,
   dropRate: number,
-  shouldPanic: boolean
-): { type: RebalanceType; targetRatio?: number } => {
+  shouldPanic: boolean,
+  baseRebalanceDays: number
+): { type: RebalanceType; targetRatio?: number; rebalanceDays: number } => {
   if (shouldPanic) {
-    return { type: RebalanceType.Panic, targetRatio: 0 };
+    return { type: RebalanceType.Panic, targetRatio: 0, rebalanceDays: baseRebalanceDays };
   }
 
   const doubleDropRate = dropRate * DOUBLE_DROP_MULTIPLIER;
 
   if (cumulativeRate >= dropRate) {
-    return { type: RebalanceType.OnTrack, targetRatio: PORTFOLIO_LIMITS.MAX_RATIO };
+    return { type: RebalanceType.OnTrack, targetRatio: PORTFOLIO_LIMITS.MAX_RATIO, rebalanceDays: baseRebalanceDays };
   } else if (cumulativeRate >= doubleDropRate) {
-    return { type: RebalanceType.Drop };
+    return { type: RebalanceType.Drop, rebalanceDays: baseRebalanceDays };
   } else {
-    return { type: RebalanceType.BigDrop, targetRatio: PORTFOLIO_LIMITS.MIN_RATIO };
+    return { type: RebalanceType.BigDrop, targetRatio: PORTFOLIO_LIMITS.MIN_RATIO, rebalanceDays: baseRebalanceDays };
   }
 };
 
@@ -174,13 +175,13 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation): Po
   const after = deepCopyPortfolioSnapshot(before);
   const cumulativeRate = before.cumulativeRateSinceRebalance;
 
-  const strategy = determineRebalanceStrategy(cumulativeRate, dropRate, before.shouldPanic);
+  const strategy = determineRebalanceStrategy(cumulativeRate, dropRate, before.shouldPanic, rebalanceDays);
   if (strategy.targetRatio !== undefined) {
     updatePortfolioAllocation(after, strategy.targetRatio);
   }
 
   // Set post-rebalance metadata
-  after.nextRebalanceDate = addDays(before.date, rebalanceDays);
+  after.nextRebalanceDate = addDays(before.date, strategy.rebalanceDays);
   after.cumulativeRateSinceRebalance = 0;
   after.shouldPanic = false;
 
