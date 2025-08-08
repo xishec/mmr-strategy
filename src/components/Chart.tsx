@@ -304,7 +304,12 @@ const Chart: React.FC<ChartProps> = ({
     const createValueLabels = () => {
       // Value label (floating)
       const valueLabel = crosshair.append("g").attr("class", "value-label").style("display", "none");
-      const valueRect = valueLabel.append("rect").attr("fill", "#666").attr("stroke", "#666").attr("rx", 3).attr("ry", 3);
+      const valueRect = valueLabel
+        .append("rect")
+        .attr("fill", "#666")
+        .attr("stroke", "#666")
+        .attr("rx", 3)
+        .attr("ry", 3);
       const valueText = valueLabel
         .append("text")
         .attr("fill", "white")
@@ -630,15 +635,10 @@ const Chart: React.FC<ChartProps> = ({
       const yAxisConfig = isLogScale
         ? d3.axisLeft(priceYScale).ticks(4).tickFormat(formatPriceValue)
         : d3.axisLeft(priceYScale).tickFormat(formatPriceValue);
-      
-      g.append("g")
-        .attr("class", "y-axis-price")
-        .attr("transform", "translate(0,0)")
-        .call(yAxisConfig);
 
-      g.append("g")
-        .attr("class", "y-axis-ratio")
-        .call(d3.axisLeft(ratioYScale).ticks(3));
+      g.append("g").attr("class", "y-axis-price").attr("transform", "translate(0,0)").call(yAxisConfig);
+
+      g.append("g").attr("class", "y-axis-ratio").call(d3.axisLeft(ratioYScale).ticks(3));
 
       // Price grid lines
       g.selectAll(".grid-line")
@@ -669,24 +669,12 @@ const Chart: React.FC<ChartProps> = ({
           crosshair.style("display", null);
           crosshairLine.attr("x1", x).attr("x2", x);
 
-          // Show x-axis date label
-          xAxisValueText.text(time);
-          const xAxisTextBBox = (xAxisValueText.node() as SVGTextElement).getBBox();
-          const xAxisPadding = 4;
-          xAxisValueRect
-            .attr("x", -xAxisTextBBox.width / 2 - xAxisPadding)
-            .attr("y", -xAxisPadding)
-            .attr("width", xAxisTextBBox.width + xAxisPadding * 2)
-            .attr("height", xAxisTextBBox.height + xAxisPadding * 2);
-          xAxisValueLabel.attr("transform", `translate(${x}, ${ratioTop + ratioHeight + 5})`).style("display", "block");
-
           // Also update the persistent selected crosshair
           updateSelectedCrosshair(time);
         }
       },
       clearCrosshairPosition: () => {
         crosshair.style("display", "none");
-        xAxisValueLabel.style("display", "none");
       },
       timeScale: () => ({
         subscribeVisibleLogicalRangeChange: () => {},

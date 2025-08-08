@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Simulation } from "../core/models";
 
 export interface UseDateNavigationReturn {
@@ -9,6 +9,8 @@ export interface UseDateNavigationReturn {
 
 export const useDateNavigation = (simulation: Simulation): UseDateNavigationReturn => {
   const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
+  const lastKeyPressTime = useRef<number>(0);
+  const keyRepeatThreshold = 100; // milliseconds between moves when holding key
 
   // Available dates for navigation
   const availableDates = useMemo(() => {
@@ -31,7 +33,7 @@ export const useDateNavigation = (simulation: Simulation): UseDateNavigationRetu
     setSelectedDateIndex((prev) => Math.min(availableDates.length - 1, prev + 1));
   }, [availableDates.length]);
 
-  // Keyboard event handler for arrow key navigation
+  // Keyboard event handler for arrow key navigation with throttling
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       // Only handle if no input elements are focused
@@ -39,12 +41,19 @@ export const useDateNavigation = (simulation: Simulation): UseDateNavigationRetu
         return;
       }
 
-      if (event.key === "ArrowLeft" && !event.repeat) {
-        event.preventDefault();
-        handlePreviousDate();
-      } else if (event.key === "ArrowRight" && !event.repeat) {
-        event.preventDefault();
-        handleNextDate();
+      const currentTime = Date.now();
+      
+      // For first press or when enough time has passed since last press
+      if (!event.repeat || currentTime - lastKeyPressTime.current >= keyRepeatThreshold) {
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          handlePreviousDate();
+          lastKeyPressTime.current = currentTime;
+        } else if (event.key === "ArrowRight") {
+          event.preventDefault();
+          handleNextDate();
+          lastKeyPressTime.current = currentTime;
+        }
       }
     };
 
