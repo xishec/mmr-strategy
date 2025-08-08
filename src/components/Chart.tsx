@@ -11,6 +11,18 @@ export const red = "#EA4335";
 export const green = "#34A853";
 export const grey = "#848484ff";
 
+// Color mapping
+const colorMap = {
+  strategyTotal: yellow,
+  sma200: blue,
+  mockTotalQQQ: green,
+  mockTotalTQQQ: red,
+  mockTotalNothing: "#ecececff",
+  ratio: "#d0d0d0ff",
+  pullback: red,
+  default: "#2962FF",
+};
+
 interface ChartProps {
   d3ChartData: D3ChartData;
   selectedDate: string | null;
@@ -147,19 +159,6 @@ const Chart: React.FC<ChartProps> = ({
       } else {
         return value.toFixed(0);
       }
-    };
-
-    // Color mapping
-    const colorMap = {
-      strategyTotal: yellow,
-      strategyTotalAll: lightYellow,
-      sma200: blue,
-      mockTotalQQQ: green,
-      mockTotalTQQQ: red,
-      mockTotalNothing: "#ecececff",
-      ratio: "#d0d0d0ff",
-      pullback: red,
-      default: "#2962FF",
     };
 
     // Helper function to render a series

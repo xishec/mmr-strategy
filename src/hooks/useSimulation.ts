@@ -30,7 +30,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
       simulationAnalysisMinusYears: 1,
     },
     uiVariables: {
-      isLogScale: false,
+      isLogScale: true,
     },
   });
 

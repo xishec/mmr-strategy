@@ -31,7 +31,7 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
         time: snapshot.date,
         value: snapshot.investments.mockTotalNothing,
       })),
-      strategyTotalAll: simulation.portfolioSnapshots.map((snapshot) => ({
+      strategyTotal: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
         value: snapshot.investments.total,
       })),
