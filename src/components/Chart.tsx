@@ -3,25 +3,39 @@ import * as d3 from "d3";
 import { D3ChartData } from "../core/models";
 import { CHART_LAYOUT } from "../core/constants";
 
-export const black = "#202124";
-export const yellow = "#FBBC04";
-export const lightYellow = "#ffe599ff";
-export const blue = "#4285F4";
-export const red = "#EA4335";
-export const green = "#34A853";
-export const grey = "#848484ff";
-
-// Color mapping
-const colorMap = {
-  strategyTotal: yellow,
-  sma200: blue,
-  mockTotalQQQ: green,
-  mockTotalTQQQ: red,
-  mockTotalNothing: "#ecececff",
-  ratio: grey,
-  pullback: red,
+// Color constants
+const COLORS = {
+  black: "#202124",
+  yellow: "#FBBC04",
+  lightYellow: "#ffe599ff",
+  blue: "#4285F4",
+  red: "#EA4335",
+  green: "#34A853",
+  grey: "#848484ff",
+  lightGrey: "#d7d7d7ff",
   default: "#2962FF",
-};
+} as const;
+
+// Export individual colors for backward compatibility
+export const black = COLORS.black;
+export const yellow = COLORS.yellow;
+export const lightYellow = COLORS.lightYellow;
+export const blue = COLORS.blue;
+export const red = COLORS.red;
+export const green = COLORS.green;
+export const grey = COLORS.grey;
+
+// Color mapping for different chart series
+const COLOR_MAP = {
+  strategyTotal: COLORS.yellow,
+  sma200: COLORS.blue,
+  mockTotalQQQ: COLORS.green,
+  mockTotalTQQQ: COLORS.red,
+  mockTotalNothing: "#ecececff",
+  ratio: COLORS.grey,
+  pullback: COLORS.red,
+  default: COLORS.default,
+} as const;
 
 interface ChartProps {
   d3ChartData: D3ChartData;
@@ -163,121 +177,75 @@ const Chart: React.FC<ChartProps> = ({
 
     // Helper function to render a series
     const renderSeries = (seriesName: string, data: any[], yScale: any, isArea = false, isStepLine = false) => {
-      const color = colorMap[seriesName as keyof typeof colorMap] || colorMap.default;
+      const color = COLOR_MAP[seriesName as keyof typeof COLOR_MAP] || COLOR_MAP.default;
       const processedData = data.map((d) => ({ ...d, parsedTime: parseTime(d.time) }));
 
-      if (seriesName === "Target") {
-        // // Render as points (only for rebalance dates)
-        // g.append("g")
-        //   .attr("class", `points series-${seriesName}`)
-        //   .selectAll("circle")
-        //   .data(rebalanceData)
-        //   .enter()
-        //   .append("circle")
-        //   .attr("cx", (d) => xScale(d.parsedTime))
-        //   .attr("cy", (d) => yScale(d.value))
-        //   .attr("r", 2.5)
-        //   .attr("stroke", black)
-        //   .attr("fill", "none");
-      } else {
-        // Render as line/area with optional step interpolation
-        const line = d3
-          .line<any>()
+      // Render as line/area with optional step interpolation
+      const line = d3
+        .line<any>()
+        .x((d) => xScale(d.parsedTime))
+        .y((d) => yScale(d.value));
+
+      // Use step interpolation for ratio charts
+      if (isStepLine) {
+        line.curve(d3.curveStepAfter);
+      }
+
+      // Render the line
+      const strokeWidth = seriesName === "strategyTotal" ? 2 : 1;
+      g.append("path")
+        .datum(processedData)
+        .attr("class", `line series-${seriesName}`)
+        .attr("fill", "none")
+        .attr("stroke", color)
+        .attr("stroke-width", strokeWidth)
+        .attr("d", line);
+
+      // Render area if needed
+      if (isArea) {
+        const area = d3
+          .area<any>()
           .x((d) => xScale(d.parsedTime))
-          .y((d) => yScale(d.value));
+          .y0(yScale(0))
+          .y1((d) => yScale(d.value));
 
-        // Use step interpolation for ratio charts
         if (isStepLine) {
-          line.curve(d3.curveStepAfter);
+          area.curve(d3.curveStepAfter);
         }
 
-        if (seriesName === "strategyTotal") {
-          g.append("path")
-            .datum(processedData)
-            .attr("class", `line series-${seriesName}`)
-            .attr("fill", "none")
-            .attr("stroke", color)
-            .attr("stroke-width", 2)
-            .attr("d", line);
-        } else {
-          g.append("path")
-            .datum(processedData)
-            .attr("class", `line series-${seriesName}`)
-            .attr("fill", "none")
-            .attr("stroke", color)
-            .attr("stroke-width", 1)
-            .attr("d", line);
-        }
-
-        if (isArea) {
-          if (seriesName === "ratio") {
-            const area = d3
-              .area<any>()
-              .x((d) => xScale(d.parsedTime))
-              .y0(yScale(0))
-              .y1((d) => yScale(d.value));
-
-            // Use step interpolation for ratio areas
-            if (isStepLine) {
-              area.curve(d3.curveStepAfter);
-            }
-
-            g.append("path")
-              .datum(processedData)
-              .attr("class", `area series-${seriesName}`)
-              .attr("fill", color)
-              .attr("fill-opacity", 0.3)
-              .attr("d", area);
-          } else {
-            const area = d3
-              .area<any>()
-              .x((d) => xScale(d.parsedTime))
-              .y0(yScale(0))
-              .y1((d) => yScale(d.value));
-
-            g.append("path")
-              .datum(processedData)
-              .attr("class", `area series-${seriesName}`)
-              .attr("fill", color)
-              .attr("fill-opacity", 0.3)
-              .attr("d", area);
-          }
-        }
+        g.append("path")
+          .datum(processedData)
+          .attr("class", `area series-${seriesName}`)
+          .attr("fill", color)
+          .attr("fill-opacity", 0.3)
+          .attr("d", area);
       }
 
       return { data: processedData, name: seriesName };
     };
 
-    // Add center line at y=0 for ratio section
-    g.append("line")
-      .attr("class", "center-line")
-      .attr("x1", 0)
-      .attr("x2", width)
-      .attr("y1", ratioYScale(0))
-      .attr("y2", ratioYScale(0))
-      .attr("stroke", "#d7d7d7ff")
-      .attr("stroke-width", 1)
-      .attr("stroke-dasharray", "3,3");
+    // Helper function to add grid lines
+    const addGridLines = () => {
+      const gridLines = [
+        { y: ratioYScale(-1), className: "ratio-line-neg1" },
+        { y: ratioYScale(0), className: "ratio-line-zero" },
+        { y: ratioYScale(1), className: "ratio-line-pos1" },
+      ];
 
-    g.append("line")
-      .attr("class", "center-line")
-      .attr("x1", 0)
-      .attr("x2", width)
-      .attr("y1", ratioYScale(-1))
-      .attr("y2", ratioYScale(-1))
-      .attr("stroke", "#d7d7d7ff")
-      .attr("stroke-width", 1)
-      .attr("stroke-dasharray", "3,3");
+      gridLines.forEach(({ y, className }) => {
+        g.append("line")
+          .attr("class", className)
+          .attr("x1", 0)
+          .attr("x2", width)
+          .attr("y1", y)
+          .attr("y2", y)
+          .attr("stroke", COLORS.lightGrey)
+          .attr("stroke-width", 1)
+          .attr("stroke-dasharray", "3,3");
+      });
+    };
 
-    g.append("line")
-      .attr("class", "center-line")
-      .attr("x1", 0)
-      .attr("x2", width)
-      .attr("y1", ratioYScale(1))
-      .attr("y2", ratioYScale(1))
-      .attr("stroke", "#d7d7d7ff")
-      .attr("stroke-width", 1)
-      .attr("stroke-dasharray", "3,3");
+    addGridLines();
 
     // Render all series
     let mainSeries: any = null;
@@ -294,87 +262,115 @@ const Chart: React.FC<ChartProps> = ({
       if (!mainSeries) mainSeries = series;
     });
 
-    // Add interactive crosshair with dragging
-    const crosshair = g
-      .append("g")
-      .attr("class", "crosshair")
-      .style("display", selectedDate ? "block" : "none");
-    const crosshairHeight = ratioTop + ratioHeight + spaceBetweenCharts / 2;
+    // Helper function to create crosshair elements
+    const createCrosshair = () => {
+      const crosshair = g
+        .append("g")
+        .attr("class", "crosshair")
+        .style("display", selectedDate ? "block" : "none");
 
-    // Vertical crosshair line
-    const crosshairLine = crosshair
-      .append("line")
-      .attr("x1", 0)
-      .attr("x2", 0)
-      .attr("y1", priceTop)
-      .attr("y2", crosshairHeight)
-      .attr("stroke", "#666")
-      .attr("stroke-width", 1)
-      .attr("stroke-dasharray", "3,3");
+      const crosshairHeight = ratioTop + ratioHeight + spaceBetweenCharts / 2;
 
-    // Horizontal crosshair line
-    const crosshairHorizontal = crosshair
-      .append("line")
-      .attr("class", "crosshair-horizontal")
-      .attr("x1", 0)
-      .attr("x2", width)
-      .attr("y1", 0)
-      .attr("y2", 0)
-      .attr("stroke", "#666")
-      .attr("stroke-width", 1)
-      .attr("stroke-dasharray", "3,3")
-      .style("display", "none");
+      // Vertical crosshair line
+      const crosshairLine = crosshair
+        .append("line")
+        .attr("x1", 0)
+        .attr("x2", 0)
+        .attr("y1", priceTop)
+        .attr("y2", crosshairHeight)
+        .attr("stroke", "#666")
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "3,3");
 
-    // Value label
-    const valueLabel = crosshair.append("g").attr("class", "value-label").style("display", "none");
+      // Horizontal crosshair line
+      const crosshairHorizontal = crosshair
+        .append("line")
+        .attr("class", "crosshair-horizontal")
+        .attr("x1", 0)
+        .attr("x2", width)
+        .attr("y1", 0)
+        .attr("y2", 0)
+        .attr("stroke", "#666")
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "3,3")
+        .style("display", "none");
 
-    const valueRect = valueLabel.append("rect").attr("fill", "#666").attr("stroke", "#666").attr("rx", 3).attr("ry", 3);
+      return { crosshair, crosshairLine, crosshairHorizontal, crosshairHeight };
+    };
 
-    const valueText = valueLabel
-      .append("text")
-      .attr("fill", "white")
-      .attr("font-size", "11px")
-      .attr("font-family", "monospace")
-      .attr("text-anchor", "start")
-      .attr("dy", "0.35em");
+    const { crosshair, crosshairLine, crosshairHorizontal, crosshairHeight } = createCrosshair();
 
-    // Y-axis value label (left side)
-    const yAxisValueLabel = crosshair.append("g").attr("class", "y-axis-value-label").style("display", "none");
+    // Helper function to create value labels
+    const createValueLabels = () => {
+      // Value label (floating)
+      const valueLabel = crosshair.append("g").attr("class", "value-label").style("display", "none");
+      const valueRect = valueLabel.append("rect").attr("fill", "#666").attr("stroke", "#666").attr("rx", 3).attr("ry", 3);
+      const valueText = valueLabel
+        .append("text")
+        .attr("fill", "white")
+        .attr("font-size", "11px")
+        .attr("font-family", "monospace")
+        .attr("text-anchor", "start")
+        .attr("dy", "0.35em");
 
-    const yAxisValueRect = yAxisValueLabel
-      .append("rect")
-      .attr("fill", "#666")
-      .attr("stroke", "#666")
-      .attr("rx", 3)
-      .attr("ry", 3);
+      // Y-axis value label
+      const yAxisValueLabel = crosshair.append("g").attr("class", "y-axis-value-label").style("display", "none");
+      const yAxisValueRect = yAxisValueLabel
+        .append("rect")
+        .attr("fill", "#666")
+        .attr("stroke", "#666")
+        .attr("rx", 3)
+        .attr("ry", 3);
+      const yAxisValueText = yAxisValueLabel
+        .append("text")
+        .attr("fill", "white")
+        .attr("font-size", "11px")
+        .attr("font-family", "monospace")
+        .attr("font-weight", "bold")
+        .attr("text-anchor", "start")
+        .attr("dy", "0.35em");
 
-    const yAxisValueText = yAxisValueLabel
-      .append("text")
-      .attr("fill", "white")
-      .attr("font-size", "11px")
-      .attr("font-family", "monospace")
-      .attr("font-weight", "bold")
-      .attr("text-anchor", "start")
-      .attr("dy", "0.35em");
+      // X-axis value label
+      const xAxisValueLabel = crosshair.append("g").attr("class", "x-axis-value-label").style("display", "none");
+      const xAxisValueRect = xAxisValueLabel
+        .append("rect")
+        .attr("fill", "#666")
+        .attr("stroke", "#666")
+        .attr("rx", 3)
+        .attr("ry", 3);
+      const xAxisValueText = xAxisValueLabel
+        .append("text")
+        .attr("fill", "white")
+        .attr("font-size", "11px")
+        .attr("font-family", "monospace")
+        .attr("font-weight", "bold")
+        .attr("text-anchor", "middle")
+        .attr("dy", "0.35em");
 
-    // X-axis value label (bottom)
-    const xAxisValueLabel = crosshair.append("g").attr("class", "x-axis-value-label").style("display", "none");
+      return {
+        valueLabel,
+        valueRect,
+        valueText,
+        yAxisValueLabel,
+        yAxisValueRect,
+        yAxisValueText,
+        xAxisValueLabel,
+        xAxisValueRect,
+        xAxisValueText,
+      };
+    };
 
-    const xAxisValueRect = xAxisValueLabel
-      .append("rect")
-      .attr("fill", "#666")
-      .attr("stroke", "#666")
-      .attr("rx", 3)
-      .attr("ry", 3);
-
-    const xAxisValueText = xAxisValueLabel
-      .append("text")
-      .attr("fill", "white")
-      .attr("font-size", "11px")
-      .attr("font-family", "monospace")
-      .attr("font-weight", "bold")
-      .attr("text-anchor", "middle")
-      .attr("dy", "0.35em");
+    const {
+      valueLabel,
+      valueRect,
+      valueText,
+      yAxisValueLabel,
+      yAxisValueRect,
+      yAxisValueText,
+      xAxisValueLabel,
+      xAxisValueRect,
+      xAxisValueText,
+    } = createValueLabels();
 
     // Add persistent selected date crosshair
     const selectedCrosshair = g.append("g").attr("class", "selected-crosshair").style("display", "none");
@@ -469,7 +465,7 @@ const Chart: React.FC<ChartProps> = ({
         .attr("height", xAxisTextBBox.height + xAxisPadding * 2);
 
       xAxisValueLabel
-        .attr("transform", `translate(${constrainedX}, ${ratioTop + ratioHeight - 20})`)
+        .attr("transform", `translate(${constrainedX}, ${ratioTop + ratioHeight - 15})`)
         .style("display", "block");
 
       // Show horizontal crosshair line at cursor position
@@ -617,39 +613,49 @@ const Chart: React.FC<ChartProps> = ({
         }
       });
 
-    // Add axes
-    g.append("g")
-      .attr("class", "x-axis")
-      .attr("transform", `translate(0,${ratioTop + ratioHeight + 10})`)
-      .call(
-        d3
-          .axisBottom(xScale)
-          .ticks(20)
-          .tickFormat((domainValue) => {
-            return d3.timeFormat("%Y")(domainValue as Date);
-          })
-      );
+    // Helper function to add axes and grid
+    const addAxesAndGrid = () => {
+      // X-axis
+      g.append("g")
+        .attr("class", "x-axis")
+        .attr("transform", `translate(0,${ratioTop + ratioHeight + 10})`)
+        .call(
+          d3
+            .axisBottom(xScale)
+            .ticks(20)
+            .tickFormat((domainValue) => d3.timeFormat("%Y")(domainValue as Date))
+        );
 
-    // Add Y-axes with custom formatting for price values
-    const yAxisConfig = isLogScale
-      ? d3.axisLeft(priceYScale).ticks(4).tickFormat(formatPriceValue)
-      : d3.axisLeft(priceYScale).tickFormat(formatPriceValue);
-    g.append("g").attr("class", "y-axis-price").attr("transform", `translate(0,0)`).call(yAxisConfig);
-    // Add grid lines
-    g.selectAll(".grid-line")
-      .data(priceYScale.ticks(4))
-      .enter()
-      .append("line")
-      .attr("class", "grid-line")
-      .attr("x1", 0)
-      .attr("x2", width)
-      .attr("y1", (d) => priceYScale(d))
-      .attr("y2", (d) => priceYScale(d))
-      .attr("stroke", "#d7d7d7ff")
-      .attr("stroke-width", 1)
-      .attr("stroke-dasharray", "3,3");
+      // Y-axes
+      const yAxisConfig = isLogScale
+        ? d3.axisLeft(priceYScale).ticks(4).tickFormat(formatPriceValue)
+        : d3.axisLeft(priceYScale).tickFormat(formatPriceValue);
+      
+      g.append("g")
+        .attr("class", "y-axis-price")
+        .attr("transform", "translate(0,0)")
+        .call(yAxisConfig);
 
-    g.append("g").attr("class", "y-axis-ratio").call(d3.axisLeft(ratioYScale).ticks(3));
+      g.append("g")
+        .attr("class", "y-axis-ratio")
+        .call(d3.axisLeft(ratioYScale).ticks(3));
+
+      // Price grid lines
+      g.selectAll(".grid-line")
+        .data(priceYScale.ticks(4))
+        .enter()
+        .append("line")
+        .attr("class", "grid-line")
+        .attr("x1", 0)
+        .attr("x2", width)
+        .attr("y1", (d) => priceYScale(d))
+        .attr("y2", (d) => priceYScale(d))
+        .attr("stroke", COLORS.lightGrey)
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "3,3");
+    };
+
+    addAxesAndGrid();
 
     // Chart object for compatibility
     const chartLikeObject = {

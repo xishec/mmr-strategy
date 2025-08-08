@@ -20,7 +20,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
       startDate: formatDate(new Date(1998, 0, 1)),
       endDate: formatDate(new Date()),
       cashYearRate: 0.0,
-      SMAUpMargin: 0.10,
+      SMAUpMargin: 0.03,
       SMADownMargin: -0,
       monthlyNewCash: 2000,
     },
