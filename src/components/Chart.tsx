@@ -18,7 +18,7 @@ const colorMap = {
   mockTotalQQQ: green,
   mockTotalTQQQ: red,
   mockTotalNothing: "#ecececff",
-  ratio: "#d0d0d0ff",
+  ratio: grey,
   pullback: red,
   default: "#2962FF",
 };
@@ -225,7 +225,8 @@ const Chart: React.FC<ChartProps> = ({
             g.append("path")
               .datum(processedData)
               .attr("class", `area series-${seriesName}`)
-              .attr("fill", "#ecececff")
+              .attr("fill", color)
+              .attr("fill-opacity", 0.3)
               .attr("d", area);
           } else {
             const area = d3
