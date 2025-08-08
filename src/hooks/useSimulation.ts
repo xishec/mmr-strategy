@@ -98,19 +98,19 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
         // Clear previous results
         setMultiSimulationResults(null);
 
-        await runMultipleSimulations(dashboardVariables, marketData);
+        const multiSimulationResults = await runMultipleSimulations(dashboardVariables, marketData);
 
         // Set the analysis results and the individual results
-        setAnalysisResults(analysisResults);
+        setMultiSimulationResults(multiSimulationResults);
 
-        console.log(`Completed ${analysisResults.totalSimulations} simulations`);
+        console.log(`Completed ${multiSimulationResults.totalSimulations} simulations`);
       } catch (error) {
         console.error("Error running multiple simulations:", error);
-        setAnalysisResults(null);
+        setMultiSimulationResults(null);
       } finally {
       }
     }
-  }, [marketData, simulation.variables, variables.simulationYears]);
+  }, [marketData, multiSimulation, dashboardVariables]);
 
   const cancelSimulation = useCallback(() => {
     console.log("Simulation state reset");
@@ -129,8 +129,8 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
 
   return {
     simulation,
-    variables,
-    analysisResults,
+    dashboardVariables,
+    multiSimulationResults,
     updateVariable,
     runMultipleSimulationsHandler,
     cancelSimulation,

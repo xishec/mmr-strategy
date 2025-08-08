@@ -87,12 +87,8 @@ export const convertAnnualRateToDaily = (annualRate: number): number => {
 
 export const runMultipleSimulations = async (
   dashboardVariables: DashboardVariables,
-  marketData: MarketData,
-  nbYear: number
-): Promise<{
-  results: Array<{ startDate: string; simulation: Simulation }>;
-  analysisResults: any;
-}> => {
+  marketData: MarketData
+): Promise<MultiSimulationResults> => {
   // Only store essential data to minimize memory usage
   const strategyRates: number[] = [];
   const qqqRates: number[] = [];
@@ -133,7 +129,10 @@ export const runMultipleSimulations = async (
 
         if (hasEnoughData) {
           // Calculate end date for this simulation
-          const simulationEndDateString = addYears(nextAvailableDate, nbYear);
+          const simulationEndDateString = addYears(
+            nextAvailableDate,
+            dashboardVariables.multiSimulationVariables.simulationDurationYears
+          );
 
           // Create simulation configuration
           const simulation: Simulation = {
@@ -176,9 +175,7 @@ export const runMultipleSimulations = async (
 
   console.log(`Completed ${simulationCount} simulations`);
 
-  const analysisResults = calculateSummaryStats(strategyRates, qqqRates, tqqqRates, startDates);
-
-  return { results: [], analysisResults };
+  return calculateSummaryStats(strategyRates, qqqRates, tqqqRates, startDates);
 };
 
 const calculateSummaryStats = (
