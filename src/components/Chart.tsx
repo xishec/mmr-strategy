@@ -357,6 +357,25 @@ const Chart: React.FC<ChartProps> = ({
       .attr("text-anchor", "start")
       .attr("dy", "0.35em");
 
+    // X-axis value label (bottom)
+    const xAxisValueLabel = crosshair.append("g").attr("class", "x-axis-value-label").style("display", "none");
+
+    const xAxisValueRect = xAxisValueLabel
+      .append("rect")
+      .attr("fill", "#666")
+      .attr("stroke", "#666")
+      .attr("rx", 3)
+      .attr("ry", 3);
+
+    const xAxisValueText = xAxisValueLabel
+      .append("text")
+      .attr("fill", "white")
+      .attr("font-size", "11px")
+      .attr("font-family", "monospace")
+      .attr("font-weight", "bold")
+      .attr("text-anchor", "middle")
+      .attr("dy", "0.35em");
+
     // Add persistent selected date crosshair
     const selectedCrosshair = g.append("g").attr("class", "selected-crosshair").style("display", "none");
 
@@ -396,9 +415,18 @@ const Chart: React.FC<ChartProps> = ({
 
     // Helper function to find nearest date
     const findNearestDate = (xPosition: number): string | null => {
-      if (!seriesData.rebalanceLogsMap) return null;
+      // Get dates from any available series data (they all have the same dates)
+      let dates: string[] = [];
 
-      const dates = Object.keys(seriesData.rebalanceLogsMap);
+      // Try to get dates from any available series
+      const allSeries = Object.values(seriesData);
+      for (const series of allSeries) {
+        if (Array.isArray(series) && series.length > 0) {
+          dates = series.map((point: any) => point.time);
+          break;
+        }
+      }
+
       if (dates.length === 0) return null;
 
       const parseTime = d3.timeParse("%Y-%m-%d");
@@ -424,6 +452,25 @@ const Chart: React.FC<ChartProps> = ({
       const constrainedX = Math.max(0, Math.min(width, xPosition));
       crosshairLine.attr("x1", constrainedX).attr("x2", constrainedX);
       crosshair.style("display", "block");
+
+      // Show x-axis date label
+      const dateAtPosition = xScale.invert(constrainedX);
+      const dateString = d3.timeFormat("%Y-%m-%d")(dateAtPosition);
+
+      xAxisValueText.text(dateString);
+
+      // Calculate text dimensions for X-axis label
+      const xAxisTextBBox = (xAxisValueText.node() as SVGTextElement).getBBox();
+      const xAxisPadding = 4;
+      xAxisValueRect
+        .attr("x", -xAxisTextBBox.width / 2 - xAxisPadding)
+        .attr("y", -xAxisTextBBox.height / 2 - xAxisPadding)
+        .attr("width", xAxisTextBBox.width + xAxisPadding * 2)
+        .attr("height", xAxisTextBBox.height + xAxisPadding * 2);
+
+      xAxisValueLabel
+        .attr("transform", `translate(${constrainedX}, ${ratioTop + ratioHeight - 20})`)
+        .style("display", "block");
 
       // Show horizontal crosshair line at cursor position
       if (mouseY !== undefined) {
@@ -478,6 +525,7 @@ const Chart: React.FC<ChartProps> = ({
         crosshairHorizontal.style("display", "none");
         valueLabel.style("display", "none");
         yAxisValueLabel.style("display", "none");
+        // Keep x-axis label visible even without mouseY
       }
     };
 
@@ -505,6 +553,7 @@ const Chart: React.FC<ChartProps> = ({
           crosshairHorizontal.style("display", "none");
           valueLabel.style("display", "none");
           yAxisValueLabel.style("display", "none");
+          xAxisValueLabel.style("display", "none");
         }
       })
       .on("mousemove", function (event) {
@@ -614,12 +663,24 @@ const Chart: React.FC<ChartProps> = ({
           crosshair.style("display", null);
           crosshairLine.attr("x1", x).attr("x2", x);
 
+          // Show x-axis date label
+          xAxisValueText.text(time);
+          const xAxisTextBBox = (xAxisValueText.node() as SVGTextElement).getBBox();
+          const xAxisPadding = 4;
+          xAxisValueRect
+            .attr("x", -xAxisTextBBox.width / 2 - xAxisPadding)
+            .attr("y", -xAxisPadding)
+            .attr("width", xAxisTextBBox.width + xAxisPadding * 2)
+            .attr("height", xAxisTextBBox.height + xAxisPadding * 2);
+          xAxisValueLabel.attr("transform", `translate(${x}, ${ratioTop + ratioHeight + 5})`).style("display", "block");
+
           // Also update the persistent selected crosshair
           updateSelectedCrosshair(time);
         }
       },
       clearCrosshairPosition: () => {
         crosshair.style("display", "none");
+        xAxisValueLabel.style("display", "none");
       },
       timeScale: () => ({
         subscribeVisibleLogicalRangeChange: () => {},
