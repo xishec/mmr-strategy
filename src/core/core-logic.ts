@@ -34,7 +34,7 @@ export const runSingleSimulation = (simulation: Simulation, marketData: MarketDa
       date,
       bigDropLast30Days: last30DaysFromCurrent.some((d) => marketData.TQQQ[d].rate < -20),
       isAboveSMA200: marketData.QQQ[date].close >= marketData.QQQ[date].sma200! * 1.05,
-      isBelowSMA200: marketData.QQQ[date].close < marketData.QQQ[date].sma200! * 0.95,
+      isBelowSMA200: marketData.QQQ[date].close < marketData.QQQ[date].sma200! * 1,
     };
 
     const daysSinceLastCashAddition = daysBetween(lastCashAdditionDate, date);
