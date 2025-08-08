@@ -18,8 +18,8 @@ interface SimulationSetupProps {
   startDate: Date;
   endDate: Date;
   initialMoney: number;
-  rebalanceDays: number;
   cashYearRate: number;
+  upMargin: number;
   dropRate: number;
   monthlyNewCash: number;
   simulationYears: number;
@@ -29,9 +29,9 @@ interface SimulationSetupProps {
   onStartDateChange: (date: Date | null) => void;
   onEndDateChange: (date: Date | null) => void;
   onInitialMoneyChange: (value: number) => void;
-  onRebalanceDaysChange: (value: number) => void;
   onCashYearRateChange: (value: number) => void;
-  onDropRateChange: (value: number) => void;
+  onSMAUpMarginChange: (value: number) => void;
+  onSMADownMarginChange: (value: number) => void;
   onMonthlyNewCashChange: (value: number) => void;
   onSimulationYearsChange: (value: number) => void;
   onLogScaleChange: (checked: boolean) => void;
@@ -44,8 +44,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   startDate,
   endDate,
   initialMoney,
-  rebalanceDays,
   cashYearRate,
+  upMargin,
   dropRate,
   monthlyNewCash,
   simulationYears,
@@ -55,9 +55,9 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   onStartDateChange,
   onEndDateChange,
   onInitialMoneyChange,
-  onRebalanceDaysChange,
   onCashYearRateChange,
-  onDropRateChange,
+  onSMAUpMarginChange,
+  onSMADownMarginChange,
   onMonthlyNewCashChange,
   onSimulationYearsChange,
   onLogScaleChange,
@@ -75,10 +75,11 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
         flexDirection: "column",
         backgroundColor: "background.paper",
         borderRadius: 2,
+        gap: 3,
       }}
     >
       {/* Header */}
-      <Box sx={{ mb: 3, textAlign: "center" }}>
+      <Box sx={{ textAlign: "center" }}>
         <Typography
           variant="h5"
           component="h2"
@@ -204,106 +205,37 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
                   input: {
                     endAdornment: <InputAdornment position="end">%</InputAdornment>,
                   },
-                  htmlInput: { step: 0.01 },
+                  htmlInput: { step: 0.5 },
                 }}
               />
               <TextField
                 size="small"
-                label="Drop Rate"
+                label="SMA Up Margin"
                 type="number"
-                value={dropRate.toString()}
-                onChange={(e) => onDropRateChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                value={upMargin.toString()}
+                onChange={(e) => onSMAUpMarginChange(e.target.value === "" ? 0 : Number(e.target.value))}
                 variant="outlined"
                 fullWidth
                 slotProps={{
                   input: {
                     endAdornment: <InputAdornment position="end">%</InputAdornment>,
                   },
-                  htmlInput: { step: 0.01 },
-                }}
-              />
-            </Box>
-          </CardContent>
-        </Box>
-
-        {/* Simulation Parameters */}
-        <Box sx={{ mb: 3, border: "1px solid #7c7c7c80", borderRadius: 2 }}>
-          <CardContent sx={{ pb: 2 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                mb: 2,
-                color: "primary.main",
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                fontSize: "1rem",
-              }}
-            >
-              <Schedule fontSize="small" />
-              Simulation Parameters
-            </Typography>
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
-              <TextField
-                size="small"
-                label="Rebalance Days"
-                type="number"
-                value={rebalanceDays.toString()}
-                onChange={(e) => onRebalanceDaysChange(e.target.value === "" ? 0 : Number(e.target.value))}
-                variant="outlined"
-                fullWidth
-                slotProps={{
-                  input: {
-                    endAdornment: <InputAdornment position="end">days</InputAdornment>,
-                  },
-                  htmlInput: { step: 1 },
+                  htmlInput: { step: 0.5 },
                 }}
               />
               <TextField
                 size="small"
-                label="Simulation Years"
+                label="SMA Down Margin"
                 type="number"
-                value={simulationYears.toString()}
-                onChange={(e) => onSimulationYearsChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                value={dropRate.toString()}
+                onChange={(e) => onSMADownMarginChange(e.target.value === "" ? 0 : Number(e.target.value))}
                 variant="outlined"
                 fullWidth
                 slotProps={{
                   input: {
-                    endAdornment: <InputAdornment position="end">years</InputAdornment>,
+                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
                   },
-                  htmlInput: { step: 1, min: 1, max: 25 },
-                }}
-              />
-              <TextField
-                size="small"
-                label="Frequency"
-                type="number"
-                value={simulationFrequencyDays.toString()}
-                onChange={(e) => onSimulationFrequencyDaysChange(e.target.value === "" ? 0 : Number(e.target.value))}
-                variant="outlined"
-                fullWidth
-                slotProps={{
-                  input: {
-                    endAdornment: <InputAdornment position="end">days</InputAdornment>,
-                  },
-                  htmlInput: { step: 1, min: 1 },
-                }}
-              />
-              <TextField
-                size="small"
-                label="Analysis Minus Years"
-                type="number"
-                value={simulationAnalysisMinusYears.toString()}
-                onChange={(e) =>
-                  onSimulationAnalysisMinusYearsChange(e.target.value === "" ? 0 : Number(e.target.value))
-                }
-                variant="outlined"
-                fullWidth
-                slotProps={{
-                  input: {
-                    endAdornment: <InputAdornment position="end">years</InputAdornment>,
-                  },
-                  htmlInput: { step: 1, min: 0 },
+                  htmlInput: { step: 0.5 },
                 }}
               />
             </Box>
@@ -347,8 +279,75 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
         </Box>
       </Box>
 
+      {/* Simulation Parameters */}
+      <Box sx={{ border: "1px solid #7c7c7c80", borderRadius: 2 }}>
+        <CardContent sx={{ pb: 2 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              mb: 2,
+              color: "primary.main",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              fontSize: "1rem",
+            }}
+          >
+            <Schedule fontSize="small" />
+            Multi Simulation Parameters
+          </Typography>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+            <TextField
+              size="small"
+              label="Duration"
+              type="number"
+              value={simulationYears.toString()}
+              onChange={(e) => onSimulationYearsChange(e.target.value === "" ? 0 : Number(e.target.value))}
+              variant="outlined"
+              fullWidth
+              slotProps={{
+                input: {
+                  endAdornment: <InputAdornment position="end">years</InputAdornment>,
+                },
+                htmlInput: { step: 1, min: 1, max: 25 },
+              }}
+            />
+            <TextField
+              size="small"
+              label="Sample Frequency"
+              type="number"
+              value={simulationFrequencyDays.toString()}
+              onChange={(e) => onSimulationFrequencyDaysChange(e.target.value === "" ? 0 : Number(e.target.value))}
+              variant="outlined"
+              fullWidth
+              slotProps={{
+                input: {
+                  endAdornment: <InputAdornment position="end">days</InputAdornment>,
+                },
+                htmlInput: { step: 1, min: 1 },
+              }}
+            />
+            <TextField
+              size="small"
+              label="Analysis Minus Years"
+              type="number"
+              value={simulationAnalysisMinusYears.toString()}
+              onChange={(e) => onSimulationAnalysisMinusYearsChange(e.target.value === "" ? 0 : Number(e.target.value))}
+              variant="outlined"
+              fullWidth
+              slotProps={{
+                input: {
+                  endAdornment: <InputAdornment position="end">years</InputAdornment>,
+                },
+                htmlInput: { step: 1, min: 0 },
+              }}
+            />
+          </Box>
+        </CardContent>
+      </Box>
+
       {/* Action Button */}
-      <Box sx={{ mt: 2, pt: 2 }}>
+      <Box sx={{}}>
         <Button
           variant="outlined"
           color="primary"
@@ -362,7 +361,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
             borderRadius: 2,
           }}
         >
-          Run Daily Simulations
+          Run Multi Simulations
         </Button>
       </Box>
     </Paper>

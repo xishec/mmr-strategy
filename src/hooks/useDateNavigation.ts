@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { Simulation } from '../core/models';
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { Simulation } from "../core/models";
 
 export interface UseDateNavigationReturn {
   selectedDate: string | null;
@@ -12,8 +12,8 @@ export const useDateNavigation = (simulation: Simulation): UseDateNavigationRetu
 
   // Available dates for navigation
   const availableDates = useMemo(() => {
-    if (!simulation || simulation.rebalanceLogs.length === 0) return [];
-    return simulation.rebalanceLogs.map((log) => log.date).sort();
+    if (!simulation || simulation.portfolioSnapshots.length === 0) return [];
+    return simulation.portfolioSnapshots.map((snapshot) => snapshot.date);
   }, [simulation]);
 
   // Current selected date string
@@ -39,25 +39,18 @@ export const useDateNavigation = (simulation: Simulation): UseDateNavigationRetu
         return;
       }
 
-      if (event.key === 'ArrowLeft' && !event.repeat) {
+      if (event.key === "ArrowLeft" && !event.repeat) {
         event.preventDefault();
         handlePreviousDate();
-      } else if (event.key === 'ArrowRight' && !event.repeat) {
+      } else if (event.key === "ArrowRight" && !event.repeat) {
         event.preventDefault();
         handleNextDate();
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
   }, [handlePreviousDate, handleNextDate]);
-
-  // Update selected date index when simulation data changes
-  useEffect(() => {
-    if (simulation.rebalanceLogs.length > 0) {
-      setSelectedDateIndex(simulation.rebalanceLogs.length - 1);
-    }
-  }, [simulation.rebalanceLogs]);
 
   return {
     selectedDate,

@@ -1,15 +1,14 @@
 import { useMemo } from "react";
-import { Simulation, RebalanceLog, PortfolioSnapshot, D3ChartData } from "../core/models";
+import { Simulation, PortfolioSnapshot, D3ChartData } from "../core/models";
 
 export const useChartData = (simulation: Simulation, selectedDate: string | null): D3ChartData => {
   // Memoize expensive chart data calculations
   const d3ChartData = useMemo((): D3ChartData => {
-    if (!simulation || simulation.rebalanceLogs.length === 0) {
+    if (!simulation) {
       return {
         priceChart: {},
         ratioChart: {},
         pullbackChart: {},
-        rebalanceLogsMap: {},
       };
     }
 
@@ -17,12 +16,6 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
     const portfolioSnapshotsMap: Record<string, PortfolioSnapshot> = {};
     simulation.portfolioSnapshots.forEach((snapshot) => {
       portfolioSnapshotsMap[snapshot.date] = snapshot;
-    });
-
-    // Create rebalance logs map for quick lookup by date
-    const newRebalanceLogsMap: Record<string, RebalanceLog> = {};
-    simulation.rebalanceLogs.forEach((log) => {
-      newRebalanceLogsMap[log.date] = log;
     });
 
     const priceChart = {
@@ -38,18 +31,10 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
         time: snapshot.date,
         value: snapshot.investments.mockTotalNothing,
       })),
-      strategyTotalAll: simulation.portfolioSnapshots.map((snapshot) => ({
+      strategyTotal: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
         value: snapshot.investments.total,
       })),
-      strategyTotal: simulation.rebalanceLogs.map((rebalanceLog) => ({
-        time: rebalanceLog.date,
-        value: rebalanceLog.before.investments.total,
-      })),
-      // Target: simulation.rebalanceLogs.map((rebalanceLog) => ({
-      //   time: rebalanceLog.date,
-      //   value: rebalanceLog.before.nextTarget,
-      // })),
     };
 
     const ratioChart = {
@@ -70,7 +55,6 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
       priceChart,
       ratioChart,
       pullbackChart,
-      rebalanceLogsMap: newRebalanceLogsMap,
     };
   }, [simulation]);
 
