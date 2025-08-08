@@ -23,10 +23,10 @@ export const loadData = async (
       QQQ: (await import("../data/QQQ.json")).default,
       TQQQ: (await import("../data/TQQQ.json")).default,
     };
-    
+
     // Initialize cumulative rate cache for performance
     initializeCumulativeRateCache(marketData);
-    
+
     setMarketData(marketData);
   } catch (error) {
     console.error("Error loading data:", error);
@@ -36,16 +36,6 @@ export const loadData = async (
 };
 
 export const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) => {
-  const investments: Investments = {
-    total: simulation.variables.initialMoney,
-    TQQQ: simulation.variables.initialMoney * 1,
-    cash: simulation.variables.initialMoney * 0,
-    ratio: 1,
-    mockTotalQQQ: simulation.variables.initialMoney,
-    mockTotalTQQQ: simulation.variables.initialMoney,
-    mockTotalNothing: simulation.variables.initialMoney,
-  };
-
   const firstValidDate = Object.keys(marketData.TQQQ).find((date) => date >= simulation.variables.startDate);
 
   if (!firstValidDate) {
@@ -54,29 +44,42 @@ export const setupInitialPortfolio = (simulation: Simulation, marketData: Market
 
   simulation.variables.startDate = firstValidDate;
 
+  const cumulativeRate = calculateCumulativeRate(firstValidDate, marketData);
+  const shouldStart = cumulativeRate > 0;
+
+  const investments: Investments = {
+    total: simulation.variables.initialMoney * 1,
+    TQQQ: simulation.variables.initialMoney * (shouldStart ? 1 : 0),
+    cash: simulation.variables.initialMoney * (shouldStart ? 0 : 1),
+    ratio: shouldStart ? 1 : 0,
+    mockTotalQQQ: simulation.variables.initialMoney,
+    mockTotalTQQQ: simulation.variables.initialMoney,
+    mockTotalNothing: simulation.variables.initialMoney,
+  };
+
   const portfolioSnapshot: PortfolioSnapshot = {
     date: firstValidDate,
     investments: investments,
     cumulativeRateSinceRebalance: 0,
-    cumulativeRate: 0,
+    cumulativeRate: cumulativeRate,
     peak: simulation.variables.initialMoney,
     pullback: 0,
     shouldPanic: false,
     shouldEnter: false,
     lastRebalanceDate: firstValidDate,
-    nextRebalanceDate: addDays(firstValidDate, simulation.variables.rebalanceDays),
+    nextRebalanceDate: addDays(firstValidDate, 1),
   };
 
   simulation.portfolioSnapshots = [portfolioSnapshot];
 
-  // const rebalanceLog: RebalanceLog = {
-  //   date: firstValidDate,
-  //   before: portfolioSnapshot,
-  //   after: portfolioSnapshot,
-  //   cumulativeRateSinceLastRebalance: 0,
-  //   rebalanceType: RebalanceType.OnTrack,
-  // };
-  // simulation.rebalanceLogs = [rebalanceLog];
+  const rebalanceLog: RebalanceLog = {
+    date: firstValidDate,
+    before: portfolioSnapshot,
+    after: portfolioSnapshot,
+    cumulativeRateSinceLastRebalance: 0,
+    rebalanceType: RebalanceType.OnTrack,
+  };
+  simulation.rebalanceLogs = [rebalanceLog];
 };
 
 export const startSimulation = (
@@ -250,25 +253,19 @@ export const runMultipleSimulations = async (
   return { results: [], analysisResults };
 };
 
-// Cache for pre-computed cumulative rates to improve performance
 let cumulativeRateCache: { [date: string]: number } = {};
 let cacheInitialized = false;
 
-/**
- * Pre-computes all cumulative rates for better performance
- * This should be called once when market data is loaded
- */
 export const initializeCumulativeRateCache = (marketData: MarketData): void => {
   cumulativeRateCache = {};
   const availableDates = Object.keys(marketData.TQQQ).sort();
-  
+
   for (let i = 0; i < availableDates.length; i++) {
     const currentDate = availableDates[i];
-    
-    // Find start date (90 days ago or closest available)
-    const startDate90DaysAgo = addDays(currentDate, -90);
+
+    const startDate90DaysAgo = addDays(currentDate, -400);
     let startIndex = -1;
-    
+
     // Find the first date on or after startDate90DaysAgo
     for (let j = 0; j < i; j++) {
       if (availableDates[j] >= startDate90DaysAgo) {
@@ -276,35 +273,35 @@ export const initializeCumulativeRateCache = (marketData: MarketData): void => {
         break;
       }
     }
-    
+
     if (startIndex === -1 || startIndex >= i) {
       cumulativeRateCache[currentDate] = -1; // Return -100% if not enough data
       continue;
     }
-    
+
     const startDate = availableDates[startIndex];
     const startData = marketData.TQQQ[startDate];
     const endData = marketData.TQQQ[currentDate];
-    
+
     if (!startData || !endData) {
       cumulativeRateCache[currentDate] = -1;
       continue;
     }
-    
+
     // Extract close prices from the new data structure
-    const startClose = typeof startData === 'object' ? startData.close : startData;
-    const endClose = typeof endData === 'object' ? endData.close : endData;
-    
+    const startClose = typeof startData === "object" ? startData.close : startData;
+    const endClose = typeof endData === "object" ? endData.close : endData;
+
     if (startClose === undefined || endClose === undefined || startClose <= 0) {
       cumulativeRateCache[currentDate] = -1;
       continue;
     }
-    
+
     // Calculate cumulative rate: (end_price - start_price) / start_price
     const cumulativeRate = (endClose - startClose) / startClose;
     cumulativeRateCache[currentDate] = cumulativeRate;
   }
-  
+
   cacheInitialized = true;
 };
 
@@ -313,12 +310,12 @@ export const calculateCumulativeRate = (date: string, marketData: MarketData): n
   if (!cacheInitialized) {
     initializeCumulativeRateCache(marketData);
   }
-  
+
   // Return cached value if available
   if (cumulativeRateCache[date] !== undefined) {
     return cumulativeRateCache[date] === -1 ? -1 : cumulativeRateCache[date];
   }
-  
+
   // Fallback to original calculation for dates not in cache
   // Calculate date 90 days before the given date
   const startDate90DaysAgo = addDays(date, -90);
@@ -342,8 +339,8 @@ export const calculateCumulativeRate = (date: string, marketData: MarketData): n
   }
 
   // Extract close prices from the new data structure
-  const startClose = typeof startData === 'object' ? startData.close : startData;
-  const endClose = typeof endData === 'object' ? endData.close : endData;
+  const startClose = typeof startData === "object" ? startData.close : startData;
+  const endClose = typeof endData === "object" ? endData.close : endData;
 
   if (startClose === undefined || endClose === undefined || startClose <= 0) {
     return -1;

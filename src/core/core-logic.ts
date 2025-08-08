@@ -12,9 +12,6 @@ import { PORTFOLIO_LIMITS, TIME_CONSTANTS } from "./constants";
 const PANIC_THRESHOLD = -20; // Percentage drop that triggers panic mode
 const DOUBLE_DROP_MULTIPLIER = 2;
 
-/**
- * Processes a single date in the simulation, handling portfolio updates and rebalancing
- */
 const processSimulationDate = (simulation: Simulation, date: string, marketData: MarketData): PortfolioSnapshot => {
   const portfolioSnapshot = computePortfolioSnapshot(simulation, date, marketData);
 
@@ -25,9 +22,6 @@ const processSimulationDate = (simulation: Simulation, date: string, marketData:
   return portfolioSnapshot;
 };
 
-/**
- * Filters market data to only include dates within the simulation range
- */
 const getRelevantMarketDates = (marketData: MarketData, startDate: string, endDate: string): string[] => {
   return Object.keys(marketData.TQQQ).filter((date) => date > startDate && date <= endDate);
 };
@@ -42,7 +36,6 @@ export const runSingleSimulation = (simulation: Simulation, marketData: MarketDa
   };
 
   setupInitialPortfolio(newSimulation, marketData);
-  rebalance(newSimulation.portfolioSnapshots[0], newSimulation);
 
   // Get relevant market dates within our simulation range
   const marketDates = getRelevantMarketDates(
@@ -67,18 +60,12 @@ export const runSingleSimulation = (simulation: Simulation, marketData: MarketDa
   return newSimulation;
 };
 
-/**
- * Helper function to calculate market multipliers from percentage changes
- */
 const calculateMultipliers = (tqqqDelta: number, qqqDelta: number, cashDayRate: number) => ({
   tqqq: tqqqDelta / 100 + 1,
   qqq: qqqDelta / 100 + 1,
   cash: cashDayRate + 1,
 });
 
-/**
- * Helper function to update mock portfolio totals with new cash
- */
 const addNewCashToPortfolio = (investments: Investments, newCash: number) => {
   investments.cash += newCash;
   investments.mockTotalQQQ += newCash;
@@ -126,7 +113,7 @@ export const computePortfolioSnapshot = (
   newSnapshot.cumulativeRateSinceRebalance = (1 + newSnapshot.cumulativeRateSinceRebalance) * multipliers.tqqq - 1;
 
   // Check for panic conditions
-  if (tqqqDelta < PANIC_THRESHOLD || newSnapshot.cumulativeRate < -0.4) {
+  if (tqqqDelta < PANIC_THRESHOLD) {
     newSnapshot.shouldPanic = true;
     newSnapshot.nextRebalanceDate = date;
   }
@@ -134,18 +121,12 @@ export const computePortfolioSnapshot = (
   return newSnapshot;
 };
 
-/**
- * Helper function to update portfolio allocation
- */
 const updatePortfolioAllocation = (snapshot: PortfolioSnapshot, newTargetRatio: number) => {
   snapshot.investments.TQQQ = snapshot.investments.total * newTargetRatio;
   snapshot.investments.cash = snapshot.investments.total * (1 - newTargetRatio);
   snapshot.investments.ratio = newTargetRatio;
 };
 
-/**
- * Determines the rebalance type and target allocation based on performance and panic state
- */
 const determineRebalanceStrategy = (
   cumulativeRate: number,
   dropRate: number,
@@ -158,12 +139,14 @@ const determineRebalanceStrategy = (
 
   const doubleDropRate = dropRate * DOUBLE_DROP_MULTIPLIER;
 
-  if (cumulativeRate >= dropRate) {
-    return { type: RebalanceType.OnTrack, targetRatio: PORTFOLIO_LIMITS.MAX_RATIO, rebalanceDays: baseRebalanceDays };
+  if (cumulativeRate >= 0.3) {
+    return { type: RebalanceType.OnTrack, targetRatio: 1, rebalanceDays: 1 };
+  } else if (cumulativeRate >= 0) {
+    return { type: RebalanceType.OnTrack, targetRatio: 1, rebalanceDays: 1 };
   } else if (cumulativeRate >= doubleDropRate) {
-    return { type: RebalanceType.Drop, rebalanceDays: baseRebalanceDays };
+    return { type: RebalanceType.Drop, rebalanceDays: 1 };
   } else {
-    return { type: RebalanceType.BigDrop, targetRatio: PORTFOLIO_LIMITS.MIN_RATIO, rebalanceDays: baseRebalanceDays };
+    return { type: RebalanceType.BigDrop, rebalanceDays: 1 };
   }
 };
 
@@ -177,7 +160,7 @@ export const rebalance = (before: PortfolioSnapshot, simulation: Simulation): Po
   addNewCashToPortfolio(before.investments, newCash);
 
   const after = deepCopyPortfolioSnapshot(before);
-  const cumulativeRate = before.cumulativeRateSinceRebalance;
+  const cumulativeRate = before.cumulativeRate;
 
   const strategy = determineRebalanceStrategy(cumulativeRate, dropRate, before.shouldPanic, rebalanceDays);
   if (strategy.targetRatio !== undefined) {
