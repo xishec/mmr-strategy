@@ -89,6 +89,9 @@ export const runMultipleSimulations = async (
   dashboardVariables: DashboardVariables,
   marketData: MarketData
 ): Promise<MultiSimulationResults> => {
+  // Yield once at the start to allow UI to update loading state
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  
   // Only store essential data to minimize memory usage
   const strategyRates: number[] = [];
   const qqqRates: number[] = [];
