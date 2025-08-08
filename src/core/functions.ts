@@ -15,7 +15,7 @@ import { TIME_CONSTANTS } from "./constants";
 
 export const loadData = async (
   setDataLoading: (loading: boolean) => void,
-  setMarketData: (data: MarketData | null) => void
+  setMarketData: (data: MarketData) => void
 ) => {
   try {
     setDataLoading(true);
@@ -259,31 +259,24 @@ export const calculateCumulativeRate = (date: string, marketData: MarketData): n
     return -100;
   }
 
-  // Get all dates between startDate and date (inclusive of startDate, exclusive of date)
-  const periodicDates = availableDates.filter((d) => d >= startDate && d < date);
+  // Get the start and end close prices
+  const startData = marketData.TQQQ[startDate];
+  const endData = marketData.TQQQ[date];
 
-  if (periodicDates.length === 0) {
+  if (!startData || !endData) {
     return -100;
   }
 
-  // Calculate cumulative rate by compounding daily rates
-  // Start with 1.0 (representing 100% of initial value)
-  let cumulativeMultiplier = 1.0;
+  // Extract close prices from the new data structure
+  const startClose = typeof startData === 'object' ? startData.close : startData;
+  const endClose = typeof endData === 'object' ? endData.close : endData;
 
-  for (const dateKey of periodicDates) {
-    const dailyRate = marketData.TQQQ[dateKey];
-    if (dailyRate === undefined) {
-      return -100;
-    }
-
-    // Convert percentage to decimal and add 1 to get multiplier
-    // e.g., -20.58% becomes 0.7942 (1 + (-20.58/100))
-    const dailyMultiplier = 1 + dailyRate / 100;
-    cumulativeMultiplier *= dailyMultiplier;
+  if (startClose === undefined || endClose === undefined || startClose <= 0) {
+    return -100;
   }
 
-  // Convert back to rate (subtract 1 to get the change)
-  const cumulativeRate = cumulativeMultiplier - 1;
+  // Calculate cumulative rate: (end_price - start_price) / start_price
+  const cumulativeRate = (endClose - startClose) / startClose;
 
   return cumulativeRate;
 };

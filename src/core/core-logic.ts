@@ -91,8 +91,8 @@ export const computePortfolioSnapshot = (
   const lastSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
   const newSnapshot = deepCopyPortfolioSnapshot(lastSnapshot);
 
-  const tqqqDelta = marketData.TQQQ[date] || 0;
-  const qqqDelta = marketData.QQQ[date] || 0;
+  const tqqqDelta = marketData.TQQQ[date].rate || 0;
+  const qqqDelta = marketData.QQQ[date].rate || 0;
   const multipliers = calculateMultipliers(tqqqDelta, qqqDelta, simulation.variables.cashDayRate);
 
   // Calculate new portfolio values

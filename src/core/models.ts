@@ -79,9 +79,14 @@ export interface Investments {
   ratio: number;
 }
 
+export interface DailyData {
+  rate: number;
+  close: number;
+}
+
 export interface MarketData {
-  QQQ: Record<string, number>;
-  TQQQ: Record<string, number>;
+  QQQ: Record<string, DailyData>;
+  TQQQ: Record<string, DailyData>;
 }
 
 export interface ChartPoint {
