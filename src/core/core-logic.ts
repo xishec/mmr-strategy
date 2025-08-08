@@ -1,6 +1,6 @@
 import { daysBetween } from "./date-utils";
 import { calculateAnnualizedRates, deepCopyPortfolioSnapshot } from "./functions";
-import { Investments, MarketData, PortfolioSnapshot, Signal, Simulation } from "./models";
+import { Investments, MarketData, PortfolioSnapshot, Signal, Simulation, SimulationVariables } from "./models";
 
 export const runSingleSimulation = (oldSimulation: Simulation, marketData: MarketData): Simulation => {
   const simulation: Simulation = {
@@ -18,7 +18,7 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
   let lastCashAdditionDate = simulation.simulationVariables.startDate;
 
   for (const date of marketDates) {
-    const signal = getSignal(date, marketData, marketDates);
+    const signal = getSignal(date, marketData, marketDates, simulation.simulationVariables);
 
     const lastSnapshot =
       simulation.portfolioSnapshots.length === 0
@@ -46,14 +46,20 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
   return simulation;
 };
 
-const getSignal = (date: string, marketData: MarketData, marketDates: string[]): Signal => {
+const getSignal = (
+  date: string,
+  marketData: MarketData,
+  marketDates: string[],
+  simulationVariables: SimulationVariables
+): Signal => {
   const currentDateIndex = marketDates.indexOf(date);
   const last30DaysFromCurrent = marketDates.slice(Math.max(0, currentDateIndex - 30), currentDateIndex);
+  console.log(simulationVariables.SMAUpMargin, simulationVariables.SMADownMargin);
   return {
     date,
     bigDropLast30Days: last30DaysFromCurrent.some((d) => marketData.TQQQ[d].rate < -20),
-    isAboveSMA200: marketData.QQQ[date].close >= marketData.QQQ[date].sma200! * 1.05,
-    isBelowSMA200: marketData.QQQ[date].close < marketData.QQQ[date].sma200! * 1,
+    isAboveSMA200: marketData.QQQ[date].close >= marketData.QQQ[date].sma200! * (1 + simulationVariables.SMAUpMargin),
+    isBelowSMA200: marketData.QQQ[date].close < marketData.QQQ[date].sma200! * (1 - simulationVariables.SMADownMargin),
   };
 };
 
@@ -62,7 +68,6 @@ const updateStrategyToSnapshot = (newSnapshot: PortfolioSnapshot, marketData: Ma
 
   if (signal.isAboveSMA200 && !signal.bigDropLast30Days) {
     // all-in
-    console.log(newSnapshot.date);
     newSnapshot.investments.TQQQ = newSnapshot.investments.total;
     newSnapshot.investments.cash = 0;
     newSnapshot.investments.ratio = 1;
