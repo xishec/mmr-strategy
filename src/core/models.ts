@@ -32,6 +32,8 @@ export interface MultiSimulationVariables {
   simulationAnalysisMinusYears: number;
 }
 
+export interface DashboardVariables extends SimulationVariables, MultiSimulationVariables {}
+
 export interface MultiSimulationResults {
   totalSimulations: number;
   averageStrategyRate: number;
