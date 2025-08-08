@@ -1,6 +1,6 @@
 import { addDays, daysBetween } from "./date-utils";
 import { calculateAnnualizedRates, calculateCumulativeRate, deepCopyPortfolioSnapshot } from "./functions";
-import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation } from "./models";
+import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Signal, Simulation } from "./models";
 import { TIME_CONSTANTS } from "./constants";
 
 const PANIC_THRESHOLD = -20;
@@ -22,16 +22,28 @@ export const runSingleSimulation = (simulation: Simulation, marketData: MarketDa
     newSimulation.variables.endDate
   );
 
+  let lastCashAdditionDate = newSimulation.variables.startDate;
+
   for (const date of marketDates) {
     const lastSnapshot = newSimulation.portfolioSnapshots[newSimulation.portfolioSnapshots.length - 1];
+    const newSnapshot = deepCopyPortfolioSnapshot(lastSnapshot);
 
     const currentDateIndex = marketDates.indexOf(date);
     const last30DaysFromCurrent = marketDates.slice(Math.max(0, currentDateIndex - 30), currentDateIndex);
-    const noBigDropLast30Days = !last30DaysFromCurrent.some((d) => marketData.TQQQ[d].rate < -20);
-    const isAboveSMA200 = marketData.QQQ[date].close > marketData.QQQ[date].sma200! * 1;
+    const signal: Signal = {
+      date,
+      bigDropLast30Days: last30DaysFromCurrent.some((d) => marketData.TQQQ[d].rate < -20),
+      isAboveSMA200: marketData.QQQ[date].close >= marketData.QQQ[date].sma200! * 1.05,
+      isBelowSMA200: marketData.QQQ[date].close < marketData.QQQ[date].sma200! * 0.95,
+    };
 
-    const newSnapshot = deepCopyPortfolioSnapshot(lastSnapshot);
-    updateStrategyToSnapshot(newSnapshot, marketData, isAboveSMA200, noBigDropLast30Days);
+    const daysSinceLastCashAddition = daysBetween(lastCashAdditionDate, date);
+    if (daysSinceLastCashAddition >= 30 && newSimulation.variables.monthlyNewCash > 0) {
+      addNewCashToPortfolio(newSnapshot.investments, newSimulation.variables.monthlyNewCash);
+      lastCashAdditionDate = date;
+    }
+
+    updateStrategyToSnapshot(newSnapshot, marketData, signal);
     updateMockToSnapshot(newSnapshot, marketData);
 
     newSnapshot.date = date;
@@ -45,22 +57,22 @@ export const runSingleSimulation = (simulation: Simulation, marketData: MarketDa
   return newSimulation;
 };
 
-const updateStrategyToSnapshot = (
-  newSnapshot: PortfolioSnapshot,
-  marketData: MarketData,
-  isAboveSMA200: boolean,
-  noBigDropLast30Days: boolean
-) => {
+const updateStrategyToSnapshot = (newSnapshot: PortfolioSnapshot, marketData: MarketData, signal: Signal) => {
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
 
-  if (isAboveSMA200 && noBigDropLast30Days) {
+  if (signal.isAboveSMA200 && !signal.bigDropLast30Days) {
+    // all-in
+    console.log(newSnapshot.date);
     newSnapshot.investments.TQQQ = newSnapshot.investments.total;
     newSnapshot.investments.cash = 0;
     newSnapshot.investments.ratio = 1;
-  } else {
+  } else if (signal.isBelowSMA200 || signal.bigDropLast30Days) {
+    // panic
     newSnapshot.investments.TQQQ = 0;
     newSnapshot.investments.cash = newSnapshot.investments.total;
     newSnapshot.investments.ratio = 0;
+  } else {
+    // hold
   }
   newSnapshot.investments.TQQQ *= TQQQRate / 100 + 1;
   newSnapshot.investments.cash *= 1;
@@ -129,14 +141,14 @@ const getRelevantMarketDates = (marketData: MarketData, startDate: string, endDa
 //   cash: cashDayRate + 1,
 // });
 
-// const addNewCashToPortfolio = (investments: Investments, newCash: number) => {
-//   investments.cash += newCash;
-//   investments.mockTotalQQQ += newCash;
-//   investments.mockTotalTQQQ += newCash;
-//   investments.mockTotalNothing += newCash;
-//   investments.total = investments.cash + investments.TQQQ;
-//   investments.ratio = investments.TQQQ / investments.total;
-// };
+const addNewCashToPortfolio = (investments: Investments, newCash: number) => {
+  investments.cash += newCash;
+  investments.mockTotalQQQ += newCash;
+  investments.mockTotalTQQQ += newCash;
+  investments.mockTotalNothing += newCash;
+  investments.total = investments.cash + investments.TQQQ;
+  investments.ratio = investments.TQQQ / investments.total;
+};
 
 // export const computePortfolioSnapshot = (
 //   simulation: Simulation,

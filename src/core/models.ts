@@ -54,6 +54,13 @@ export interface RebalanceLog {
   rebalanceType: RebalanceType;
 }
 
+export interface Signal {
+  date: string;
+  bigDropLast30Days: boolean;
+  isAboveSMA200: boolean;
+  isBelowSMA200: boolean;
+}
+
 export enum RebalanceType {
   OnTrack = "On Track",
   Drop = "Drop",
