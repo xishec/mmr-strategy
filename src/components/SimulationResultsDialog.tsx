@@ -68,24 +68,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .nice()
       .range([height, 0]);
 
-    // Line generators
-    const strategyLine = d3
-      .line<(typeof parsedData)[0]>()
-      .x((d) => xScale(d.date))
-      .y((d) => yScale(d.strategyRate))
-      .curve(d3.curveMonotoneX);
-
-    const qqqLine = d3
-      .line<(typeof parsedData)[0]>()
-      .x((d) => xScale(d.date))
-      .y((d) => yScale(d.qqqRate))
-      .curve(d3.curveMonotoneX);
-
-    const tqqqLine = d3
-      .line<(typeof parsedData)[0]>()
-      .x((d) => xScale(d.date))
-      .y((d) => yScale(d.tqqqRate))
-      .curve(d3.curveMonotoneX);
+    // No line generators needed - using scatter plot markers instead
 
     // Add grid lines
     g.selectAll(".grid-line")
@@ -139,27 +122,46 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .call(applyTextStyle)
       .text("Simulation Start Date");
 
-    // Add lines
-    g.append("path")
-      .datum(parsedData)
-      .attr("fill", "none")
-      .attr("stroke", yellow) // for strategy
-      .attr("stroke-width", 1)
-      .attr("d", strategyLine);
+    // Add scatter plot markers instead of lines
+    
+    // Strategy rate markers
+    g.selectAll(".strategy-dot")
+      .data(parsedData)
+      .enter()
+      .append("circle")
+      .attr("class", "strategy-dot")
+      .attr("cx", (d) => xScale(d.date))
+      .attr("cy", (d) => yScale(d.strategyRate))
+      .attr("r", 1)
+      .attr("fill", yellow)
+      .attr("stroke", yellow)
+      .attr("stroke-width", 1);
 
-    g.append("path")
-      .datum(parsedData)
-      .attr("fill", "none")
-      .attr("stroke", blue) // for QQQ
-      .attr("stroke-width", 1)
-      .attr("d", qqqLine);
+    // QQQ rate markers
+    g.selectAll(".qqq-dot")
+      .data(parsedData)
+      .enter()
+      .append("circle")
+      .attr("class", "qqq-dot")
+      .attr("cx", (d) => xScale(d.date))
+      .attr("cy", (d) => yScale(d.qqqRate))
+      .attr("r", 1)
+      .attr("fill", blue)
+      .attr("stroke", blue)
+      .attr("stroke-width", 1);
 
-    g.append("path")
-      .datum(parsedData)
-      .attr("fill", "none")
-      .attr("stroke", red) // for TQQQ
-      .attr("stroke-width", 1)
-      .attr("d", tqqqLine);
+    // TQQQ rate markers
+    g.selectAll(".tqqq-dot")
+      .data(parsedData)
+      .enter()
+      .append("circle")
+      .attr("class", "tqqq-dot")
+      .attr("cx", (d) => xScale(d.date))
+      .attr("cy", (d) => yScale(d.tqqqRate))
+      .attr("r", 1)
+      .attr("fill", red)
+      .attr("stroke", red)
+      .attr("stroke-width", 1);
 
     // Add legend with better styling
     const legend = g.append("g").attr("transform", `translate(20, 20)`);

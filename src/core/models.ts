@@ -42,6 +42,7 @@ export interface PortfolioSnapshot {
   lastRebalanceDate: string;
   nextRebalanceDate: string;
   shouldPanic: boolean;
+  shouldEnter: boolean;
 }
 
 export interface RebalanceLog {

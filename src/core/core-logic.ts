@@ -2,7 +2,6 @@ import { addDays, daysBetween } from "./date-utils";
 import {
   calculateAnnualizedRates,
   deepCopyPortfolioSnapshot,
-  isGoodDayToStart,
   setupInitialPortfolio,
 } from "./functions";
 import { Investments, MarketData, PortfolioSnapshot, RebalanceLog, RebalanceType, Simulation } from "./models";

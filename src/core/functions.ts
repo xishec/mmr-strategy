@@ -33,9 +33,9 @@ export const loadData = async (
 export const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) => {
   const investments: Investments = {
     total: simulation.variables.initialMoney,
-    TQQQ: simulation.variables.initialMoney * 0.5,
-    cash: simulation.variables.initialMoney * 0.5,
-    ratio: 0.5,
+    TQQQ: simulation.variables.initialMoney * 1,
+    cash: simulation.variables.initialMoney * 0,
+    ratio: 1,
     mockTotalQQQ: simulation.variables.initialMoney,
     mockTotalTQQQ: simulation.variables.initialMoney,
     mockTotalNothing: simulation.variables.initialMoney,
@@ -56,6 +56,7 @@ export const setupInitialPortfolio = (simulation: Simulation, marketData: Market
     peak: simulation.variables.initialMoney,
     pullback: 0,
     shouldPanic: false,
+    shouldEnter: false,
     lastRebalanceDate: firstValidDate,
     nextRebalanceDate: addDays(firstValidDate, simulation.variables.rebalanceDays),
   };
@@ -184,7 +185,7 @@ export const runMultipleSimulations = async (
     // Check if this date exists in market data or find next available date
     const nextAvailableDate = availableDates.find((date) => date >= currentIterationDate);
 
-    if (nextAvailableDate && isGoodDayToStart(nextAvailableDate, marketData, variables)) {
+    if (nextAvailableDate && calculateCumulativeRate(nextAvailableDate, marketData) >= 0) {
       try {
         // Check if we have at least minimum required days of data after the start date
         const minEndDate = addDays(nextAvailableDate, TIME_CONSTANTS.MIN_DATA_DAYS);
@@ -243,7 +244,7 @@ export const runMultipleSimulations = async (
   return { results: [], analysisResults };
 };
 
-export const isGoodDayToStart = (date: string, marketData: MarketData, variables: Variables): boolean => {
+export const calculateCumulativeRate = (date: string, marketData: MarketData): number => {
   // Calculate date 90 days before the given date
   const startDate90DaysAgo = addDays(date, -90);
 
@@ -253,27 +254,37 @@ export const isGoodDayToStart = (date: string, marketData: MarketData, variables
   // Find the first available date on or after startDate90DaysAgo
   const startDate = availableDates.find((d) => d >= startDate90DaysAgo);
 
-  // If we don't have data going back 90 days, return false
   if (!startDate || startDate >= date) {
-    return false;
+    return -100;
   }
 
-  // Get TQQQ values at start and end dates
-  const startValue = marketData.TQQQ[startDate];
-  const endValue = marketData.TQQQ[date];
+  // Get all dates between startDate and date (inclusive of startDate, exclusive of date)
+  const periodicDates = availableDates.filter((d) => d >= startDate && d < date);
 
-  // If either value is missing, return false
-  if (startValue === undefined || endValue === undefined) {
-    return false;
+  if (periodicDates.length === 0) {
+    return -100;
   }
 
-  // Calculate cumulative rate over the 90-day period
-  // This represents the total return over the period
-  const cumulativeRate = (endValue - startValue) / Math.abs(startValue);
+  // Calculate cumulative rate by compounding daily rates
+  // Start with 1.0 (representing 100% of initial value)
+  let cumulativeMultiplier = 1.0;
 
-  // Convert dropRate (which is typically negative) to positive for comparison
-  // The cumulative rate should be greater than the drop rate threshold
-  return cumulativeRate > variables.dropRate * 100;
+  for (const dateKey of periodicDates) {
+    const dailyRate = marketData.TQQQ[dateKey];
+    if (dailyRate === undefined) {
+      return -100;
+    }
+    
+    // Convert percentage to decimal and add 1 to get multiplier
+    // e.g., -20.58% becomes 0.7942 (1 + (-20.58/100))
+    const dailyMultiplier = 1 + (dailyRate / 100);
+    cumulativeMultiplier *= dailyMultiplier;
+  }
+
+  // Convert back to rate (subtract 1 to get the change)
+  const cumulativeRate = cumulativeMultiplier - 1;
+
+  return cumulativeRate;
 };
 
 /**
