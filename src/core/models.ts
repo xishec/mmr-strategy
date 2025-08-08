@@ -77,6 +77,7 @@ export interface Investments {
   TQQQ: number;
   cash: number;
   ratio: number;
+  sma200: number;
 }
 
 export interface DailyData {

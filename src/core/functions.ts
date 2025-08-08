@@ -27,6 +27,9 @@ export const loadData = async (
     // Initialize cumulative rate cache for performance
     initializeCumulativeRateCache(marketData);
 
+    // Initialize SMA cache for performance (200-day period)
+    initializeSMACache(marketData, 200);
+
     setMarketData(marketData);
   } catch (error) {
     console.error("Error loading data:", error);
@@ -55,6 +58,7 @@ export const setupInitialPortfolio = (simulation: Simulation, marketData: Market
     mockTotalQQQ: simulation.variables.initialMoney,
     mockTotalTQQQ: simulation.variables.initialMoney,
     mockTotalNothing: simulation.variables.initialMoney,
+    sma200: calculateSMA(firstValidDate, marketData, 200),
   };
 
   const portfolioSnapshot: PortfolioSnapshot = {
@@ -256,6 +260,10 @@ export const runMultipleSimulations = async (
 let cumulativeRateCache: { [date: string]: number } = {};
 let cacheInitialized = false;
 
+// Cache for pre-computed SMA values to improve performance
+let smaCache: { [date: string]: number } = {};
+let smaCacheInitialized = false;
+
 export const initializeCumulativeRateCache = (marketData: MarketData): void => {
   cumulativeRateCache = {};
   const availableDates = Object.keys(marketData.TQQQ).sort();
@@ -305,6 +313,53 @@ export const initializeCumulativeRateCache = (marketData: MarketData): void => {
   cacheInitialized = true;
 };
 
+/**
+ * Pre-computes all SMA values for better performance
+ * This should be called once when market data is loaded
+ */
+export const initializeSMACache = (marketData: MarketData, period: number = 90): void => {
+  smaCache = {};
+  const availableDates = Object.keys(marketData.TQQQ).sort();
+
+  for (let i = 0; i < availableDates.length; i++) {
+    const currentDate = availableDates[i];
+
+    // Need at least 'period' days of data for SMA calculation
+    if (i < period - 1) {
+      smaCache[currentDate] = -1; // Not enough data
+      continue;
+    }
+
+    // Get the last 'period' days including current date
+    const startIndex = i - period + 1;
+    const endIndex = i + 1; // exclusive
+
+    let sum = 0;
+    let validDays = 0;
+
+    for (let j = startIndex; j < endIndex; j++) {
+      const date = availableDates[j];
+      const data = marketData.TQQQ[date];
+
+      if (data) {
+        const closePrice = typeof data === "object" ? data.close : data;
+        if (closePrice !== undefined && closePrice > 0) {
+          sum += closePrice;
+          validDays++;
+        }
+      }
+    }
+
+    if (validDays === period) {
+      smaCache[currentDate] = sum / period;
+    } else {
+      smaCache[currentDate] = -1; // Not enough valid data
+    }
+  }
+
+  smaCacheInitialized = true;
+};
+
 export const calculateCumulativeRate = (date: string, marketData: MarketData): number => {
   // Initialize cache if not done yet
   if (!cacheInitialized) {
@@ -350,6 +405,49 @@ export const calculateCumulativeRate = (date: string, marketData: MarketData): n
   const cumulativeRate = (endClose - startClose) / startClose;
 
   return cumulativeRate;
+};
+
+export const calculateSMA = (date: string, marketData: MarketData, period: number = 90): number => {
+  // Initialize cache if not done yet
+  if (!smaCacheInitialized) {
+    initializeSMACache(marketData, period);
+  }
+
+  // Return cached value if available
+  if (smaCache[date] !== undefined) {
+    return smaCache[date] === -1 ? -1 : smaCache[date];
+  }
+
+  // Fallback to original calculation for dates not in cache
+  const availableDates = Object.keys(marketData.TQQQ).sort();
+  const dateIndex = availableDates.indexOf(date);
+
+  if (dateIndex === -1 || dateIndex < period - 1) {
+    return -1; // Not enough data
+  }
+
+  // Calculate SMA for the specified period
+  let sum = 0;
+  let validDays = 0;
+
+  for (let i = dateIndex - period + 1; i <= dateIndex; i++) {
+    const currentDate = availableDates[i];
+    const data = marketData.TQQQ[currentDate];
+
+    if (data) {
+      const closePrice = typeof data === "object" ? data.close : data;
+      if (closePrice !== undefined && closePrice > 0) {
+        sum += closePrice;
+        validDays++;
+      }
+    }
+  }
+
+  if (validDays === period) {
+    return sum / period;
+  }
+
+  return -1; // Not enough valid data
 };
 
 /**

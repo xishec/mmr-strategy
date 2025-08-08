@@ -93,7 +93,7 @@ const Chart: React.FC<ChartProps> = ({
     const priceKeys = [
       "strategyTotal",
       "strategyTotalAll",
-      "target",
+      "sma200",
       "mockTotalQQQ",
       "mockTotalTQQQ",
       "mockTotalNothing",
@@ -155,7 +155,7 @@ const Chart: React.FC<ChartProps> = ({
     const colorMap = {
       strategyTotal: yellow,
       strategyTotalAll: lightYellow,
-      target: black,
+      sma200: blue,
       mockTotalQQQ: green,
       mockTotalTQQQ: red,
       mockTotalNothing: "#ecececff",

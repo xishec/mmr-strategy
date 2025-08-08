@@ -12,7 +12,7 @@ def download_stock(ticker):
     print("*** Downloading TQQQ data to csv ***")
 
     # Set date range - using a longer period to get all available data
-    start_date = "2000-01-01"  # TQQQ inception was in 2010
+    start_date = "1995-01-01"
     end_date = datetime.today().strftime("%Y-%m-%d")
 
     try:
@@ -119,7 +119,7 @@ def simulate_TQQQ():
 
     # Initialize TQQQ simulation with starting values
     simulated_TQQQ_data = {}
-    
+
     # Get the starting close price from QQQ's first remaining day
     if sorted_dates[1:]:  # After removing first date
         first_remaining_date = sorted_dates[1]
@@ -132,18 +132,18 @@ def simulate_TQQQ():
 
     # Start TQQQ simulation with 3x the starting price of QQQ
     tqqq_close = starting_close * 3
-    
+
     for date, data_obj in sorted(QQQ_data.items()):
         # Extract the rate from QQQ data and multiply by 3 for TQQQ
         qqq_rate = data_obj["rate"] if isinstance(data_obj, dict) else data_obj
         tqqq_rate = qqq_rate * 3
-        
+
         # Calculate new TQQQ close price based on the leveraged rate
         tqqq_close = tqqq_close * (1 + tqqq_rate / 100)
-        
+
         simulated_TQQQ_data[date] = {
-            "rate": round(tqqq_rate, 2), 
-            "close": round(tqqq_close, 2)
+            "rate": round(tqqq_rate, 2),
+            "close": round(tqqq_close, 2),
         }
 
     # Replace TQQQ_data with simulated data
@@ -176,7 +176,7 @@ def simulate_TQQQ():
 
 
 if __name__ == "__main__":
-    # download_stock("QQQ")
-    # time.sleep(1)
-    # download_stock("TQQQ")
+    download_stock("QQQ")
+    time.sleep(1)
+    download_stock("TQQQ")
     simulate_TQQQ()

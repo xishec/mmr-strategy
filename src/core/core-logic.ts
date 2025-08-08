@@ -100,6 +100,7 @@ export const computePortfolioSnapshot = (
     mockTotalQQQ: lastSnapshot.investments.mockTotalQQQ * multipliers.qqq,
     mockTotalTQQQ: lastSnapshot.investments.mockTotalTQQQ * multipliers.tqqq,
     mockTotalNothing: lastSnapshot.investments.mockTotalNothing,
+    sma200: calculateCumulativeRate(date, marketData),
   };
 
   // Update snapshot with new values
