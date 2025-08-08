@@ -1,35 +1,57 @@
 export interface Simulation {
   portfolioSnapshots: PortfolioSnapshot[];
-  variables: Variables;
-  annualizedTQQQRate?: number;
-  annualizedQQQRate?: number;
-  annualizedStrategyRate?: number;
+  simulationVariables: SimulationVariables;
+  simulationResults?: SimulationResults;
 }
 
-export interface Variables {
+export interface SimulationVariables {
   initialMoney: number;
   startDate: string;
   endDate: string;
-  rebalanceDays: number;
   cashDayRate: number;
-  dropRate: number;
+  SMAUpMargin: number;
+  SMADownMargin: number;
   monthlyNewCash: number;
+}
+
+export interface SimulationResults {
+  annualizedTQQQRate: number;
+  annualizedQQQRate: number;
+  annualizedStrategyRate: number;
+}
+
+export interface MultiSimulation {
+  simulations: Simulation[];
+  multiSimulationVariables: MultiSimulationVariables;
+  multiSimulationResults?: MultiSimulationResults;
+}
+
+export interface MultiSimulationVariables {
   simulationFrequencyDays: number;
+  simulationDurationYears: number;
   simulationAnalysisMinusYears: number;
 }
 
-export interface DashboardVariables {
-  startDate: Date;
-  endDate: Date;
-  initialMoney: number;
-  rebalanceDays: number;
-  cashYearRate: number;
-  dropRate: number;
-  monthlyNewCash: number;
-  simulationYears: number;
-  isLogScale: boolean;
-  simulationFrequencyDays: number;
-  simulationAnalysisMinusYears: number;
+export interface MultiSimulationResults {
+  totalSimulations: number;
+  averageStrategyRate: number;
+  averageQQQRate: number;
+  averageTQQQRate: number;
+  strategyStandardDeviation: number;
+  qqqStandardDeviation: number;
+  tqqqStandardDeviation: number;
+  absoluteWorstStrategyRate: number;
+  relativeWorstStrategyRate: number;
+  absoluteWorstStrategyRateDate: string;
+  relativeWorstStrategyRateDate: string;
+  winRateVsQQQ: number;
+  strategyVsQQQImprovement: number;
+  resultsWithRates: Array<{
+    startDate: string;
+    strategyRate: number;
+    qqqRate: number;
+    tqqqRate: number;
+  }>;
 }
 
 export interface PortfolioSnapshot {
@@ -80,26 +102,4 @@ export interface D3ChartData {
   priceChart: MultiSeriesChartData;
   ratioChart: MultiSeriesChartData;
   pullbackChart: MultiSeriesChartData;
-}
-
-export interface AnalysisResults {
-  totalSimulations: number;
-  averageStrategyRate: number;
-  averageQQQRate: number;
-  averageTQQQRate: number;
-  strategyStandardDeviation: number;
-  qqqStandardDeviation: number;
-  tqqqStandardDeviation: number;
-  absoluteWorstStrategyRate: number;
-  relativeWorstStrategyRate: number;
-  absoluteWorstStrategyRateDate: string;
-  relativeWorstStrategyRateDate: string;
-  winRateVsQQQ: number;
-  strategyVsQQQImprovement: number;
-  resultsWithRates: Array<{
-    startDate: string;
-    strategyRate: number;
-    qqqRate: number;
-    tqqqRate: number;
-  }>;
 }
