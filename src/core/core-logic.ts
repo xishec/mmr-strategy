@@ -122,7 +122,7 @@ export const computePortfolioSnapshot = (
   newSnapshot.cumulativeRateSinceRebalance = (1 + newSnapshot.cumulativeRateSinceRebalance) * multipliers.tqqq - 1;
 
   // Check for panic conditions
-  if (tqqqDelta < PANIC_THRESHOLD || newSnapshot.cumulativeRateSinceRebalance < PANIC_THRESHOLD) {
+  if (tqqqDelta < PANIC_THRESHOLD) {
     newSnapshot.shouldPanic = true;
     newSnapshot.nextRebalanceDate = date;
   }

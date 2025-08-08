@@ -270,7 +270,6 @@ export const isGoodDayToStart = (date: string, marketData: MarketData, variables
   // Calculate cumulative rate over the 90-day period
   // This represents the total return over the period
   const cumulativeRate = (endValue - startValue) / Math.abs(startValue);
-  console.log(date, cumulativeRate, cumulativeRate > variables.dropRate * 100);
 
   // Convert dropRate (which is typically negative) to positive for comparison
   // The cumulative rate should be greater than the drop rate threshold
