@@ -15,8 +15,8 @@ export interface UseSimulationReturn {
 export const useSimulation = (marketData: MarketData | null): UseSimulationReturn => {
   // Simulation variables
   const [variables, setVariables] = useState<DashboardVariables>({
-    startDate: new Date(2000, 0, 1),
-    endDate: new Date(),
+    startDate: new Date(1998, 0, 1),
+    endDate: new Date(2003, 0, 1),
     initialMoney: 100000,
     rebalanceDays: 90,
     cashYearRate: 0.0,

@@ -50,7 +50,7 @@ export interface RebalanceLog {
   date: string;
   before: PortfolioSnapshot;
   after: PortfolioSnapshot;
-  cumulativeRateSinceLastRebalance: number;
+  note?: string;
   rebalanceType: RebalanceType;
 }
 
@@ -82,6 +82,7 @@ export interface Investments {
 export interface DailyData {
   rate: number;
   close: number;
+  sma200: number | null;
 }
 
 export interface MarketData {

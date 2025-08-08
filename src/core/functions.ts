@@ -1,7 +1,6 @@
 import { runSingleSimulation } from "./core-logic";
 import {
   AnalysisResults,
-  Investments,
   MarketData,
   PortfolioSnapshot,
   RebalanceLog,
@@ -38,60 +37,12 @@ export const loadData = async (
   }
 };
 
-export const setupInitialPortfolio = (simulation: Simulation, marketData: MarketData) => {
-  const firstValidDate = Object.keys(marketData.TQQQ).find((date) => date >= simulation.variables.startDate);
-
-  if (!firstValidDate) {
-    throw new Error(`No market data found for start date ${simulation.variables.startDate} or later`);
-  }
-
-  simulation.variables.startDate = firstValidDate;
-
-  const cumulativeRate = calculateCumulativeRate(firstValidDate, marketData);
-  const shouldStart = cumulativeRate > 0;
-
-  const investments: Investments = {
-    total: simulation.variables.initialMoney * 1,
-    TQQQ: simulation.variables.initialMoney * (shouldStart ? 1 : 0),
-    cash: simulation.variables.initialMoney * (shouldStart ? 0 : 1),
-    ratio: shouldStart ? 1 : 0,
-    mockTotalQQQ: simulation.variables.initialMoney,
-    mockTotalTQQQ: simulation.variables.initialMoney,
-    mockTotalNothing: simulation.variables.initialMoney,
-  };
-
-  const portfolioSnapshot: PortfolioSnapshot = {
-    date: firstValidDate,
-    investments: investments,
-    cumulativeRateSinceRebalance: 0,
-    cumulativeRate: cumulativeRate,
-    peak: simulation.variables.initialMoney,
-    pullback: 0,
-    shouldPanic: false,
-    shouldEnter: false,
-    lastRebalanceDate: firstValidDate,
-    nextRebalanceDate: addDays(firstValidDate, 1),
-  };
-
-  simulation.portfolioSnapshots = [portfolioSnapshot];
-
-  const rebalanceLog: RebalanceLog = {
-    date: firstValidDate,
-    before: portfolioSnapshot,
-    after: portfolioSnapshot,
-    cumulativeRateSinceLastRebalance: 0,
-    rebalanceType: RebalanceType.OnTrack,
-  };
-  simulation.rebalanceLogs = [rebalanceLog];
-};
-
 export const startSimulation = (
   simulation: Simulation,
   setSimulation: (simulation: Simulation) => void,
   marketData: MarketData
 ) => {
-  const result = runSingleSimulation(simulation, marketData);
-  setSimulation(result);
+  setSimulation(runSingleSimulation(simulation, marketData));
 };
 
 export const calculateAnnualizedRates = (simulation: Simulation) => {
