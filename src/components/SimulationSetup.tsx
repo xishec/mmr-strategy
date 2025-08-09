@@ -24,6 +24,7 @@ interface SimulationSetupProps {
   monthlyNewCash: number;
   simulationYears: number;
   isLogScale: boolean;
+  showSignalMarkers: boolean;
   simulationFrequencyDays: number;
   simulationAnalysisMinusYears: number;
   onStartDateChange: (date: Date | null) => void;
@@ -35,6 +36,7 @@ interface SimulationSetupProps {
   onMonthlyNewCashChange: (value: number) => void;
   onSimulationYearsChange: (value: number) => void;
   onLogScaleChange: (checked: boolean) => void;
+  onShowSignalMarkersChange: (checked: boolean) => void;
   onRunMultipleSimulations: () => void;
   onSimulationFrequencyDaysChange: (value: number) => void;
   onSimulationAnalysisMinusYearsChange: (value: number) => void;
@@ -51,6 +53,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   monthlyNewCash,
   simulationYears,
   isLogScale,
+  showSignalMarkers,
   simulationFrequencyDays,
   simulationAnalysisMinusYears,
   onStartDateChange,
@@ -62,6 +65,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   onMonthlyNewCashChange,
   onSimulationYearsChange,
   onLogScaleChange,
+  onShowSignalMarkersChange,
   onRunMultipleSimulations,
   onSimulationFrequencyDaysChange,
   onSimulationAnalysisMinusYearsChange,
@@ -263,6 +267,22 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
             label={
               <Typography variant="body1" sx={{ fontWeight: 500 }}>
                 Logarithmic Scale
+              </Typography>
+            }
+            sx={{ ml: 0 }}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showSignalMarkers}
+                onChange={(e) => onShowSignalMarkersChange(e.target.checked)}
+                color="primary"
+                size="medium"
+              />
+            }
+            label={
+              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                Signals Markers
               </Typography>
             }
             sx={{ ml: 0 }}

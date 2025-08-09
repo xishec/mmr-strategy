@@ -41,6 +41,7 @@ interface ChartProps {
   d3ChartData: D3ChartData;
   selectedDate: string | null;
   isLogScale?: boolean;
+  showSignalMarkers?: boolean;
   height: string | number;
   onDateChange?: (date: string) => void;
 }
@@ -49,6 +50,7 @@ const Chart: React.FC<ChartProps> = ({
   d3ChartData,
   selectedDate,
   isLogScale = false,
+  showSignalMarkers = false,
   height,
   onDateChange,
 }: ChartProps) => {
@@ -224,7 +226,7 @@ const Chart: React.FC<ChartProps> = ({
       }
 
       // Render X marker points for mockTotalTQQQ when hasXMarker is true
-      if (seriesName === "mockTotalTQQQ") {
+      if (seriesName === "mockTotalTQQQ" && showSignalMarkers) {
         const markerData = processedData.filter((d) => d.hasXMarker);
 
         g.selectAll(`.marker-${seriesName}`)
@@ -748,7 +750,7 @@ const Chart: React.FC<ChartProps> = ({
     };
 
     return { chart: chartLikeObject, mainSeries };
-  }, [isLogScale, chartDataMemo, onDateChange, selectedDate]);
+  }, [isLogScale, chartDataMemo, onDateChange, selectedDate, showSignalMarkers]);
 
   // Handle selectedDate changes
   useEffect(() => {

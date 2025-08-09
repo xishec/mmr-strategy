@@ -105,6 +105,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
                 monthlyNewCash={dashboardVariables.simulationVariables.monthlyNewCash}
                 simulationYears={dashboardVariables.multiSimulationVariables.simulationDurationYears}
                 isLogScale={dashboardVariables.uiVariables.isLogScale}
+                showSignalMarkers={dashboardVariables.uiVariables.showSignalMarkers}
                 simulationFrequencyDays={dashboardVariables.multiSimulationVariables.simulationFrequencyDays}
                 simulationAnalysisMinusYears={dashboardVariables.multiSimulationVariables.simulationAnalysisMinusYears}
                 onStartDateChange={(newValue: Date | null) => {
@@ -174,6 +175,13 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
                   };
                   updateVariable("uiVariables", updatedUIVariables);
                 }}
+                onShowSignalMarkersChange={(checked: boolean) => {
+                  const updatedUIVariables = {
+                    ...dashboardVariables.uiVariables,
+                    showSignalMarkers: checked,
+                  };
+                  updateVariable("uiVariables", updatedUIVariables);
+                }}
                 onSimulationFrequencyDaysChange={(value: number) => {
                   const updatedMultiSimulationVariables = {
                     ...dashboardVariables.multiSimulationVariables,
@@ -219,6 +227,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
                   d3ChartData={d3ChartData}
                   selectedDate={selectedDate}
                   isLogScale={dashboardVariables.uiVariables.isLogScale}
+                  showSignalMarkers={dashboardVariables.uiVariables.showSignalMarkers}
                   height="100%"
                   onDateChange={handleDateChange}
                 />

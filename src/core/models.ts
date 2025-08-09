@@ -40,6 +40,7 @@ export interface DashboardVariables {
 
 export interface UIVariables {
   isLogScale: boolean;
+  showSignalMarkers: boolean;
 }
 
 export interface MultiSimulationResults {

@@ -30,6 +30,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     },
     uiVariables: {
       isLogScale: true,
+      showSignalMarkers: false,
     },
   });
 
