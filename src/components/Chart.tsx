@@ -233,61 +233,9 @@ const Chart: React.FC<ChartProps> = ({
           .attr("d", line);
       }
 
-      // Render X marker points for mockTotalTQQQ when hasXMarker is true
+      // Store marker data for later rendering (markers will be rendered after all series)
       if (seriesName === "mockTotalTQQQ" && showSignalMarkers) {
-        const markerData = processedData.filter((d) => d.hasXMarker);
-
-        g.selectAll(`.marker-${seriesName}`)
-          .data(markerData)
-          .enter()
-          .append("g")
-          .attr("class", `marker-${seriesName}`)
-          .attr("transform", (d) => `translate(${xScale(d.parsedTime)}, ${yScale(d.value)})`)
-          .selectAll("line")
-          .data([
-            { x1: -4, y1: -4, x2: 4, y2: 4 }, // \ diagonal
-            { x1: -4, y1: 4, x2: 4, y2: -4 }, // / diagonal
-          ])
-          .enter()
-          .append("line")
-          .attr("x1", (d) => d.x1)
-          .attr("y1", (d) => d.y1)
-          .attr("x2", (d) => d.x2)
-          .attr("y2", (d) => d.y2)
-          .attr("stroke", COLORS.red)
-          .attr("stroke-width", 2)
-          .attr("stroke-linecap", "round");
-
-        // Render green triangles for isAboveSMA200
-        const greenTriangleData = processedData.filter((d) => d.hasGreenTriangle);
-        g.selectAll(`.green-triangle-${seriesName}`)
-          .data(greenTriangleData)
-          .enter()
-          .append("polygon")
-          .attr("class", `green-triangle-${seriesName}`)
-          .attr("points", (d) => {
-            const x = xScale(d.parsedTime);
-            const y = yScale(d.value) + 10; // 15 pixels below the line
-            const size = 4;
-            return `${x},${y - size} ${x - size},${y + size} ${x + size},${y + size}`;
-          })
-          .attr("fill", COLORS.green);
-
-        // Render black triangles for isBelowSMA200
-        const redTriangleData = processedData.filter((d) => d.hasBlackTriangle);
-        g.selectAll(`.black-triangle-${seriesName}`)
-          .data(redTriangleData)
-          .enter()
-          .append("polygon")
-          .attr("class", `black-triangle-${seriesName}`)
-          .attr("points", (d) => {
-            const x = xScale(d.parsedTime);
-            const y = yScale(d.value) - 10; // 15 pixels below the line
-            const size = 4;
-            // Downward pointing triangle
-            return `${x},${y + size} ${x - size},${y - size} ${x + size},${y - size}`;
-          })
-          .attr("fill", COLORS.red);
+        return { data: processedData, name: seriesName, hasMarkers: true, yScale };
       }
 
       return { data: processedData, name: seriesName };
@@ -318,11 +266,13 @@ const Chart: React.FC<ChartProps> = ({
 
     // Render all series
     let mainSeries: any = null;
+    let markerSeriesInfo: any = null;
 
     // Render price series
     Object.entries(priceSeriesData).forEach(([name, data]) => {
       const series = renderSeries(name, data, priceYScale, false, false);
       if (!mainSeries) mainSeries = series;
+      if (series.hasMarkers) markerSeriesInfo = series;
     });
 
     // Render ratio series with areas and step lines
@@ -330,6 +280,66 @@ const Chart: React.FC<ChartProps> = ({
       const series = renderSeries(name, data, ratioYScale, true, false);
       if (!mainSeries) mainSeries = series;
     });
+
+    // Render markers above everything else
+    if (markerSeriesInfo && showSignalMarkers) {
+      const { data: processedData, name: seriesName, yScale } = markerSeriesInfo;
+      
+      // Render X marker points for mockTotalTQQQ when hasXMarker is true
+      const markerData = processedData.filter((d: any) => d.hasXMarker);
+
+      g.selectAll(`.marker-${seriesName}`)
+        .data(markerData)
+        .enter()
+        .append("g")
+        .attr("class", `marker-${seriesName}`)
+        .attr("transform", (d: any) => `translate(${xScale(d.parsedTime)}, ${yScale(d.value)})`)
+        .selectAll("line")
+        .data([
+          { x1: -4, y1: -4, x2: 4, y2: 4 }, // \ diagonal
+          { x1: -4, y1: 4, x2: 4, y2: -4 }, // / diagonal
+        ])
+        .enter()
+        .append("line")
+        .attr("x1", (d: any) => d.x1)
+        .attr("y1", (d: any) => d.y1)
+        .attr("x2", (d: any) => d.x2)
+        .attr("y2", (d: any) => d.y2)
+        .attr("stroke", COLORS.red)
+        .attr("stroke-width", 2)
+        .attr("stroke-linecap", "round");
+
+      // Render green triangles for isAboveSMA200
+      const greenTriangleData = processedData.filter((d: any) => d.hasGreenTriangle);
+      g.selectAll(`.green-triangle-${seriesName}`)
+        .data(greenTriangleData)
+        .enter()
+        .append("polygon")
+        .attr("class", `green-triangle-${seriesName}`)
+        .attr("points", (d: any) => {
+          const x = xScale(d.parsedTime);
+          const y = yScale(d.value) + 10; // 10 pixels below the line
+          const size = 4;
+          return `${x},${y - size} ${x - size},${y + size} ${x + size},${y + size}`;
+        })
+        .attr("fill", COLORS.green);
+
+      // Render red triangles for isBelowSMA200
+      const redTriangleData = processedData.filter((d: any) => d.hasBlackTriangle);
+      g.selectAll(`.black-triangle-${seriesName}`)
+        .data(redTriangleData)
+        .enter()
+        .append("polygon")
+        .attr("class", `black-triangle-${seriesName}`)
+        .attr("points", (d: any) => {
+          const x = xScale(d.parsedTime);
+          const y = yScale(d.value) - 10; // 10 pixels above the line
+          const size = 4;
+          // Downward pointing triangle
+          return `${x},${y + size} ${x - size},${y - size} ${x + size},${y - size}`;
+        })
+        .attr("fill", COLORS.red);
+    }
 
     // Helper function to create crosshair elements
     const createCrosshair = () => {
