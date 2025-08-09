@@ -9,8 +9,6 @@ import {
   CardContent,
   InputAdornment,
 } from "@mui/material";
-import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { AttachMoney, Schedule, CalendarMonth, Analytics, Refresh } from "@mui/icons-material";
 
 interface SimulationSetupProps {
@@ -84,26 +82,30 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
             Date Range
           </Typography>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <DatePicker
-                label="Start Date"
-                value={startDate}
-                onChange={onStartDateChange}
-                format="yyyy-MM-dd"
-                sx={{ width: "100%" }}
-                slotProps={{ textField: { size: "small" } }}
-              />
-            </LocalizationProvider>
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <DatePicker
-                label="End Date"
-                value={endDate}
-                onChange={onEndDateChange}
-                format="yyyy-MM-dd"
-                sx={{ width: "100%" }}
-                slotProps={{ textField: { size: "small" } }}
-              />
-            </LocalizationProvider>
+            <TextField
+              size="small"
+              label="Start Date"
+              type="date"
+              value={startDate.toISOString().split('T')[0]}
+              onChange={(e) => onStartDateChange(e.target.value ? new Date(e.target.value) : null)}
+              variant="outlined"
+              fullWidth
+              slotProps={{
+                inputLabel: { shrink: true },
+              }}
+            />
+            <TextField
+              size="small"
+              label="End Date"
+              type="date"
+              value={endDate.toISOString().split('T')[0]}
+              onChange={(e) => onEndDateChange(e.target.value ? new Date(e.target.value) : null)}
+              variant="outlined"
+              fullWidth
+              slotProps={{
+                inputLabel: { shrink: true },
+              }}
+            />
           </Box>
         </CardContent>
       </Box>

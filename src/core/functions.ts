@@ -47,6 +47,16 @@ const calculateAnnualizedRate = (
 };
 
 export const calculateAnnualizedRates = (simulation: Simulation) => {
+  // Safety check: ensure we have portfolio snapshots before calculating rates
+  if (simulation.portfolioSnapshots.length === 0) {
+    simulation.simulationResults = {
+      annualizedStrategyRate: 0,
+      annualizedQQQRate: 0,
+      annualizedTQQQRate: 0,
+    };
+    return;
+  }
+
   const endDate = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1].date;
   const lastPortfolioSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
 
