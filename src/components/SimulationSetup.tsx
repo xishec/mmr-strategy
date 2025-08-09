@@ -7,7 +7,6 @@ import {
   Switch,
   Button,
   CardContent,
-  Paper,
   InputAdornment,
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
@@ -66,45 +65,9 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   onSimulationAnalysisMinusYearsChange,
 }) => {
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 3,
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        backgroundColor: "background.paper",
-        borderRadius: 2,
-        gap: 3,
-      }}
-    >
-      {/* Header */}
-      <Box sx={{ textAlign: "center" }}>
-        <Typography
-          variant="h5"
-          component="h2"
-          sx={{
-            fontWeight: 600,
-            color: "primary.main",
-            mb: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 1,
-          }}
-        >
-          <Analytics />
-          Simulation Setup
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Configure your investment simulation parameters
-        </Typography>
-      </Box>
-
-      {/* Main Content */}
-      <Box sx={{ flex: 1, overflow: "auto" }}>
-        {/* Date Range Section */}
-        <Box sx={{ mb: 3, border: "1px solid #7c7c7c80", borderRadius: 2 }}>
+    <Box sx={{ flex: 1, overflow: "auto" }}>
+      {/* Date Range Section */}
+      <Box sx={{ mb: 3, border: "1px solid #7c7c7c80", borderRadius: 2 }}>
           <CardContent sx={{ pb: 2 }}>
             <Typography
               variant="h6"
@@ -277,10 +240,9 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
             />
           </CardContent>
         </Box>
-      </Box>
 
-      {/* Simulation Parameters */}
-      <Box sx={{ border: "1px solid #7c7c7c80", borderRadius: 2 }}>
+        {/* Multi Simulation Parameters */}
+        <Box sx={{ border: "1px solid #7c7c7c80", borderRadius: 2 }}>
         <CardContent sx={{ pb: 2 }}>
           <Typography
             variant="h6"
@@ -361,10 +323,10 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
             borderRadius: 2,
           }}
         >
-          Run Multi Simulations
+          Run Multiple Simulations
         </Button>
       </Box>
-    </Paper>
+    </Box>
   );
 };
 
