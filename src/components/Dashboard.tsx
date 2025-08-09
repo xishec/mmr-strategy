@@ -9,7 +9,7 @@ import Chart from "./Chart";
 import { useDateNavigation } from "../hooks/useDateNavigation";
 import { useSimulation } from "../hooks/useSimulation";
 import { useChartData } from "../hooks/useChartData";
-import InformationBar from "./RebalanceDetails";
+import InformationBar from "./InformationBar";
 
 interface DashboardProps {
   marketData: MarketData;
@@ -47,28 +47,44 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
 
   return (
     <Fade in={true} timeout={500}>
-      <Container maxWidth={false} disableGutters sx={{ height: "100vh", bgcolor: "grey.100" }}>
+      <Container
+        maxWidth={false}
+        disableGutters
+        sx={{
+          bgcolor: "grey.100",
+        }}
+      >
         {/* Main Layout */}
         <Box
           sx={{
-            height: "100vh",
+            height: { xs: "auto", md: "100vh" },
+            minHeight: { xs: "100vh", md: "auto" },
             display: "grid",
-            gridTemplateColumns: "500px 1fr",
-            gridTemplateRows: "min-content min-content 1fr",
+            gridTemplateColumns: {
+              xs: "1fr",
+              md: "500px 1fr",
+            },
+            gridTemplateRows: {
+              xs: "auto auto auto auto",
+              md: "min-content min-content 1fr",
+            },
             gap: 2,
             p: 2,
-            overflow: "hidden",
+            overflow: {
+              xs: "auto",
+              md: "hidden",
+            },
           }}
         >
           {/* Rebalance Details Section */}
-          <Card elevation={0} sx={{ borderRadius: 2, gridColumn: "1/3" }}>
+          <Card elevation={0} sx={{ borderRadius: 2, gridColumn: { xs: "1", md: "1/3" } }}>
             <Box sx={{ py: 5, px: 4 }}>
               <InformationBar marketData={marketData} simulation={simulation} />
             </Box>
           </Card>
 
           {/* Sidebar - Simulation Setup */}
-          <Card elevation={0} sx={{ borderRadius: 2, gridRow: "2/4" }}>
+          <Card elevation={0} sx={{ borderRadius: 2, gridRow: { xs: "auto", md: "2/4" } }}>
             <Box sx={{ p: 4, height: "100%", display: "flex", flexDirection: "column" }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
                 <Analytics color="primary" fontSize="small" />
@@ -194,6 +210,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
               overflow: "hidden",
               display: "flex",
               flexDirection: "column",
+              minHeight: { xs: "400px", md: "auto" },
             }}
           >
             <Box sx={{ p: 4, pb: 3, flex: 1, display: "flex", flexDirection: "column" }}>

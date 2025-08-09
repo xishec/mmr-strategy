@@ -75,7 +75,11 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
         display: "grid",
         alignItems: "center",
         gap: 2,
-        gridTemplateColumns: "repeat(6, 1fr)",
+        gridTemplateColumns: {
+          xs: "repeat(2, max-content)",
+          md: "repeat(6, max-content)",
+        },
+        justifyContent: "space-between",
       }}
     >
       {/* Date first */}
@@ -141,7 +145,7 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
                 fontSize: "1rem",
                 fontWeight: "bold",
                 color: item.color,
-                ml: 2.5,
+                ml: 3,
               }}
             >
               {getValueForSeries(item.seriesKey)}

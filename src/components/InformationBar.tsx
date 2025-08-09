@@ -14,8 +14,18 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation 
   const testVariable = true;
 
   return (
-    <Box display="flex" alignItems="center" justifyContent="space-between" width="100%" sx={{}}>
-      <Typography variant="h6" fontWeight="bold">
+    <Box
+      display="grid"
+      alignItems="center"
+      width="100%"
+      gridTemplateColumns={{
+        xs: "1fr",
+        md: "repeat(5, max-content)",
+      }}
+      justifyContent={"space-between"}
+      gap={1}
+    >
+      <Typography variant="h1" fontSize="1.75rem" fontWeight="bold">
         MMR Strategy App
       </Typography>
 
