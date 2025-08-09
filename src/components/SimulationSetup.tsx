@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -9,14 +9,16 @@ import {
   CardContent,
   InputAdornment,
   Autocomplete,
+  IconButton,
 } from "@mui/material";
-import { AttachMoney, Schedule, CalendarMonth, Analytics, Refresh } from "@mui/icons-material";
+import { AttachMoney, Schedule, CalendarMonth, Analytics, Refresh, MyLocation, RadioButtonChecked } from "@mui/icons-material";
 import { MarketData } from "../core/models";
 import { parseDate } from "../core/date-utils";
 
 interface SimulationSetupProps {
   startDate: Date;
   endDate: Date;
+  selectedDate?: string | null;
   initialMoney: number;
   cashYearRate: number;
   upMargin: number;
@@ -46,6 +48,7 @@ interface SimulationSetupProps {
 const SimulationSetup: React.FC<SimulationSetupProps> = ({
   startDate,
   endDate,
+  selectedDate,
   initialMoney,
   cashYearRate,
   upMargin,
@@ -71,6 +74,44 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   onSimulationAnalysisMinusYearsChange,
   marketData,
 }) => {
+  const [waitingForStartDate, setWaitingForStartDate] = useState(false);
+  const [waitingForEndDate, setWaitingForEndDate] = useState(false);
+  const [lastSelectedDate, setLastSelectedDate] = useState<string | null>(selectedDate ?? null);
+
+  // Effect to handle new date selections when in waiting mode
+  React.useEffect(() => {
+    // Only apply if selectedDate has actually changed from the last known value
+    if (waitingForStartDate && selectedDate && selectedDate !== lastSelectedDate) {
+      try {
+        const parsedSelectedDate = parseDate(selectedDate);
+        onStartDateChange(parsedSelectedDate);
+        setWaitingForStartDate(false);
+        setLastSelectedDate(selectedDate);
+      } catch {
+        // If parsing fails, ignore
+      }
+    } else if (selectedDate !== lastSelectedDate) {
+      // Update last selected date even when not waiting
+      setLastSelectedDate(selectedDate ?? null);
+    }
+  }, [selectedDate, waitingForStartDate, onStartDateChange, lastSelectedDate]);
+
+  React.useEffect(() => {
+    // Only apply if selectedDate has actually changed from the last known value
+    if (waitingForEndDate && selectedDate && selectedDate !== lastSelectedDate) {
+      try {
+        const parsedSelectedDate = parseDate(selectedDate);
+        onEndDateChange(parsedSelectedDate);
+        setWaitingForEndDate(false);
+        setLastSelectedDate(selectedDate);
+      } catch {
+        // If parsing fails, ignore
+      }
+    } else if (selectedDate !== lastSelectedDate) {
+      // Update last selected date even when not waiting
+      setLastSelectedDate(selectedDate ?? null);
+    }
+  }, [selectedDate, waitingForEndDate, onEndDateChange, lastSelectedDate]);
   const getAvailableDates = () => {
     try {
       return Object.keys(marketData.QQQ).sort();
@@ -101,42 +142,84 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
             Date Range
           </Typography>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
-            <Autocomplete
-              size="small"
-              options={availableDates}
-              value={startDate.toISOString().split("T")[0]}
-              onChange={(event, newValue) => {
-                if (newValue) {
-                  try {
-                    const selectedDate = parseDate(newValue);
-                    onStartDateChange(selectedDate);
-                  } catch {
-                    // If parsing fails, ignore the change
+            <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+              <Autocomplete
+                size="small"
+                options={availableDates}
+                value={startDate.toISOString().split("T")[0]}
+                onChange={(event, newValue) => {
+                  if (newValue) {
+                    try {
+                      const selectedDate = parseDate(newValue);
+                      onStartDateChange(selectedDate);
+                    } catch {
+                      // If parsing fails, ignore the change
+                    }
+                  } else {
+                    onStartDateChange(null);
                   }
-                } else {
-                  onStartDateChange(null);
-                }
-              }}
-              renderInput={(params) => <TextField {...params} label="Start Date" variant="outlined" fullWidth />}
-            />
-            <Autocomplete
-              size="small"
-              options={availableDates}
-              value={endDate.toISOString().split("T")[0]}
-              onChange={(event, newValue) => {
-                if (newValue) {
-                  try {
-                    const selectedDate = parseDate(newValue);
-                    onEndDateChange(selectedDate);
-                  } catch {
-                    // If parsing fails, ignore the change
+                }}
+                renderInput={(params) => <TextField {...params} label="Start Date" variant="outlined" fullWidth />}
+                sx={{ flex: 1 }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setWaitingForStartDate(true);
+                  setWaitingForEndDate(false); // Cancel waiting for end date if active
+                }}
+                sx={{ 
+                  mb: 0.125,
+                  color: waitingForStartDate ? 'primary.main' : 'inherit',
+                  backgroundColor: waitingForStartDate ? 'primary.light' : 'transparent',
+                  '&:hover': {
+                    backgroundColor: waitingForStartDate ? 'primary.light' : 'action.hover',
                   }
-                } else {
-                  onEndDateChange(null);
-                }
-              }}
-              renderInput={(params) => <TextField {...params} label="End Date" variant="outlined" fullWidth />}
-            />
+                }}
+                title={waitingForStartDate ? "Click on chart to set start date" : "Wait for next chart selection to set start date"}
+              >
+                {waitingForStartDate ? <RadioButtonChecked fontSize="small" /> : <MyLocation fontSize="small" />}
+              </IconButton>
+            </Box>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+              <Autocomplete
+                size="small"
+                options={availableDates}
+                value={endDate.toISOString().split("T")[0]}
+                onChange={(event, newValue) => {
+                  if (newValue) {
+                    try {
+                      const selectedDate = parseDate(newValue);
+                      onEndDateChange(selectedDate);
+                    } catch {
+                      // If parsing fails, ignore the change
+                    }
+                  } else {
+                    onEndDateChange(null);
+                  }
+                }}
+                renderInput={(params) => <TextField {...params} label="End Date" variant="outlined" fullWidth />}
+                sx={{ flex: 1 }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setWaitingForEndDate(true);
+                  setWaitingForStartDate(false); // Cancel waiting for start date if active
+                }}
+                sx={{ 
+                  mb: 0.125,
+                  color: waitingForEndDate ? 'primary.main' : 'inherit',
+                  backgroundColor: waitingForEndDate ? 'primary.light' : 'transparent',
+                  '&:hover': {
+                    backgroundColor: waitingForEndDate ? 'primary.light' : 'action.hover',
+                  }
+                }}
+                title={waitingForEndDate ? "Click on chart to set end date" : "Wait for next chart selection to set end date"}
+              >
+                {waitingForEndDate ? <RadioButtonChecked fontSize="small" /> : <MyLocation fontSize="small" />}
+              </IconButton>
+            </Box>
           </Box>
         </CardContent>
       </Box>

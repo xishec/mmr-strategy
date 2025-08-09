@@ -198,6 +198,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
                 }}
                 onRunMultipleSimulations={handleRunMultipleSimulations}
                 marketData={marketData}
+                selectedDate={selectedDate}
               />
             </Box>
           </Card>
