@@ -23,9 +23,22 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
         time: snapshot.date,
         value: snapshot.investments.mockTotalQQQ,
       })),
-      mockTotalTQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
+      mockTotalTQQQ: simulation.portfolioSnapshots.map((snapshot, i) => ({
         time: snapshot.date,
         value: snapshot.investments.mockTotalTQQQ,
+        hasXMarker:
+          snapshot.signal.bigDropLast30Days &&
+          (i === 0 || !simulation.portfolioSnapshots[i - 1]?.signal.bigDropLast30Days),
+        hasGreenTriangle:
+          snapshot.signal.isAboveSMA200 &&
+          (i === 0 ||
+            (!simulation.portfolioSnapshots[i - 1]?.signal.isAboveSMA200 &&
+              simulation.portfolioSnapshots[i - 1].investments.ratio === 0)),
+        hasBlackTriangle:
+          snapshot.signal.isBelowSMA200 &&
+          (i === 0 ||
+            (!simulation.portfolioSnapshots[i - 1]?.signal.isBelowSMA200 &&
+              simulation.portfolioSnapshots[i - 1].investments.ratio > 0)),
       })),
       mockTotalNothing: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,

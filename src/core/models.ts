@@ -103,6 +103,9 @@ export interface MarketData {
 export interface ChartPoint {
   time: string;
   value: number;
+  hasXMarker?: boolean;
+  hasGreenTriangle?: boolean;
+  hasBlackTriangle?: boolean;
 }
 
 export type ChartData = ChartPoint[];

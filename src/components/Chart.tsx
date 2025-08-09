@@ -223,6 +223,67 @@ const Chart: React.FC<ChartProps> = ({
           .attr("d", area);
       }
 
+      // Render X marker points for mockTotalTQQQ when hasXMarker is true
+      if (seriesName === "mockTotalTQQQ") {
+        const markerData = processedData.filter((d) => d.hasXMarker);
+
+        g.selectAll(`.marker-${seriesName}`)
+          .data(markerData)
+          .enter()
+          .append("g")
+          .attr("class", `marker-${seriesName}`)
+          .attr("transform", (d) => `translate(${xScale(d.parsedTime)}, ${yScale(d.value)})`)
+          .selectAll("line")
+          .data([
+            { x1: -4, y1: -4, x2: 4, y2: 4 }, // \ diagonal
+            { x1: -4, y1: 4, x2: 4, y2: -4 }  // / diagonal
+          ])
+          .enter()
+          .append("line")
+          .attr("x1", (d) => d.x1)
+          .attr("y1", (d) => d.y1)
+          .attr("x2", (d) => d.x2)
+          .attr("y2", (d) => d.y2)
+          .attr("stroke", COLORS.black)
+          .attr("stroke-width", 2)
+          .attr("stroke-linecap", "round");
+
+        // Render green triangles for isAboveSMA200
+        const greenTriangleData = processedData.filter((d) => d.hasGreenTriangle);
+        g.selectAll(`.green-triangle-${seriesName}`)
+          .data(greenTriangleData)
+          .enter()
+          .append("polygon")
+          .attr("class", `green-triangle-${seriesName}`)
+          .attr("points", (d) => {
+            const x = xScale(d.parsedTime);
+            const y = yScale(d.value) + 15; // 15 pixels below the line
+            const size = 4;
+            return `${x},${y - size} ${x - size},${y + size} ${x + size},${y + size}`;
+          })
+          .attr("fill", COLORS.green)
+          .attr("stroke", "white")
+          .attr("stroke-width", 0.5);
+
+        // Render black triangles for isBelowSMA200
+        const blackTriangleData = processedData.filter((d) => d.hasBlackTriangle);
+        g.selectAll(`.black-triangle-${seriesName}`)
+          .data(blackTriangleData)
+          .enter()
+          .append("polygon")
+          .attr("class", `black-triangle-${seriesName}`)
+          .attr("points", (d) => {
+            const x = xScale(d.parsedTime);
+            const y = yScale(d.value) - 15; // 15 pixels below the line
+            const size = 4;
+            // Downward pointing triangle
+            return `${x},${y + size} ${x - size},${y - size} ${x + size},${y - size}`;
+          })
+          .attr("fill", COLORS.black)
+          .attr("stroke", "white")
+          .attr("stroke-width", 0.5);
+      }
+
       return { data: processedData, name: seriesName };
     };
 

@@ -68,9 +68,9 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
 
     // No line generators needed - using scatter plot markers instead
 
-    // Add grid lines
+    // Add grid lines - always 5 ticks
     g.selectAll(".grid-line")
-      .data(yScale.ticks())
+      .data(yScale.ticks(5))
       .enter()
       .append("line")
       .attr("class", "grid-line")
@@ -82,12 +82,12 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", "3,3");
 
-    // Add axes
+    // Add axes - always 5 ticks
     const xAxis = d3
       .axisBottom(xScale)
-      .ticks(20)
+      .ticks(5)
       .tickFormat(d3.timeFormat("%Y") as any);
-    const yAxis = d3.axisLeft(yScale).tickFormat(d3.format(".1%"));
+    const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".1%"));
 
     g.append("g")
       .attr("class", "x-axis")
@@ -460,9 +460,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
           .attr("width", xAxisTextBBox.width + xAxisPadding * 2)
           .attr("height", xAxisTextBBox.height + xAxisPadding * 2);
 
-        xAxisValueLabel
-          .attr("transform", `translate(${mouseX}, ${height + 25})`)
-          .style("display", "block");
+        xAxisValueLabel.attr("transform", `translate(${mouseX}, ${height + 25})`).style("display", "block");
 
         // Find closest data point for tooltip
         const bisectDate = d3.bisector((d: (typeof parsedData)[0]) => d.date).left;
@@ -486,7 +484,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .on("click", function (event) {
         const [mouseX, mouseY] = d3.pointer(event, this);
         const dateAtMouse = xScale.invert(mouseX);
-        
+
         // Update persistent crosshair position
         persistentCrosshairLine.attr("x1", mouseX).attr("x2", mouseX);
         persistentCrosshairHorizontal.attr("y1", mouseY).attr("y2", mouseY);
@@ -522,7 +520,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
           .attr("height", persistentXAxisTextBBox.height + persistentXAxisPadding * 2);
 
         persistentXAxisValueLabel.attr("transform", `translate(${mouseX}, ${height + 25})`);
-        
+
         event.preventDefault();
         event.stopPropagation();
       });
@@ -615,7 +613,19 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
             {/* Statistics Summary */}
             {multiSimulationResults && (
               <Box sx={{ mx: 2, mb: 2, p: 3, bgcolor: "grey.50", borderRadius: 2 }}>
-                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 2 }}>
+                <Box
+                  sx={{
+                    display: "grid",
+                    alignItems: "center",
+                    gap: 2,
+                    gridTemplateColumns: {
+                      xs: "repeat(2, max-content)",
+                      sm: "repeat(3, max-content)",
+                      lg: "repeat(7, max-content)",
+                    },
+                    justifyContent: "space-between",
+                  }}
+                >
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Average QQQ Rate
