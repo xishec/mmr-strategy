@@ -19,6 +19,10 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
     });
 
     const priceChart = {
+      mockTotalNothing: simulation.portfolioSnapshots.map((snapshot) => ({
+        time: snapshot.date,
+        value: snapshot.investments.mockTotalNothing,
+      })),
       mockTotalQQQ: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
         value: snapshot.investments.mockTotalQQQ,
@@ -39,10 +43,6 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
           (i === 0 ||
             (!simulation.portfolioSnapshots[i - 1]?.signal.isBelowSMA200 &&
               simulation.portfolioSnapshots[i - 1].investments.ratio > 0)),
-      })),
-      mockTotalNothing: simulation.portfolioSnapshots.map((snapshot) => ({
-        time: snapshot.date,
-        value: snapshot.investments.mockTotalNothing,
       })),
       strategyTotal: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,

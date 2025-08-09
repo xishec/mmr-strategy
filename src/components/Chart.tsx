@@ -29,10 +29,10 @@ export const grey = COLORS.grey;
 const COLOR_MAP = {
   strategyTotal: COLORS.yellow,
   sma200: COLORS.blue,
-  mockTotalQQQ: COLORS.green,
-  mockTotalTQQQ: COLORS.red,
-  mockTotalNothing: "#ecececff",
-  ratio: COLORS.grey,
+  mockTotalQQQ: COLORS.blue,
+  mockTotalTQQQ: COLORS.black,
+  mockTotalNothing: "#dadadaff",
+  ratio: COLORS.yellow,
   pullback: COLORS.red,
   default: COLORS.default,
 } as const;
@@ -195,16 +195,6 @@ const Chart: React.FC<ChartProps> = ({
         line.curve(d3.curveStepAfter);
       }
 
-      // Render the line
-      const strokeWidth = seriesName === "strategyTotal" ? 2 : 1;
-      g.append("path")
-        .datum(processedData)
-        .attr("class", `line series-${seriesName}`)
-        .attr("fill", "none")
-        .attr("stroke", color)
-        .attr("stroke-width", strokeWidth)
-        .attr("d", line);
-
       // Render area if needed
       if (isArea) {
         const area = d3
@@ -223,6 +213,24 @@ const Chart: React.FC<ChartProps> = ({
           .attr("fill", color)
           .attr("fill-opacity", 0.3)
           .attr("d", area);
+
+        const strokeWidth = seriesName === "ratio" ? 1 : 1;
+        g.append("path")
+          .datum(processedData)
+          .attr("class", `line series-${seriesName}`)
+          .attr("fill", "none")
+          .attr("stroke", color)
+          .attr("stroke-width", strokeWidth)
+          .attr("d", line);
+      } else {
+        const strokeWidth = seriesName === "strategyTotal" ? 2 : 1;
+        g.append("path")
+          .datum(processedData)
+          .attr("class", `line series-${seriesName}`)
+          .attr("fill", "none")
+          .attr("stroke", color)
+          .attr("stroke-width", strokeWidth)
+          .attr("d", line);
       }
 
       // Render X marker points for mockTotalTQQQ when hasXMarker is true
@@ -238,7 +246,7 @@ const Chart: React.FC<ChartProps> = ({
           .selectAll("line")
           .data([
             { x1: -4, y1: -4, x2: 4, y2: 4 }, // \ diagonal
-            { x1: -4, y1: 4, x2: 4, y2: -4 }  // / diagonal
+            { x1: -4, y1: 4, x2: 4, y2: -4 }, // / diagonal
           ])
           .enter()
           .append("line")
@@ -246,7 +254,7 @@ const Chart: React.FC<ChartProps> = ({
           .attr("y1", (d) => d.y1)
           .attr("x2", (d) => d.x2)
           .attr("y2", (d) => d.y2)
-          .attr("stroke", COLORS.black)
+          .attr("stroke", COLORS.red)
           .attr("stroke-width", 2)
           .attr("stroke-linecap", "round");
 
@@ -259,31 +267,27 @@ const Chart: React.FC<ChartProps> = ({
           .attr("class", `green-triangle-${seriesName}`)
           .attr("points", (d) => {
             const x = xScale(d.parsedTime);
-            const y = yScale(d.value) + 15; // 15 pixels below the line
+            const y = yScale(d.value) + 10; // 15 pixels below the line
             const size = 4;
             return `${x},${y - size} ${x - size},${y + size} ${x + size},${y + size}`;
           })
-          .attr("fill", COLORS.green)
-          .attr("stroke", "white")
-          .attr("stroke-width", 0.5);
+          .attr("fill", COLORS.green);
 
         // Render black triangles for isBelowSMA200
-        const blackTriangleData = processedData.filter((d) => d.hasBlackTriangle);
+        const redTriangleData = processedData.filter((d) => d.hasBlackTriangle);
         g.selectAll(`.black-triangle-${seriesName}`)
-          .data(blackTriangleData)
+          .data(redTriangleData)
           .enter()
           .append("polygon")
           .attr("class", `black-triangle-${seriesName}`)
           .attr("points", (d) => {
             const x = xScale(d.parsedTime);
-            const y = yScale(d.value) - 15; // 15 pixels below the line
+            const y = yScale(d.value) - 10; // 15 pixels below the line
             const size = 4;
             // Downward pointing triangle
             return `${x},${y + size} ${x - size},${y - size} ${x + size},${y - size}`;
           })
-          .attr("fill", COLORS.black)
-          .attr("stroke", "white")
-          .attr("stroke-width", 0.5);
+          .attr("fill", COLORS.red);
       }
 
       return { data: processedData, name: seriesName };
@@ -696,18 +700,19 @@ const Chart: React.FC<ChartProps> = ({
             .tickFormat((domainValue) => d3.timeFormat("%Y")(domainValue as Date))
         );
 
-      // Y-axes - always 5 ticks
+      // Y-axes - fewer ticks for log scale to reduce clutter
       const yAxisConfig = isLogScale
-        ? d3.axisLeft(priceYScale).ticks(5).tickFormat(formatPriceValue)
+        ? d3.axisLeft(priceYScale).ticks(3).tickFormat(formatPriceValue)
         : d3.axisLeft(priceYScale).ticks(5).tickFormat(formatPriceValue);
 
       g.append("g").attr("class", "y-axis-price").attr("transform", "translate(0,0)").call(yAxisConfig);
 
       g.append("g").attr("class", "y-axis-ratio").call(d3.axisLeft(ratioYScale).ticks(5));
 
-      // Price grid lines - always 5 ticks
+      // Price grid lines - fewer grid lines for log scale
+      const gridTicks = isLogScale ? 3 : 5;
       g.selectAll(".grid-line")
-        .data(priceYScale.ticks(5))
+        .data(priceYScale.ticks(gridTicks))
         .enter()
         .append("line")
         .attr("class", "grid-line")

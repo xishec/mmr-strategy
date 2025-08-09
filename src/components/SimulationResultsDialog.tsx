@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogTitle, DialogContent, Box, Typography } from "@mui/material";
 import * as d3 from "d3";
-import { blue, yellow, red, black } from "./Chart";
+import { blue, yellow, black, red } from "./Chart";
 import { MultiSimulationResults } from "../core/models";
 
 interface SimulationResultsDialogProps {
@@ -157,8 +157,8 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("cx", (d) => xScale(d.date))
       .attr("cy", (d) => yScale(d.tqqqRate))
       .attr("r", 1)
-      .attr("fill", red)
-      .attr("stroke", red)
+      .attr("fill", black)
+      .attr("stroke", black)
       .attr("stroke-width", 1);
 
     // Add legend with better styling
@@ -218,7 +218,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
       .attr("x2", 28)
       .attr("y1", 58)
       .attr("y2", 58)
-      .attr("stroke", red)
+      .attr("stroke", black)
       .attr("stroke-width", 2);
 
     legend
@@ -642,7 +642,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                     <Typography variant="body2" color="text.secondary">
                       Average TQQQ Rate
                     </Typography>
-                    <Typography variant="h6" color={red}>
+                    <Typography variant="h6" color={black}>
                       {(multiSimulationResults.averageTQQQRate * 100).toFixed(2)}%
                     </Typography>
                     <Typography variant="caption" display="block" color="text.secondary">
@@ -688,7 +688,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                     <Typography variant="body2" color="text.secondary">
                       Absolute Worst Rate
                     </Typography>
-                    <Typography variant="h6" color={black}>
+                    <Typography variant="h6" color={yellow}>
                       {(multiSimulationResults.absoluteWorstStrategyRate * 100).toFixed(2)}%
                       <Typography variant="caption" display="block" color="text.secondary">
                         ({multiSimulationResults.absoluteWorstStrategyRateDate})
@@ -699,7 +699,7 @@ const SimulationResultsDialog: React.FC<SimulationResultsDialogProps> = ({
                     <Typography variant="body2" color="text.secondary">
                       Relative Worst Rate
                     </Typography>
-                    <Typography variant="h6" color={black}>
+                    <Typography variant="h6" color={yellow}>
                       {(multiSimulationResults.relativeWorstStrategyRate * 100).toFixed(2)}%
                       <Typography variant="caption" display="block" color="text.secondary">
                         ({multiSimulationResults.relativeWorstStrategyRateDate})

@@ -11,7 +11,16 @@ import {
   Autocomplete,
   IconButton,
 } from "@mui/material";
-import { AttachMoney, Schedule, CalendarMonth, Analytics, Refresh, MyLocation, RadioButtonChecked } from "@mui/icons-material";
+import {
+  AttachMoney,
+  Schedule,
+  CalendarMonth,
+  Analytics,
+  Refresh,
+  MyLocation,
+  RadioButtonChecked,
+  Replay,
+} from "@mui/icons-material";
 import { MarketData } from "../core/models";
 import { parseDate } from "../core/date-utils";
 
@@ -141,8 +150,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
             <CalendarMonth fontSize="small" />
             Date Range
           </Typography>
-          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
-            <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr" }, gap: 2 }}>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
               <Autocomplete
                 size="small"
                 options={availableDates}
@@ -168,20 +177,42 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
                   setWaitingForStartDate(true);
                   setWaitingForEndDate(false); // Cancel waiting for end date if active
                 }}
-                sx={{ 
+                sx={{
                   mb: 0.125,
-                  color: waitingForStartDate ? 'primary.main' : 'inherit',
-                  backgroundColor: waitingForStartDate ? 'primary.light' : 'transparent',
-                  '&:hover': {
-                    backgroundColor: waitingForStartDate ? 'primary.light' : 'action.hover',
-                  }
+                  color: waitingForStartDate ? "primary.main" : "inherit",
+                  backgroundColor: waitingForStartDate ? "primary.light" : "transparent",
+                  "&:hover": {
+                    backgroundColor: waitingForStartDate ? "primary.light" : "action.hover",
+                  },
                 }}
-                title={waitingForStartDate ? "Click on chart to set start date" : "Wait for next chart selection to set start date"}
               >
                 {waitingForStartDate ? <RadioButtonChecked fontSize="small" /> : <MyLocation fontSize="small" />}
               </IconButton>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  if (availableDates.length > 0) {
+                    try {
+                      const firstDate = parseDate(availableDates[0]);
+                      onStartDateChange(firstDate);
+                    } catch {
+                      // If parsing fails, ignore
+                    }
+                  }
+                }}
+                sx={{
+                  mb: 0.125,
+                  color: "inherit",
+                  "&:hover": {
+                    backgroundColor: "action.hover",
+                  },
+                }}
+                title="Reset to first available date"
+              >
+                <Replay fontSize="small" />
+              </IconButton>
             </Box>
-            <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
               <Autocomplete
                 size="small"
                 options={availableDates}
@@ -207,17 +238,39 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
                   setWaitingForEndDate(true);
                   setWaitingForStartDate(false); // Cancel waiting for start date if active
                 }}
-                sx={{ 
+                sx={{
                   mb: 0.125,
-                  color: waitingForEndDate ? 'primary.main' : 'inherit',
-                  backgroundColor: waitingForEndDate ? 'primary.light' : 'transparent',
-                  '&:hover': {
-                    backgroundColor: waitingForEndDate ? 'primary.light' : 'action.hover',
-                  }
+                  color: waitingForEndDate ? "primary.main" : "inherit",
+                  backgroundColor: waitingForEndDate ? "primary.light" : "transparent",
+                  "&:hover": {
+                    backgroundColor: waitingForEndDate ? "primary.light" : "action.hover",
+                  },
                 }}
-                title={waitingForEndDate ? "Click on chart to set end date" : "Wait for next chart selection to set end date"}
               >
                 {waitingForEndDate ? <RadioButtonChecked fontSize="small" /> : <MyLocation fontSize="small" />}
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  if (availableDates.length > 0) {
+                    try {
+                      const lastDate = parseDate(availableDates[availableDates.length - 1]);
+                      onEndDateChange(lastDate);
+                    } catch {
+                      // If parsing fails, ignore
+                    }
+                  }
+                }}
+                sx={{
+                  mb: 0.125,
+                  color: "inherit",
+                  "&:hover": {
+                    backgroundColor: "action.hover",
+                  },
+                }}
+                title="Reset to last available date"
+              >
+                <Replay fontSize="small" />
               </IconButton>
             </Box>
           </Box>
