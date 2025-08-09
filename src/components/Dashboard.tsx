@@ -57,34 +57,34 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         {/* Main Layout */}
         <Box
           sx={{
-            height: { xs: "auto", md: "100vh" },
-            minHeight: { xs: "100vh", md: "auto" },
+            height: { md: "auto", lg: "100vh" },
+            minHeight: { md: "100vh", lg: "auto" },
             display: "grid",
             gridTemplateColumns: {
-              xs: "1fr",
-              md: "500px 1fr",
+              md: "1fr",
+              lg: "500px 1fr",
             },
             gridTemplateRows: {
-              xs: "auto auto auto auto",
-              md: "min-content min-content 1fr",
+              md: "auto auto auto auto",
+              lg: "min-content min-content 1fr",
             },
             gap: 2,
             p: 2,
             overflow: {
-              xs: "auto",
-              md: "hidden",
+              md: "auto",
+              lg: "hidden",
             },
           }}
         >
           {/* Rebalance Details Section */}
-          <Card elevation={0} sx={{ borderRadius: 2, gridColumn: { xs: "1", md: "1/3" } }}>
+          <Card elevation={0} sx={{ borderRadius: 2, gridColumn: { md: "1", lg: "1/3" } }}>
             <Box sx={{ py: 5, px: 4 }}>
               <InformationBar marketData={marketData} simulation={simulation} />
             </Box>
           </Card>
 
           {/* Sidebar - Simulation Setup */}
-          <Card elevation={0} sx={{ borderRadius: 2, gridRow: { xs: "auto", md: "2/4" } }}>
+          <Card elevation={0} sx={{ borderRadius: 2, gridRow: { md: "auto", lg: "2/4" } }}>
             <Box sx={{ p: 4, height: "100%", display: "flex", flexDirection: "column" }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
                 <Analytics color="primary" fontSize="small" />
@@ -210,7 +210,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
               overflow: "hidden",
               display: "flex",
               flexDirection: "column",
-              minHeight: { xs: "400px", md: "auto" },
+              minHeight: { xs: "90vh", lg: "auto" },
             }}
           >
             <Box sx={{ p: 4, pb: 3, flex: 1, display: "flex", flexDirection: "column" }}>

@@ -76,8 +76,9 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
         alignItems: "center",
         gap: 2,
         gridTemplateColumns: {
-          xs: "repeat(2, max-content)",
-          md: "repeat(6, max-content)",
+          sm: "repeat(2, max-content)",
+          md: "repeat(3, max-content)",
+          lg: "repeat(6, max-content)",
         },
         justifyContent: "space-between",
       }}

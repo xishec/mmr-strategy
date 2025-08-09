@@ -19,8 +19,9 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation 
       alignItems="center"
       width="100%"
       gridTemplateColumns={{
-        xs: "1fr",
-        md: "repeat(5, max-content)",
+        sm: "1fr",
+        md: "1fr",
+        lg: "repeat(5, max-content)",
       }}
       justifyContent={"space-between"}
       gap={1}
@@ -65,8 +66,8 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation 
             sx={{ fontWeight: "bolder", border: "2px solid" }}
             label={testVariable ? "ALL-IN" : "PANIC"}
             color={testVariable ? "success" : "error"}
-            variant="outlined"
-            size="medium"
+            variant="filled"
+            size="small"
           />
         )}
       </Box>

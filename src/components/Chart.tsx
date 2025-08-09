@@ -622,29 +622,29 @@ const Chart: React.FC<ChartProps> = ({
 
     // Helper function to add axes and grid
     const addAxesAndGrid = () => {
-      // X-axis
+      // X-axis - always 5 ticks
       g.append("g")
         .attr("class", "x-axis")
         .attr("transform", `translate(0,${ratioTop + ratioHeight + 10})`)
         .call(
           d3
             .axisBottom(xScale)
-            .ticks(20)
+            .ticks(5)
             .tickFormat((domainValue) => d3.timeFormat("%Y")(domainValue as Date))
         );
 
-      // Y-axes
+      // Y-axes - always 5 ticks
       const yAxisConfig = isLogScale
-        ? d3.axisLeft(priceYScale).ticks(4).tickFormat(formatPriceValue)
-        : d3.axisLeft(priceYScale).tickFormat(formatPriceValue);
+        ? d3.axisLeft(priceYScale).ticks(5).tickFormat(formatPriceValue)
+        : d3.axisLeft(priceYScale).ticks(5).tickFormat(formatPriceValue);
 
       g.append("g").attr("class", "y-axis-price").attr("transform", "translate(0,0)").call(yAxisConfig);
 
-      g.append("g").attr("class", "y-axis-ratio").call(d3.axisLeft(ratioYScale).ticks(3));
+      g.append("g").attr("class", "y-axis-ratio").call(d3.axisLeft(ratioYScale).ticks(5));
 
-      // Price grid lines
+      // Price grid lines - always 5 ticks
       g.selectAll(".grid-line")
-        .data(priceYScale.ticks(4))
+        .data(priceYScale.ticks(5))
         .enter()
         .append("line")
         .attr("class", "grid-line")

@@ -113,14 +113,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
                   onStartDateChange(null);
                 }
               }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Start Date"
-                  variant="outlined"
-                  fullWidth
-                />
-              )}
+              renderInput={(params) => <TextField {...params} label="Start Date" variant="outlined" fullWidth />}
             />
             <Autocomplete
               size="small"
@@ -138,14 +131,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
                   onEndDateChange(null);
                 }
               }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="End Date"
-                  variant="outlined"
-                  fullWidth
-                />
-              )}
+              renderInput={(params) => <TextField {...params} label="End Date" variant="outlined" fullWidth />}
             />
           </Box>
         </CardContent>
@@ -301,7 +287,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
             <Schedule fontSize="small" />
             Multi Simulation Parameters
           </Typography>
-          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: { sx: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
             <TextField
               size="small"
               label="Duration"
