@@ -10,9 +10,6 @@ interface InformationBarProps {
 
 const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation }) => {
   const lastSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
-  if (!lastSnapshot) {
-    return <Typography color="error">No data</Typography>;
-  }
 
   const testVariable = true;
 
@@ -35,29 +32,33 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation 
 
       <Box display="flex" alignItems="center" gap={1}>
         <Typography variant="body1">Updated on :</Typography>
-        <strong>
-          {parseDate(lastSnapshot.date).toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "short",
-            day: "numeric",
-          })}
-        </strong>
+        {lastSnapshot && (
+          <strong>
+            {parseDate(lastSnapshot.date).toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "short",
+              day: "numeric",
+            })}
+          </strong>
+        )}
       </Box>
 
       <Box display="flex" alignItems="center" gap={1}>
         <Typography variant="body1">TQQQ rate :</Typography>
-        <strong>{marketData.TQQQ[lastSnapshot.date].rate.toFixed(2)}%</strong>
+        {lastSnapshot && <strong>{marketData.TQQQ[lastSnapshot.date].rate.toFixed(2)}%</strong>}
       </Box>
 
       <Box display="flex" alignItems="center" gap={1}>
         <Typography variant="body1">Current Combined Signal :</Typography>
-        <Chip
-          sx={{ fontWeight: "bolder", border: "2px solid" }}
-          label={testVariable ? "ALL-IN" : "PANIC"}
-          color={testVariable ? "success" : "error"}
-          variant="outlined"
-          size="medium"
-        />
+        {lastSnapshot && (
+          <Chip
+            sx={{ fontWeight: "bolder", border: "2px solid" }}
+            label={testVariable ? "ALL-IN" : "PANIC"}
+            color={testVariable ? "success" : "error"}
+            variant="outlined"
+            size="medium"
+          />
+        )}
       </Box>
     </Box>
   );

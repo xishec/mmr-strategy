@@ -11,26 +11,23 @@ DIR = os.path.dirname(os.path.realpath(__file__))
 def download_stock(ticker):
     print("*** Downloading TQQQ data to csv ***")
 
-    # Set date range - using a longer period to get all available data
     start_date = "1995-01-01"
     end_date = datetime.today().strftime("%Y-%m-%d")
 
     try:
-        # # Download TQQQ data - letting yfinance handle the session
-        # print(f"Downloading {ticker} data from {start_date} to {end_date}...")
-        # df = yf.download(
-        #     ticker,
-        #     start=start_date,
-        #     end=end_date,
-        #     auto_adjust=False,
-        #     progress=True,
-        #     rounding=False,
-        #     # Removed session parameter to let yfinance handle it internally
-        # )
+        print(f"Downloading {ticker} data from {start_date} to {end_date}...")
+        df = yf.download(
+            ticker,
+            start=start_date,
+            end=end_date,
+            auto_adjust=False,
+            progress=True,
+            rounding=False,
+        )
 
-        # if df.empty:
-        #     print(f"No data found for {ticker}")
-        #     return False
+        if df.empty:
+            print(f"No data found for {ticker}")
+            return False
 
         output_dir = os.path.join(os.path.dirname(DIR), "./data")
         # os.makedirs(output_dir, exist_ok=True)
