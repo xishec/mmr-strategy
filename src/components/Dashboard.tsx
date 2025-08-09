@@ -179,13 +179,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
 
           {/* Legend Section */}
           <Card elevation={0} sx={{ borderRadius: 2, overflow: "visible" }}>
-            <CardContent sx={{ p: 4, pt: 3 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-                <Assessment color="primary" fontSize="small" />
-                <Typography variant="h6" sx={{ fontSize: "1rem", fontWeight: 600 }}>
-                  Strategy Performance Overview
-                </Typography>
-              </Box>
+            <CardContent sx={{ p: 4 }}>
               <Legend d3ChartData={d3ChartData} selectedDate={selectedDate} />
             </CardContent>
           </Card>
