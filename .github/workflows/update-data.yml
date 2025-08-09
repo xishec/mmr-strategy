@@ -10,7 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout repo content
-        uses: actions/checkout@v3 # checkout the repository content to github runner.
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
       - name: setup python
         uses: actions/setup-python@v4
         with:
@@ -24,10 +27,15 @@ jobs:
           python3 ./src/data/download_stocks.py
 
       - name: Commit and push if changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add --all
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update stocks data [automated]"
-          git pull --rebase  # Pull the latest changes
+          if ! git diff --quiet && git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Update stocks data [automated]"
           git push
