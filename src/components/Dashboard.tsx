@@ -173,6 +173,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
                   updateVariable("multiSimulationVariables", updatedMultiSimulationVariables);
                 }}
                 onRunMultipleSimulations={handleRunMultipleSimulations}
+                marketData={marketData}
               />
             </Box>
           </Card>

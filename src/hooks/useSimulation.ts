@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Simulation, MarketData, DashboardVariables, MultiSimulationResults, MultiSimulation } from "../core/models";
 import { startSimulation, runMultipleSimulations } from "../core/functions";
-import { formatDate } from "../core/date-utils";
 
 export interface UseSimulationReturn {
   simulation: Simulation;
@@ -17,8 +16,8 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   const [dashboardVariables, setDashboardVariables] = useState<DashboardVariables>({
     simulationVariables: {
       initialMoney: 100000,
-      startDate: formatDate(new Date(1998, 0, 1)),
-      endDate: formatDate(new Date()),
+      startDate: Object.keys(marketData!.QQQ)[0],
+      endDate: Object.keys(marketData!.QQQ).slice(-1)[0],
       cashYearRate: 0.0,
       SMAUpMargin: 0.03,
       SMADownMargin: -0.0,

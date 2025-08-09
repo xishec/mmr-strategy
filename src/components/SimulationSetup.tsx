@@ -8,8 +8,11 @@ import {
   Button,
   CardContent,
   InputAdornment,
+  Autocomplete,
 } from "@mui/material";
 import { AttachMoney, Schedule, CalendarMonth, Analytics, Refresh } from "@mui/icons-material";
+import { MarketData } from "../core/models";
+import { parseDate } from "../core/date-utils";
 
 interface SimulationSetupProps {
   startDate: Date;
@@ -35,6 +38,7 @@ interface SimulationSetupProps {
   onRunMultipleSimulations: () => void;
   onSimulationFrequencyDaysChange: (value: number) => void;
   onSimulationAnalysisMinusYearsChange: (value: number) => void;
+  marketData: MarketData;
 }
 
 const SimulationSetup: React.FC<SimulationSetupProps> = ({
@@ -61,7 +65,18 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   onRunMultipleSimulations,
   onSimulationFrequencyDaysChange,
   onSimulationAnalysisMinusYearsChange,
+  marketData,
 }) => {
+  const getAvailableDates = () => {
+    try {
+      return Object.keys(marketData.QQQ).sort();
+    } catch {
+      return [];
+    }
+  };
+
+  const availableDates = getAvailableDates();
+
   return (
     <Box sx={{ flex: 1, overflow: "auto" }}>
       {/* Date Range Section */}
@@ -82,29 +97,55 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
             Date Range
           </Typography>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
-            <TextField
+            <Autocomplete
               size="small"
-              label="Start Date"
-              type="date"
-              value={startDate.toISOString().split('T')[0]}
-              onChange={(e) => onStartDateChange(e.target.value ? new Date(e.target.value) : null)}
-              variant="outlined"
-              fullWidth
-              slotProps={{
-                inputLabel: { shrink: true },
+              options={availableDates}
+              value={startDate.toISOString().split("T")[0]}
+              onChange={(event, newValue) => {
+                if (newValue) {
+                  try {
+                    const selectedDate = parseDate(newValue);
+                    onStartDateChange(selectedDate);
+                  } catch {
+                    // If parsing fails, ignore the change
+                  }
+                } else {
+                  onStartDateChange(null);
+                }
               }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Start Date"
+                  variant="outlined"
+                  fullWidth
+                />
+              )}
             />
-            <TextField
+            <Autocomplete
               size="small"
-              label="End Date"
-              type="date"
-              value={endDate.toISOString().split('T')[0]}
-              onChange={(e) => onEndDateChange(e.target.value ? new Date(e.target.value) : null)}
-              variant="outlined"
-              fullWidth
-              slotProps={{
-                inputLabel: { shrink: true },
+              options={availableDates}
+              value={endDate.toISOString().split("T")[0]}
+              onChange={(event, newValue) => {
+                if (newValue) {
+                  try {
+                    const selectedDate = parseDate(newValue);
+                    onEndDateChange(selectedDate);
+                  } catch {
+                    // If parsing fails, ignore the change
+                  }
+                } else {
+                  onEndDateChange(null);
+                }
               }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="End Date"
+                  variant="outlined"
+                  fullWidth
+                />
+              )}
             />
           </Box>
         </CardContent>
