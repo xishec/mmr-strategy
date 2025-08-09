@@ -1,50 +1,66 @@
 import React from "react";
-import { Simulation } from "../core/models";
-import { Box, Typography, Chip, Stack } from "@mui/material";
+import { MarketData, Simulation } from "../core/models";
+import { Box, Typography, Chip } from "@mui/material";
+import { parseDate } from "../core/date-utils";
 
-interface RebalanceDetailsProps {
-  selectedDate: string | null;
+interface InformationBarProps {
+  marketData: MarketData;
   simulation: Simulation;
 }
 
-const RebalanceDetails: React.FC<RebalanceDetailsProps> = ({ selectedDate, simulation }) => {
-  const currentSnapshot = simulation.portfolioSnapshots.find((snapshot) => snapshot.date === selectedDate);
-
-  if (!currentSnapshot) {
-    return (
-      <Typography variant="body2" color="text.secondary">
-        No rebalance data available for the selected date.
-      </Typography>
-    );
+const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation }) => {
+  const lastSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
+  if (!lastSnapshot) {
+    return <Typography color="error">No data</Typography>;
   }
 
+  const testVariable = true;
+
   return (
-    <Stack spacing={2}>
+    <Box display="flex" alignItems="center" justifyContent="space-between" width="100%" sx={{}}>
+      <Typography variant="h6" fontWeight="bold">
+        MMR Strategy App
+      </Typography>
+
       <Box display="flex" alignItems="center" gap={1}>
-        <Typography variant="body1" fontWeight="medium" mt={0.25}>
-          Big Drop Last 30 Days:
-        </Typography>
-        <Chip
-          label={currentSnapshot.signal.bigDropLast30Days ? "TRUE" : "FALSE"}
-          color={currentSnapshot.signal.bigDropLast30Days ? "warning" : "success"}
-          variant="outlined"
-          size="small"
-        />
+        <Typography variant="body1">Today is :</Typography>
+        <strong>
+          {new Date().toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "short",
+            day: "numeric",
+          })}
+        </strong>
       </Box>
 
       <Box display="flex" alignItems="center" gap={1}>
-        <Typography variant="body1" fontWeight="medium" mt={0.25}>
-          Is Below SMA200:
-        </Typography>
+        <Typography variant="body1">Updated on :</Typography>
+        <strong>
+          {parseDate(lastSnapshot.date).toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "short",
+            day: "numeric",
+          })}
+        </strong>
+      </Box>
+
+      <Box display="flex" alignItems="center" gap={1}>
+        <Typography variant="body1">TQQQ rate :</Typography>
+        <strong>{marketData.TQQQ[lastSnapshot.date].rate.toFixed(2)}%</strong>
+      </Box>
+
+      <Box display="flex" alignItems="center" gap={1}>
+        <Typography variant="body1">Current Combined Signal :</Typography>
         <Chip
-          label={currentSnapshot.signal.isBelowSMA200 ? "TRUE" : "FALSE"}
-          color={currentSnapshot.signal.isBelowSMA200 ? "error" : "success"}
+          sx={{ fontWeight: "bolder", border: "2px solid" }}
+          label={testVariable ? "ALL-IN" : "PANIC"}
+          color={testVariable ? "success" : "error"}
           variant="outlined"
-          size="small"
+          size="medium"
         />
       </Box>
-    </Stack>
+    </Box>
   );
 };
 
-export default RebalanceDetails;
+export default InformationBar;

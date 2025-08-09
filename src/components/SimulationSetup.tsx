@@ -68,181 +68,181 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
     <Box sx={{ flex: 1, overflow: "auto" }}>
       {/* Date Range Section */}
       <Box sx={{ mb: 3, border: "1px solid #7c7c7c80", borderRadius: 2 }}>
-          <CardContent sx={{ pb: 2 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                mb: 2,
-                color: "primary.main",
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                fontSize: "1rem",
-              }}
-            >
-              <CalendarMonth fontSize="small" />
-              Date Range
-            </Typography>
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DatePicker
-                  label="Start Date"
-                  value={startDate}
-                  onChange={onStartDateChange}
-                  format="yyyy-MM-dd"
-                  sx={{ width: "100%" }}
-                  slotProps={{ textField: { size: "small" } }}
-                />
-              </LocalizationProvider>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DatePicker
-                  label="End Date"
-                  value={endDate}
-                  onChange={onEndDateChange}
-                  format="yyyy-MM-dd"
-                  sx={{ width: "100%" }}
-                  slotProps={{ textField: { size: "small" } }}
-                />
-              </LocalizationProvider>
-            </Box>
-          </CardContent>
-        </Box>
+        <CardContent sx={{ pb: 2 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              mb: 2,
+              color: "primary.main",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              fontSize: "1rem",
+            }}
+          >
+            <CalendarMonth fontSize="small" />
+            Date Range
+          </Typography>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                label="Start Date"
+                value={startDate}
+                onChange={onStartDateChange}
+                format="yyyy-MM-dd"
+                sx={{ width: "100%" }}
+                slotProps={{ textField: { size: "small" } }}
+              />
+            </LocalizationProvider>
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                label="End Date"
+                value={endDate}
+                onChange={onEndDateChange}
+                format="yyyy-MM-dd"
+                sx={{ width: "100%" }}
+                slotProps={{ textField: { size: "small" } }}
+              />
+            </LocalizationProvider>
+          </Box>
+        </CardContent>
+      </Box>
 
-        {/* Financial Parameters */}
-        <Box sx={{ mb: 3, border: "1px solid #7c7c7c80", borderRadius: 2 }}>
-          <CardContent sx={{ pb: 2 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                mb: 2,
-                color: "primary.main",
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                fontSize: "1rem",
+      {/* Financial Parameters */}
+      <Box sx={{ mb: 3, border: "1px solid #7c7c7c80", borderRadius: 2 }}>
+        <CardContent sx={{ pb: 2 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              mb: 2,
+              color: "primary.main",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              fontSize: "1rem",
+            }}
+          >
+            <AttachMoney fontSize="small" />
+            Financial Parameters
+          </Typography>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+            <TextField
+              size="small"
+              label="Initial Money"
+              type="number"
+              value={initialMoney.toString()}
+              onChange={(e) => onInitialMoneyChange(e.target.value === "" ? 0 : Number(e.target.value))}
+              variant="outlined"
+              fullWidth
+              slotProps={{
+                input: {
+                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                },
+                htmlInput: { step: 1 },
               }}
-            >
-              <AttachMoney fontSize="small" />
-              Financial Parameters
-            </Typography>
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
-              <TextField
-                size="small"
-                label="Initial Money"
-                type="number"
-                value={initialMoney.toString()}
-                onChange={(e) => onInitialMoneyChange(e.target.value === "" ? 0 : Number(e.target.value))}
-                variant="outlined"
-                fullWidth
-                slotProps={{
-                  input: {
-                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                  },
-                  htmlInput: { step: 1 },
-                }}
-              />
-              <TextField
-                size="small"
-                label="Monthly New Cash"
-                type="number"
-                value={monthlyNewCash.toString()}
-                onChange={(e) => onMonthlyNewCashChange(e.target.value === "" ? 0 : Number(e.target.value))}
-                variant="outlined"
-                fullWidth
-                slotProps={{
-                  input: {
-                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                  },
-                  htmlInput: { step: 500 },
-                }}
-              />
-              <TextField
-                size="small"
-                label="Cash Year Rate"
-                type="number"
-                value={cashYearRate.toString()}
-                onChange={(e) => onCashYearRateChange(e.target.value === "" ? 0 : Number(e.target.value))}
-                variant="outlined"
-                fullWidth
-                slotProps={{
-                  input: {
-                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                  },
-                  htmlInput: { step: 0.5 },
-                }}
-              />
-              <TextField
-                size="small"
-                label="SMA Up Margin"
-                type="number"
-                value={upMargin.toString()}
-                onChange={(e) => onSMAUpMarginChange(e.target.value === "" ? 0 : Number(e.target.value))}
-                variant="outlined"
-                fullWidth
-                slotProps={{
-                  input: {
-                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                  },
-                  htmlInput: { step: 0.5 },
-                }}
-              />
-              <TextField
-                size="small"
-                label="SMA Down Margin"
-                type="number"
-                value={dropRate.toString()}
-                onChange={(e) => onSMADownMarginChange(e.target.value === "" ? 0 : Number(e.target.value))}
-                variant="outlined"
-                fullWidth
-                slotProps={{
-                  input: {
-                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                  },
-                  htmlInput: { step: 0.5 },
-                }}
-              />
-            </Box>
-          </CardContent>
-        </Box>
-
-        {/* Display Options */}
-        <Box sx={{ mb: 3, border: "1px solid #7c7c7c80", borderRadius: 2 }}>
-          <CardContent sx={{ pb: 2 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                mb: 2,
-                color: "primary.main",
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                fontSize: "1rem",
-              }}
-            >
-              <Analytics fontSize="small" />
-              Display Options
-            </Typography>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={isLogScale}
-                  onChange={(e) => onLogScaleChange(e.target.checked)}
-                  color="primary"
-                  size="medium"
-                />
-              }
-              label={
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  Logarithmic Scale
-                </Typography>
-              }
-              sx={{ ml: 0 }}
             />
-          </CardContent>
-        </Box>
+            <TextField
+              size="small"
+              label="Monthly New Cash"
+              type="number"
+              value={monthlyNewCash.toString()}
+              onChange={(e) => onMonthlyNewCashChange(e.target.value === "" ? 0 : Number(e.target.value))}
+              variant="outlined"
+              fullWidth
+              slotProps={{
+                input: {
+                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                },
+                htmlInput: { step: 500 },
+              }}
+            />
+            <TextField
+              size="small"
+              label="Cash Year Rate"
+              type="number"
+              value={cashYearRate.toString()}
+              onChange={(e) => onCashYearRateChange(e.target.value === "" ? 0 : Number(e.target.value))}
+              variant="outlined"
+              fullWidth
+              slotProps={{
+                input: {
+                  endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                },
+                htmlInput: { step: 0.5 },
+              }}
+            />
+            <TextField
+              size="small"
+              label="SMA Up Margin"
+              type="number"
+              value={upMargin.toString()}
+              onChange={(e) => onSMAUpMarginChange(e.target.value === "" ? 0 : Number(e.target.value))}
+              variant="outlined"
+              fullWidth
+              slotProps={{
+                input: {
+                  endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                },
+                htmlInput: { step: 0.5 },
+              }}
+            />
+            <TextField
+              size="small"
+              label="SMA Down Margin"
+              type="number"
+              value={dropRate.toString()}
+              onChange={(e) => onSMADownMarginChange(e.target.value === "" ? 0 : Number(e.target.value))}
+              variant="outlined"
+              fullWidth
+              slotProps={{
+                input: {
+                  endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                },
+                htmlInput: { step: 0.5 },
+              }}
+            />
+          </Box>
+        </CardContent>
+      </Box>
 
-        {/* Multi Simulation Parameters */}
-        <Box sx={{ border: "1px solid #7c7c7c80", borderRadius: 2 }}>
+      {/* Display Options */}
+      <Box sx={{ mb: 3, border: "1px solid #7c7c7c80", borderRadius: 2 }}>
+        <CardContent sx={{ pb: 2 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              mb: 2,
+              color: "primary.main",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              fontSize: "1rem",
+            }}
+          >
+            <Analytics fontSize="small" />
+            Display Options
+          </Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isLogScale}
+                onChange={(e) => onLogScaleChange(e.target.checked)}
+                color="primary"
+                size="medium"
+              />
+            }
+            label={
+              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                Logarithmic Scale
+              </Typography>
+            }
+            sx={{ ml: 0 }}
+          />
+        </CardContent>
+      </Box>
+
+      {/* Multi Simulation Parameters */}
+      <Box sx={{ border: "1px solid #7c7c7c80", borderRadius: 2 }}>
         <CardContent sx={{ pb: 2 }}>
           <Typography
             variant="h6"
@@ -309,7 +309,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
       </Box>
 
       {/* Action Button */}
-      <Box sx={{}}>
+      <Box sx={{ mt: 3 }}>
         <Button
           variant="outlined"
           color="primary"
