@@ -30,12 +30,12 @@ def download_stock(ticker):
             return False
 
         output_dir = os.path.join(os.path.dirname(DIR), "./data")
-        # os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, f"{ticker}_raw.json")
-        # df.to_json(output_path)
+        df.to_json(output_path)
 
-        # print(f"Successfully saved {ticker} data to {output_path}")
-        # print(f"Total rows: {len(df)}")
+        print(f"Successfully saved {ticker} data to {output_path}")
+        print(f"Total rows: {len(df)}")
 
         # Inside download_stock function, after loading the JSON data
         with open(output_path, "r") as f:
