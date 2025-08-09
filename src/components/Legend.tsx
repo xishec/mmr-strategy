@@ -23,7 +23,7 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
     { label: "Strategy Total", color: yellow, type: "line", seriesKey: "strategyTotal" },
     { label: "Mock Total QQQ", color: blue, type: "line", seriesKey: "mockTotalQQQ" },
     { label: "Mock Total TQQQ", color: red, type: "line", seriesKey: "mockTotalTQQQ" },
-    { label: "TQQQ Ratio", color: grey, type: "area", seriesKey: "ratio" },
+    { label: "TQQQ vs Cash Ratio", color: grey, type: "area", seriesKey: "ratio" },
     { label: "Portfolio Pullback", color: red, type: "area", seriesKey: "pullback" },
   ];
 
@@ -75,7 +75,6 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
         display: "grid",
         alignItems: "center",
         gap: 2,
-        mb: 1,
         gridTemplateColumns: "repeat(6, 1fr)",
       }}
     >
@@ -83,7 +82,7 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
       {selectedDate && (
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
           <Typography variant="body2" sx={{ fontSize: "1rem", fontWeight: "normal", color: "text.secondary" }}>
-            Date
+            Selected Date
           </Typography>
           <Typography variant="body2" sx={{ fontSize: "1rem", fontWeight: "bold" }}>
             {selectedDate}

@@ -53,7 +53,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
           sx={{
             height: "100vh",
             display: "grid",
-            gridTemplateColumns: "400px 1fr",
+            gridTemplateColumns: "500px 1fr",
             gridTemplateRows: "min-content min-content 1fr",
             gap: 2,
             p: 2,
@@ -62,7 +62,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         >
           {/* Rebalance Details Section */}
           <Card elevation={0} sx={{ borderRadius: 2, gridColumn: "1/3" }}>
-            <Box sx={{ p: 0, pb: 0 }}>
+            <Box sx={{ py: 5, px: 4 }}>
               <InformationBar marketData={marketData} simulation={simulation} />
             </Box>
           </Card>
@@ -70,9 +70,9 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
           {/* Sidebar - Simulation Setup */}
           <Card elevation={0} sx={{ borderRadius: 2, gridRow: "2/4" }}>
             <Box sx={{ p: 4, height: "100%", display: "flex", flexDirection: "column" }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
                 <Analytics color="primary" fontSize="small" />
-                <Typography variant="h6" sx={{ fontSize: "1rem", fontWeight: 600 }}>
+                <Typography variant="h6" sx={{ fontSize: "1.25rem", fontWeight: 600 }}>
                   Simulation Setup
                 </Typography>
               </Box>
