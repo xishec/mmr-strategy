@@ -68,8 +68,10 @@ def download_stock(ticker):
 
                     # Calculate percentage changes, SMA200, and store data
                     prev_value = None
-                    close_prices = [item[1] for item in date_values]  # Extract close prices for SMA calculation
-                    
+                    close_prices = [
+                        item[1] for item in date_values
+                    ]  # Extract close prices for SMA calculation
+
                     for i, (date_str, value) in enumerate(date_values):
                         if prev_value is None:
                             pct_change = 0
@@ -80,12 +82,12 @@ def download_stock(ticker):
                         if i < 199:  # Not enough data for 200-day SMA
                             sma200 = None
                         else:
-                            sma200 = sum(close_prices[i-199:i+1]) / 200
+                            sma200 = sum(close_prices[i - 199 : i + 1]) / 200
 
                         stock_data[date_str] = {
-                            "rate": pct_change, 
+                            "rate": pct_change,
                             "close": value,
-                            "sma200": sma200
+                            "sma200": sma200,
                         }
                         prev_value = value
 
@@ -159,12 +161,12 @@ def simulate_TQQQ():
         if i < 199:  # Not enough data for 200-day SMA
             tqqq_sma200 = None
         else:
-            tqqq_sma200 = sum(tqqq_close_prices[i-199:i+1]) / 200
+            tqqq_sma200 = sum(tqqq_close_prices[i - 199 : i + 1]) / 200
 
         simulated_TQQQ_data[date] = {
             "rate": round(tqqq_rate, 2),
             "close": round(tqqq_close, 2),
-            "sma200": round(tqqq_sma200, 2) if tqqq_sma200 is not None else None
+            "sma200": round(tqqq_sma200, 2) if tqqq_sma200 is not None else None,
         }
 
     # Replace TQQQ_data with simulated data
@@ -189,7 +191,9 @@ def simulate_TQQQ():
         for date, data_obj in sorted(sorted_TQQQ_data.items()):
             if isinstance(data_obj, dict):
                 sma200_value = data_obj.get("sma200", "N/A")
-                csv_writer.writerow([date, data_obj["rate"], data_obj["close"], sma200_value])
+                csv_writer.writerow(
+                    [date, data_obj["rate"], data_obj["close"], sma200_value]
+                )
             else:
                 # Handle old format if it exists
                 csv_writer.writerow([date, data_obj, "N/A", "N/A"])
@@ -198,7 +202,27 @@ def simulate_TQQQ():
 
 
 if __name__ == "__main__":
-    download_stock("QQQ")
-    time.sleep(1)
-    download_stock("TQQQ")
+    # Retry logic for downloading QQQ data
+    print("Starting QQQ download with retry logic...")
+    while True:
+        if download_stock("QQQ"):
+            print("QQQ download successful!")
+            break
+        else:
+            print("QQQ download failed, retrying in 2 seconds...")
+            time.sleep(2)
+
+    # Brief pause between downloads
+    time.sleep(2)
+
+    # Retry logic for downloading TQQQ data
+    print("Starting TQQQ download with retry logic...")
+    while True:
+        if download_stock("TQQQ"):
+            print("TQQQ download successful!")
+            break
+        else:
+            print("TQQQ download failed, retrying in 2 seconds...")
+            time.sleep(2)
+
     simulate_TQQQ()

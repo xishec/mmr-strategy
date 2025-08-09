@@ -1,0 +1,33 @@
+name: Update Stock Data
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  back_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo content
+        uses: actions/checkout@v3 # checkout the repository content to github runner.
+      - name: setup python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.8 #install the python needed
+      - name: install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install yfinance
+      - name: download stock data
+        run: |
+          python3 ./src/data/download_stocks.py
+
+      - name: Commit and push if changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add --all
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update stocks data [automated]"
+          git pull --rebase  # Pull the latest changes
+          git push
