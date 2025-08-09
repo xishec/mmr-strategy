@@ -1,6 +1,6 @@
 import React from "react";
-import { Box, Card, CardContent, Typography, Fade, Container } from "@mui/material";
-import { Analytics, Assessment } from "@mui/icons-material";
+import { Box, Card, Typography, Fade, Container } from "@mui/material";
+import { Analytics } from "@mui/icons-material";
 import { MarketData } from "../core/models";
 import SimulationSetup from "./SimulationSetup";
 import Legend from "./Legend";
@@ -62,14 +62,14 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
         >
           {/* Rebalance Details Section */}
           <Card elevation={0} sx={{ borderRadius: 2, gridColumn: "1/3" }}>
-            <CardContent sx={{ p: 4, pt: 3 }}>
+            <Box sx={{ p: 0, pb: 0 }}>
               <InformationBar marketData={marketData} simulation={simulation} />
-            </CardContent>
+            </Box>
           </Card>
 
           {/* Sidebar - Simulation Setup */}
           <Card elevation={0} sx={{ borderRadius: 2, gridRow: "2/4" }}>
-            <CardContent sx={{ p: 4, pt: 3, height: "100%", display: "flex", flexDirection: "column" }}>
+            <Box sx={{ p: 4, height: "100%", display: "flex", flexDirection: "column" }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
                 <Analytics color="primary" fontSize="small" />
                 <Typography variant="h6" sx={{ fontSize: "1rem", fontWeight: 600 }}>
@@ -174,14 +174,14 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
                 }}
                 onRunMultipleSimulations={handleRunMultipleSimulations}
               />
-            </CardContent>
+            </Box>
           </Card>
 
           {/* Legend Section */}
           <Card elevation={0} sx={{ borderRadius: 2, overflow: "visible" }}>
-            <CardContent sx={{ p: 4 }}>
+            <Box sx={{ p: 4 }}>
               <Legend d3ChartData={d3ChartData} selectedDate={selectedDate} />
-            </CardContent>
+            </Box>
           </Card>
 
           {/* Chart Section */}
@@ -195,7 +195,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
               flexDirection: "column",
             }}
           >
-            <CardContent sx={{ p: 4, pt: 3, pb: 0, flex: 1, display: "flex", flexDirection: "column" }}>
+            <Box sx={{ p: 4, pb: 3, flex: 1, display: "flex", flexDirection: "column" }}>
               <Box sx={{ flex: 1, minHeight: 0 }}>
                 <Chart
                   d3ChartData={d3ChartData}
@@ -205,7 +205,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
                   onDateChange={handleDateChange}
                 />
               </Box>
-            </CardContent>
+            </Box>
           </Card>
         </Box>
 

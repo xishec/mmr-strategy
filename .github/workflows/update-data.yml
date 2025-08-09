@@ -12,7 +12,6 @@ jobs:
       - name: checkout repo content
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
       - name: setup python
         uses: actions/setup-python@v4
@@ -27,15 +26,16 @@ jobs:
           python3 ./src/data/download_stocks.py
 
       - name: Commit and push if changes
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add --all
-          if ! git diff --quiet && git diff --staged --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-          git commit -m "Update stocks data [automated]"
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update stocks data [automated]"
+          git pull --rebase 
+          sleep 5
+          for i in {1..10}; do
+            git push && break || echo "Push failed, retrying ($i/10)..."
+            sleep 6
+            git pull --rebase 
+          done
           git push

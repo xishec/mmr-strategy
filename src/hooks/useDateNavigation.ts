@@ -18,6 +18,13 @@ export const useDateNavigation = (simulation: Simulation): UseDateNavigationRetu
     return simulation.portfolioSnapshots.map((snapshot) => snapshot.date);
   }, [simulation]);
 
+  // Set selectedDateIndex to last date when availableDates changes
+  useEffect(() => {
+    if (availableDates.length > 0) {
+      setSelectedDateIndex(availableDates.length - 1);
+    }
+  }, [availableDates]);
+
   // Current selected date string
   const selectedDate = useMemo(() => {
     if (availableDates.length === 0 || selectedDateIndex >= availableDates.length) return null;
