@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogTitle, DialogContent, Box, Typography } from "@mui/material";
 import * as d3 from "d3";
-import { blue, yellow, black, red } from "./Chart";
+import { blue, yellow, black } from "./Chart";
 import { MultiSimulationResults } from "../core/models";
 
 interface SimulationResultsDialogProps {
