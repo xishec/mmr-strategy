@@ -31,7 +31,7 @@ def download_stock(ticker):
 
         # Calculate Adj Open using adjustment factor
         adj_factor = df["Adj Close"] / df["Close"]
-        df[("Adj Open", ticker)] = df[("Open", ticker)] * adj_factor
+        df["Adj Open"] = df["Open"] * adj_factor
 
         output_dir = os.path.join(os.path.dirname(DIR), "./data")
         os.makedirs(output_dir, exist_ok=True)
@@ -46,14 +46,10 @@ def download_stock(ticker):
             data = json.load(f)
 
         # Extract only the Adj Close and Adj Open columns for the specified ticker
-        adj_close_key = f"('Adj Close', '{ticker}')"
-        adj_open_key = f"('Adj Open', '{ticker}')"
-        
-        print(f"Looking for keys: {adj_close_key} and {adj_open_key}")
-        print(f"Available keys: {list(data.keys())[:10]}...")  # Show first 10 keys
+        adj_close_key = "Adj Close"
+        adj_open_key = "Adj Open"
         
         if adj_close_key in data and adj_open_key in data:
-            print("Found both Adj Close and Adj Open data, processing...")
             # Create a new dictionary for both percentage changes and close prices
             stock_data = {}
 
@@ -112,7 +108,6 @@ def download_stock(ticker):
             )
         else:
             print(f"Error: Could not find required data keys for {ticker}")
-            print(f"Missing: {adj_close_key if adj_close_key not in data else ''} {adj_open_key if adj_open_key not in data else ''}")
             return False
 
         return True
@@ -244,11 +239,11 @@ if __name__ == "__main__":
             print("QQQ download successful!")
             break
         else:
-            print("QQQ download failed, retrying in 2 seconds...")
-            time.sleep(2)
+            print("QQQ download failed, retrying in 10 seconds...")
+            time.sleep(10)
 
     # Brief pause between downloads
-    time.sleep(2)
+    time.sleep(5)
 
     # Retry logic for downloading TQQQ data
     print("Starting TQQQ download with retry logic...")
@@ -257,7 +252,7 @@ if __name__ == "__main__":
             print("TQQQ download successful!")
             break
         else:
-            print("TQQQ download failed, retrying in 2 seconds...")
-            time.sleep(2)
+            print("TQQQ download failed, retrying in 10 seconds...")
+            time.sleep(10)
 
     simulate_TQQQ()
