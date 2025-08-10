@@ -31,7 +31,7 @@ def download_stock(ticker):
 
         # Calculate Adj Open using adjustment factor
         adj_factor = df["Adj Close"] / df["Close"]
-        df["Adj Open"] = df["Open"] * adj_factor
+        df[("Adj Open", ticker)] = df[("Open", ticker)] * adj_factor
 
         output_dir = os.path.join(os.path.dirname(DIR), "./data")
         os.makedirs(output_dir, exist_ok=True)
