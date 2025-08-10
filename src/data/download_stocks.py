@@ -49,7 +49,11 @@ def download_stock(ticker):
         adj_close_key = f"('Adj Close', '{ticker}')"
         adj_open_key = f"('Adj Open', '{ticker}')"
         
+        print(f"Looking for keys: {adj_close_key} and {adj_open_key}")
+        print(f"Available keys: {list(data.keys())[:10]}...")  # Show first 10 keys
+        
         if adj_close_key in data and adj_open_key in data:
+            print("Found both Adj Close and Adj Open data, processing...")
             # Create a new dictionary for both percentage changes and close prices
             stock_data = {}
 
@@ -106,6 +110,10 @@ def download_stock(ticker):
             print(
                 f"Saved daily returns, close/open prices, and SMA200 for {ticker} to {output_path}"
             )
+        else:
+            print(f"Error: Could not find required data keys for {ticker}")
+            print(f"Missing: {adj_close_key if adj_close_key not in data else ''} {adj_open_key if adj_open_key not in data else ''}")
+            return False
 
         return True
 
