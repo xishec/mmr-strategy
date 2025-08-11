@@ -329,7 +329,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
                 htmlInput: { step: 500 },
               }}
             />
-            <TextField
+            {/* <TextField
               size="small"
               label="Cash Year Rate"
               type="number"
@@ -343,8 +343,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
                 },
                 htmlInput: { step: 0.5 },
               }}
-            />
-            <TextField
+            /> */}
+            {/* <TextField
               size="small"
               label="SMA Up Margin"
               type="number"
@@ -358,8 +358,8 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
                 },
                 htmlInput: { step: 0.5 },
               }}
-            />
-            <TextField
+            /> */}
+            {/* <TextField
               size="small"
               label="SMA Down Margin"
               type="number"
@@ -373,7 +373,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
                 },
                 htmlInput: { step: 0.5 },
               }}
-            />
+            /> */}
             <FormControlLabel
               control={
                 <Switch
@@ -388,7 +388,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
                   {buyAtOpen ? "Adjust next day at open" : "Adjust right after close"}
                 </Typography>
               }
-              sx={{ ml: 0 }}
+              sx={{ ml: 0, gridColumn: "span 2" }}
             />
           </Box>
         </CardContent>
