@@ -137,4 +137,11 @@ export class DataService {
     this.marketDataCache = null;
     this.lastFetchTime = 0;
   }
+
+  /**
+   * Get the timestamp of when data was last fetched
+   */
+  public getLastFetchTime(): number {
+    return this.lastFetchTime;
+  }
 }
