@@ -1,13 +1,14 @@
 import { MarketData } from "./models";
+import { DATA_CONFIG } from "./data-config";
 
 /**
- * Service for loading market data either from remote URLs or local files
+ * Service for loading market data from remote GitHub URLs
  */
 export class DataService {
   private static instance: DataService;
   private marketDataCache: MarketData | null = null;
   private lastFetchTime: number = 0;
-  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+  private readonly CACHE_DURATION = DATA_CONFIG.CACHE_DURATION_MS;
 
   private constructor() {}
 
@@ -51,7 +52,7 @@ export class DataService {
   }
 
   /**
-   * Load data from local files as fallback
+   * Load data from local files (for development)
    */
   private async loadFromLocalFiles(): Promise<MarketData> {
     try {
@@ -79,7 +80,7 @@ export class DataService {
   }
 
   /**
-   * Main method to load market data with remote fetch and local fallback
+   * Main method to load market data from remote URLs or local files
    */
   public async loadMarketData(): Promise<MarketData> {
     // Return cached data if available and fresh
@@ -88,51 +89,36 @@ export class DataService {
       return this.marketDataCache!;
     }
 
-    const qqqUrl = process.env.REACT_APP_QQQ_DATA_URL;
-    const tqqqUrl = process.env.REACT_APP_TQQQ_DATA_URL;
-    const useLocalFallback = process.env.REACT_APP_USE_LOCAL_FALLBACK === 'true';
-
-    // If no URLs are configured, use local files
-    if (!qqqUrl || !tqqqUrl) {
-      console.log("No remote URLs configured, using local files");
+    // Use local files in development due to CORS restrictions
+    if (DATA_CONFIG.USE_LOCAL_IN_DEVELOPMENT) {
+      console.log("Development mode: using local files");
       this.marketDataCache = await this.loadFromLocalFiles();
       this.lastFetchTime = Date.now();
       return this.marketDataCache;
     }
 
-    try {
-      console.log("Attempting to load data from remote URLs...");
-      
-      // Fetch both datasets in parallel
-      const [qqqData, tqqqData] = await Promise.all([
-        this.fetchFromUrl(qqqUrl),
-        this.fetchFromUrl(tqqqUrl),
-      ]);
+    const qqqUrl = DATA_CONFIG.QQQ_DATA_URL;
+    const tqqqUrl = DATA_CONFIG.TQQQ_DATA_URL;
 
-      const marketData: MarketData = {
-        QQQ: qqqData,
-        TQQQ: tqqqData,
-      };
+    console.log("Production mode: attempting to load data from remote URLs...");
+    
+    // Fetch both datasets in parallel
+    const [qqqData, tqqqData] = await Promise.all([
+      this.fetchFromUrl(qqqUrl),
+      this.fetchFromUrl(tqqqUrl),
+    ]);
 
-      // Cache the successful result
-      this.marketDataCache = marketData;
-      this.lastFetchTime = Date.now();
+    const marketData: MarketData = {
+      QQQ: qqqData,
+      TQQQ: tqqqData,
+    };
 
-      console.log("Successfully loaded data from remote URLs");
-      return marketData;
+    // Cache the successful result
+    this.marketDataCache = marketData;
+    this.lastFetchTime = Date.now();
 
-    } catch (error) {
-      console.warn("Failed to load data from remote URLs:", error);
-      
-      if (useLocalFallback) {
-        console.log("Falling back to local files...");
-        this.marketDataCache = await this.loadFromLocalFiles();
-        this.lastFetchTime = Date.now();
-        return this.marketDataCache;
-      } else {
-        throw new Error("Failed to load market data and fallback is disabled");
-      }
-    }
+    console.log("Successfully loaded data from remote URLs");
+    return marketData;
   }
 
   /**
