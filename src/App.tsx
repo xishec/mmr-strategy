@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
-import { ThemeProvider, createTheme, CssBaseline, Box, CircularProgress, Typography, Button } from "@mui/material";
+import { ThemeProvider, createTheme, CssBaseline, Box, Typography, Button } from "@mui/material";
 import { MarketData } from "./core/models";
 import Dashboard from "./components/Dashboard";
 import { loadData, refreshData } from "./core/functions";
@@ -93,7 +93,20 @@ function App() {
           justifyContent="center"
           minHeight="100vh"
         >
-          <CircularProgress size={60} />
+          <Box
+            sx={{
+              width: 80,
+              height: 80,
+              border: "4px solid #f3f3f3",
+              borderTop: "4px solid #d3d3d3ff",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+              "@keyframes spin": {
+                "0%": { transform: "rotate(0deg)" },
+                "100%": { transform: "rotate(360deg)" },
+              },
+            }}
+          />
           <Typography variant="h6" sx={{ mt: 2 }}>
             Loading market data...
           </Typography>
