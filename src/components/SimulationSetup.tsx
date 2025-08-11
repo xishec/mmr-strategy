@@ -385,7 +385,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
               }
               label={
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  {buyAtOpen ? "Buy at open" : "Buy at close"}
+                  {buyAtOpen ? "Adjust next day at open" : "Adjust right after close"}
                 </Typography>
               }
               sx={{ ml: 0 }}
