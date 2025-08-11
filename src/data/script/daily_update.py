@@ -4,15 +4,12 @@ Daily Stock Data Updater
 ========================
 - Updates existing QQQ.json and TQQQ.json files with latest data
 - Can be run multiple times per day safely (detects existing data)
-- Uses Twelve Data API as primary source
-- Falls back to Yahoo Finance if needed
+- Uses Twelve Data API exclusively
 """
 
 import json
-import yfinance as yf
 import requests
 import os
-import time
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
@@ -55,8 +52,7 @@ def get_latest_data_twelvedata(ticker, start_date):
     print(f"🔄 Fetching latest {ticker} data from Twelve Data (since {start_date})")
     
     if not TWELVEDATA_API_KEY or TWELVEDATA_API_KEY == "your_api_key_here":
-        print("❌ Twelve Data API key not found. Using Yahoo Finance.")
-        return get_latest_data_yahoo(ticker, start_date)
+        raise Exception("Twelve Data API key not found. Please set TWELVEDATA_API_KEY in .env file.")
     
     try:
         url = "https://api.twelvedata.com/time_series"
@@ -73,18 +69,16 @@ def get_latest_data_twelvedata(ticker, start_date):
         response = requests.get(url, params=params)
         
         if response.status_code != 200:
-            print(f"❌ HTTP Error {response.status_code}. Using Yahoo Finance.")
-            return get_latest_data_yahoo(ticker, start_date)
+            raise Exception(f"HTTP Error {response.status_code}")
         
         data = response.json()
         
         if "status" in data and data["status"] == "error":
-            print(f"❌ API Error: {data.get('message')}. Using Yahoo Finance.")
-            return get_latest_data_yahoo(ticker, start_date)
+            raise Exception(f"API Error: {data.get('message')}")
         
         if "values" not in data:
-            print(f"❌ No values in response. Using Yahoo Finance.")
-            return get_latest_data_yahoo(ticker, start_date)
+            print(f"✅ No new data available for {ticker}")
+            return {}
         
         values = data["values"]
         print(f"✅ Fetched {len(values)} new days from Twelve Data")
@@ -104,44 +98,7 @@ def get_latest_data_twelvedata(ticker, start_date):
         
     except Exception as e:
         print(f"❌ Error fetching from Twelve Data: {e}")
-        return get_latest_data_yahoo(ticker, start_date)
-
-def get_latest_data_yahoo(ticker, start_date):
-    """Get latest data from Yahoo Finance"""
-    print(f"🔄 Fetching latest {ticker} data from Yahoo Finance (since {start_date})")
-    
-    try:
-        # Add one day to start_date to avoid duplicates
-        start_dt = datetime.strptime(start_date, '%Y-%m-%d') + timedelta(days=1)
-        end_dt = datetime.now()
-        
-        stock = yf.Ticker(ticker)
-        df = stock.history(start=start_dt.strftime('%Y-%m-%d'), 
-                          end=end_dt.strftime('%Y-%m-%d'), 
-                          auto_adjust=True)
-        
-        if df.empty:
-            print(f"✅ No new data available for {ticker}")
-            return {}
-        
-        print(f"✅ Fetched {len(df)} new days from Yahoo Finance")
-        
-        # Convert to our format
-        new_data = {}
-        for date, row in df.iterrows():
-            date_str = date.strftime('%Y-%m-%d')
-            new_data[date_str] = {
-                "open": float(row['Open']),
-                "close": float(row['Close']),
-                "rate": 0,  # Will calculate later
-                "sma200": None  # Will calculate later
-            }
-        
-        return new_data
-        
-    except Exception as e:
-        print(f"❌ Error fetching from Yahoo Finance: {e}")
-        return {}
+        raise
 
 def calculate_metrics(existing_data, new_data):
     """Calculate rates and SMA200 for the combined dataset"""
