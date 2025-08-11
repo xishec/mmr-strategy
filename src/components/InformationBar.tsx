@@ -59,7 +59,7 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation,
           MMR Strategy App
         </Typography>
         <Chip
-          sx={{ fontSize: "0.9rem", fontWeight: "bolder", border: "2px solid" }}
+          sx={{ fontSize: "0.9rem", fontWeight: "bolder", border: "2px solid", mt: 0.25 }}
           label={process.env.NODE_ENV === "development" ? "DEV" : "PROD"}
           color={process.env.NODE_ENV === "development" ? "warning" : "success"}
           size="small"
