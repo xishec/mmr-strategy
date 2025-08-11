@@ -24,7 +24,7 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
     { label: "QQQ Total", color: blue, type: "line", seriesKey: "mockTotalQQQ" },
     { label: "TQQQ Total", color: red, type: "line", seriesKey: "mockTotalTQQQ" },
     { label: "TQQQ vs Cash ratio", color: green, type: "area", seriesKey: "ratio" },
-    { label: "Portfolio Pullback", color: red, type: "area", seriesKey: "pullback" },
+    { label: "Strategy Pullback", color: red, type: "area", seriesKey: "pullback" },
   ];
 
   const getValueForSeries = (seriesKey: string): string => {
