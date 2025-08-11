@@ -32,7 +32,7 @@ const COLOR_MAP = {
   mockTotalQQQ: COLORS.blue,
   mockTotalTQQQ: COLORS.black,
   mockTotalNothing: "#dadadaff",
-  ratio: COLORS.yellow,
+  ratio: COLORS.green,
   pullback: COLORS.red,
   default: COLORS.default,
 } as const;
@@ -214,7 +214,7 @@ const Chart: React.FC<ChartProps> = ({
           .attr("fill-opacity", 0.3)
           .attr("d", area);
 
-        const strokeWidth = seriesName === "ratio" ? 1 : 1;
+        const strokeWidth = seriesName === "ratio" ? 0 : 1;
         g.append("path")
           .datum(processedData)
           .attr("class", `line series-${seriesName}`)

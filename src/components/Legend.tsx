@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import { formatValue } from "../core/functions";
-import { blue, red, yellow, grey } from "./Chart";
+import { blue, red, yellow, grey, green } from "./Chart";
 import { D3ChartData } from "../core/models";
 
 interface LegendItem {
@@ -21,9 +21,9 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
   // Define all legend items in the requested order
   const allLegendItems: LegendItem[] = [
     { label: "Strategy Total", color: yellow, type: "line", seriesKey: "strategyTotal" },
-    { label: "Mock Total QQQ", color: blue, type: "line", seriesKey: "mockTotalQQQ" },
-    { label: "Mock Total TQQQ", color: red, type: "line", seriesKey: "mockTotalTQQQ" },
-    { label: "TQQQ vs Cash Ratio", color: grey, type: "area", seriesKey: "ratio" },
+    { label: "QQQ Total", color: blue, type: "line", seriesKey: "mockTotalQQQ" },
+    { label: "TQQQ Total", color: red, type: "line", seriesKey: "mockTotalTQQQ" },
+    { label: "TQQQ vs Cash ratio", color: green, type: "area", seriesKey: "ratio" },
     { label: "Portfolio Pullback", color: red, type: "area", seriesKey: "pullback" },
   ];
 

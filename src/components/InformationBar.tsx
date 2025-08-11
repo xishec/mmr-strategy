@@ -59,7 +59,7 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation,
           MMR Strategy App
         </Typography>
         <Chip
-          sx={{ fontSize: "0.9rem", fontWeight: "bolder", border: "2px solid", mt: 0.25 }}
+          sx={{ fontSize: "0.9rem", fontWeight: "bolder", border: "2px solid", mt: 0.25, pt: 0.1 }}
           label={process.env.NODE_ENV === "development" ? "DEV" : "PROD"}
           color={process.env.NODE_ENV === "development" ? "warning" : "success"}
           size="small"
@@ -126,7 +126,7 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation,
         <Typography variant="body1">Current Combined Signal :</Typography>
         {lastSnapshot && (
           <Chip
-            sx={{ fontSize: "0.9rem", fontWeight: "bolder", border: "2px solid" }}
+            sx={{ fontSize: "0.9rem", fontWeight: "bolder", border: "2px solid", pt: 0.1, pr: 0.05 }}
             label={testVariable ? "ALL-IN" : "PANIC"}
             color={testVariable ? "success" : "error"}
             variant="outlined"
