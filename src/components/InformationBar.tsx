@@ -4,6 +4,7 @@ import { Box, Typography, Chip, IconButton, Tooltip } from "@mui/material";
 import { Refresh as RefreshIcon, OpenInNew as OpenInNewIcon } from "@mui/icons-material";
 import { parseDate } from "../core/date-utils";
 import { DataService } from "../core/data-service";
+import { getYesterdaySignal } from "../core/core-logic";
 
 interface InformationBarProps {
   marketData: MarketData;
@@ -13,8 +14,13 @@ interface InformationBarProps {
 
 const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation, onRefreshData }) => {
   const lastDate = Object.keys(marketData.QQQ).slice(-1)[0];
-
-  const testVariable = true;
+  const signal = getYesterdaySignal(
+    lastDate,
+    marketData,
+    Object.keys(marketData.QQQ),
+    simulation.simulationVariables,
+    null
+  );
 
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
@@ -59,7 +65,7 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation,
           MMR Strategy App
         </Typography>
         <Chip
-          sx={{ fontSize: "0.9rem", fontWeight: "bolder", border: "2px solid", mt: 0.25, pt: 0.1 }}
+          sx={{ fontSize: "0.9rem", fontWeight: "bold", border: "2px solid", mt: 0.25, pt: 0.1 }}
           label={process.env.NODE_ENV === "development" ? "DEV" : "PROD"}
           color={process.env.NODE_ENV === "development" ? "warning" : "success"}
           size="small"
@@ -128,9 +134,9 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation,
         <Typography variant="body1">Current Combined Signal :</Typography>
         {lastDate && (
           <Chip
-            sx={{ fontSize: "0.9rem", fontWeight: "bolder", border: "2px solid", pt: 0.1, pr: 0.05 }}
-            label={testVariable ? "ALL-IN" : "PANIC"}
-            color={testVariable ? "success" : "error"}
+            sx={{ fontSize: "0.9rem", fontWeight: "bold", border: "2px solid", pt: 0.1, pr: 0.05, width: "75px" }}
+            label={signal.combinedShouldPanicSignal ? "PANIC" : "ALL-IN"}
+            color={signal.combinedShouldPanicSignal ? "error" : "success"}
             variant="outlined"
             size="small"
           />

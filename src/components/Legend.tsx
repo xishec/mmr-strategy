@@ -1,8 +1,9 @@
 import React from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Chip, Typography } from "@mui/material";
 import { formatValue } from "../core/functions";
 import { blue, red, yellow, green } from "./Chart";
-import { D3ChartData } from "../core/models";
+import { D3ChartData, MarketData } from "../core/models";
+import { getYesterdaySignal } from "../core/core-logic";
 
 interface LegendItem {
   label: string;
@@ -15,9 +16,10 @@ interface LegendItem {
 interface LegendProps {
   d3ChartData: D3ChartData;
   selectedDate?: string | null;
+  marketData: MarketData;
 }
 
-const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
+const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate, marketData }) => {
   // Define all legend items in the requested order
   const allLegendItems: LegendItem[] = [
     { label: "Strategy Total", color: yellow, type: "line", seriesKey: "strategyTotal" },
@@ -76,9 +78,9 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
         alignItems: "center",
         gap: 2,
         gridTemplateColumns: {
-          sm: "repeat(2, max-content)",
-          md: "repeat(3, max-content)",
-          lg: "repeat(6, max-content)",
+          sm: "repeat(2, 1fr)",
+          md: "repeat(3, 1fr)",
+          lg: "repeat(7, 1fr)",
         },
         justifyContent: "space-between",
       }}
@@ -86,7 +88,7 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
       {/* Date first */}
       {selectedDate && (
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-          <Typography variant="body2" sx={{ fontSize: "1rem", fontWeight: "normal", color: "text.secondary" }}>
+          <Typography variant="body2" sx={{ fontSize: "1rem", fontWeight: "normal", color: "text.secondary", mb: 0.5 }}>
             Selected Date
           </Typography>
           <Typography variant="body2" sx={{ fontSize: "1rem", fontWeight: "bold" }}>
@@ -94,6 +96,40 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate }) => {
           </Typography>
         </Box>
       )}
+
+      {/* Signal */}
+      {selectedDate &&
+        (() => {
+          const signal = getYesterdaySignal(selectedDate, marketData, Object.keys(marketData.QQQ), null, null);
+          return (
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+              <Typography
+                variant="body2"
+                sx={{ fontSize: "1rem", fontWeight: "normal", color: "text.secondary", mb: 0.5 }}
+              >
+                Combined Signal :
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: "1rem", fontWeight: "bold" }}>
+                <Chip
+                  sx={{
+                    position: "relative",
+                    top: "-0.15rem",
+                    fontSize: "0.9rem",
+                    fontWeight: "bold",
+                    border: "2px solid",
+                    pt: 0.1,
+                    pr: 0.05,
+                    width: "75px",
+                  }}
+                  label={signal.combinedShouldPanicSignal ? "PANIC" : "ALL-IN"}
+                  color={signal.combinedShouldPanicSignal ? "error" : "success"}
+                  variant="outlined"
+                  size="small"
+                />
+              </Typography>
+            </Box>
+          );
+        })()}
 
       {/* Legend items */}
       {availableItems.map((item, index) => (

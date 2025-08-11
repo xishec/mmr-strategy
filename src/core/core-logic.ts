@@ -48,11 +48,11 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
   return simulation;
 };
 
-const getYesterdaySignal = (
+export const getYesterdaySignal = (
   date: string,
   marketData: MarketData,
   marketDates: string[],
-  simulationVariables: SimulationVariables,
+  simulationVariables: SimulationVariables | null,
   lastSignal: Signal | null
 ): Signal => {
   const todayIndex = marketDates.indexOf(date);
@@ -68,21 +68,16 @@ const getYesterdaySignal = (
   }
 
   const bigDropLast30Days = last30DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
-  const isAboveSMA200 = qqqData.close >= qqqData.sma200! * (1 + simulationVariables.SMAUpMargin);
-  const isBelowSMA200 = qqqData.close < qqqData.sma200! * (1 + simulationVariables.SMADownMargin);
+  const isAboveSMA200 = qqqData.close >= qqqData.sma200! * (1 + (simulationVariables?.SMAUpMargin ?? 0));
+  const isBelowSMA200 = qqqData.close < qqqData.sma200! * (1 + (simulationVariables?.SMADownMargin ?? 0));
 
   const combinedShouldPanicSignal = isBelowSMA200 || bigDropLast30Days;
-  const combinedShouldAllInSignal = isAboveSMA200 && !bigDropLast30Days;
 
   let isNew = false;
   if (!lastSignal) {
     isNew = true;
-  } else {
-    if (!lastSignal.combinedShouldPanicSignal && combinedShouldPanicSignal) {
-      isNew = true;
-    } else if (!lastSignal.combinedShouldAllInSignal && combinedShouldAllInSignal) {
-      isNew = true;
-    }
+  } else if (lastSignal.combinedShouldPanicSignal !== combinedShouldPanicSignal) {
+    isNew = true;
   }
 
   return {
@@ -91,7 +86,7 @@ const getYesterdaySignal = (
     isAboveSMA200,
     isBelowSMA200,
     combinedShouldPanicSignal,
-    combinedShouldAllInSignal,
+    // combinedShouldAllInSignal,
     isNew,
   };
 };
@@ -117,7 +112,7 @@ const updateStrategyToSnapshot = (
       newSnapshot.investments.TQQQ = 0;
       newSnapshot.investments.cash = newSnapshot.investments.total;
       newSnapshot.investments.ratio = 0;
-    } else if (signal.combinedShouldAllInSignal) {
+    } else {
       // all-in
       newSnapshot.investments.TQQQ = newSnapshot.investments.total;
       newSnapshot.investments.cash = 0;
@@ -134,7 +129,7 @@ const updateStrategyToSnapshot = (
       newSnapshot.investments.TQQQ = 0;
       newSnapshot.investments.cash = newSnapshot.investments.total;
       newSnapshot.investments.ratio = 0;
-    } else if (signal.combinedShouldAllInSignal) {
+    } else {
       // all-in
       newSnapshot.investments.TQQQ = newSnapshot.investments.total;
       newSnapshot.investments.cash = 0;
