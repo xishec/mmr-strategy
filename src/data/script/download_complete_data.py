@@ -24,45 +24,128 @@ root_dir = os.path.dirname(os.path.dirname(os.path.dirname(DIR)))
 # API Keys
 TWELVEDATA_API_KEY = os.getenv("TWELVEDATA_API_KEY")
 
+def smart_delay(attempt=0, base_delay=1):
+    """
+    Add intelligent delays to prevent rate limiting
+    - Base delay between requests
+    - Exponential backoff for retries
+    """
+    delay_time = base_delay * (2 ** attempt) if attempt > 0 else base_delay
+    if delay_time > 0:
+        print(f"⏳ Waiting {delay_time} seconds to avoid rate limiting...")
+        time.sleep(delay_time)
+
 def download_yahoo_finance_data(ticker, start_date="1998-01-01", end_date="2010-12-31"):
     """Download historical data from Yahoo Finance (1998-2010)"""
     print(f"📈 Downloading {ticker} from Yahoo Finance ({start_date} to {end_date})")
     
-    try:
-        stock = yf.Ticker(ticker)
-        # Use auto_adjust=True to get split/dividend adjusted prices
-        df = stock.history(start=start_date, end=end_date, auto_adjust=True)
-        
-        if df.empty:
-            print(f"❌ No Yahoo Finance data found for {ticker}")
-            return {}
+    max_retries = 3
+    retry_delay = 5  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            if attempt > 0:
+                print(f"🔄 Retry attempt {attempt + 1}/{max_retries} for {ticker}")
+                time.sleep(retry_delay * attempt)  # Exponential backoff
             
-        print(f"✅ Downloaded {len(df)} days from Yahoo Finance")
-        
-        # Convert to our format
-        stock_data = {}
-        for date, row in df.iterrows():
-            date_str = date.strftime('%Y-%m-%d')
+            stock = yf.Ticker(ticker)
+            # Use auto_adjust=True to get split/dividend adjusted prices
+            df = stock.history(start=start_date, end=end_date, auto_adjust=True)
             
-            # Verify we have valid data
-            if pd.isna(row['Open']) or pd.isna(row['Close']) or row['Open'] <= 0 or row['Close'] <= 0:
-                print(f"⚠️  Skipping {date_str} - invalid data: open={row['Open']}, close={row['Close']}")
-                continue
+            # Check for empty dataframe
+            if df.empty:
+                print(f"❌ No Yahoo Finance data found for {ticker} (attempt {attempt + 1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    print(f"⏳ This could be due to rate limiting. Waiting {retry_delay * (attempt + 1)} seconds before retry...")
+                    continue
+                else:
+                    print(f"❌ All attempts failed for {ticker}. This might be due to:")
+                    print(f"   • Rate limiting from Yahoo Finance (too many requests)")
+                    print(f"   • Invalid ticker symbol: {ticker}")
+                    print(f"   • No data available for the requested date range")
+                    return {}
+            
+            # Check data quality
+            valid_rows = 0
+            total_rows = len(df)
+            
+            for date, row in df.iterrows():
+                if not (pd.isna(row['Open']) or pd.isna(row['Close']) or row['Open'] <= 0 or row['Close'] <= 0):
+                    valid_rows += 1
+            
+            if valid_rows == 0:
+                print(f"⚠️  No valid data rows found for {ticker} (all {total_rows} rows have invalid prices)")
+                if attempt < max_retries - 1:
+                    print(f"⏳ This might be due to rate limiting. Waiting {retry_delay * (attempt + 1)} seconds before retry...")
+                    continue
+                else:
+                    print(f"❌ All attempts failed - no valid price data available")
+                    return {}
+            
+            if valid_rows < total_rows * 0.5:  # Less than 50% valid data
+                print(f"⚠️  Data quality warning: Only {valid_rows}/{total_rows} rows have valid data ({valid_rows/total_rows*100:.1f}%)")
+                if attempt < max_retries - 1:
+                    print(f"⏳ Poor data quality might indicate rate limiting. Retrying...")
+                    continue
+            
+            print(f"✅ Downloaded {total_rows} days from Yahoo Finance ({valid_rows} valid, {total_rows-valid_rows} skipped)")
+            
+            # Convert to our format
+            stock_data = {}
+            skipped_count = 0
+            
+            for date, row in df.iterrows():
+                date_str = date.strftime('%Y-%m-%d')
                 
-            stock_data[date_str] = {
-                "open": float(row['Open']),
-                "close": float(row['Close']),
-                "overnight_rate": 0,  # Will calculate later
-                "day_rate": 0,  # Will calculate later
-                "rate": 0,  # Will calculate later (combined rate)
-                "sma200": None  # Will calculate later
-            }
-        
-        return stock_data
-        
-    except Exception as e:
-        print(f"❌ Error downloading {ticker} from Yahoo Finance: {e}")
-        return {}
+                # Verify we have valid data
+                if pd.isna(row['Open']) or pd.isna(row['Close']) or row['Open'] <= 0 or row['Close'] <= 0:
+                    if skipped_count < 5:  # Only log first 5 skipped entries to avoid spam
+                        print(f"⚠️  Skipping {date_str} - invalid data: open={row['Open']}, close={row['Close']}")
+                    skipped_count += 1
+                    continue
+                    
+                stock_data[date_str] = {
+                    "open": float(row['Open']),
+                    "close": float(row['Close']),
+                    "overnight_rate": 0,  # Will calculate later
+                    "day_rate": 0,  # Will calculate later
+                    "rate": 0,  # Will calculate later (combined rate)
+                    "sma200": None  # Will calculate later
+                }
+            
+            if skipped_count > 5:
+                print(f"⚠️  ... and {skipped_count - 5} more rows with invalid data")
+            
+            return stock_data
+            
+        except Exception as e:
+            error_msg = str(e).lower()
+            print(f"❌ Error downloading {ticker} from Yahoo Finance (attempt {attempt + 1}/{max_retries}): {e}")
+            
+            # Check for common rate limiting indicators
+            if any(indicator in error_msg for indicator in [
+                'too many requests', 'rate limit', 'http 429', 'http 503', 
+                'http 502', 'http 504', 'timeout', 'connection', 'server error'
+            ]):
+                print(f"🚫 Rate limiting or server error detected for {ticker}")
+                if attempt < max_retries - 1:
+                    wait_time = retry_delay * (attempt + 1)
+                    print(f"⏳ Waiting {wait_time} seconds before retry (rate limiting cooldown)...")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    print(f"❌ All retry attempts exhausted. Suggestions:")
+                    print(f"   • Wait longer before running the script again")
+                    print(f"   • Use a VPN or different IP address")
+                    print(f"   • Try downloading data in smaller chunks")
+                    return {}
+            else:
+                # Non-rate-limiting error, don't retry
+                print(f"❌ Non-recoverable error for {ticker}: {e}")
+                return {}
+    
+    print(f"❌ Failed to download {ticker} after {max_retries} attempts")
+    return {}
 
 def download_twelvedata_data(ticker, start_date="1998-01-01", end_date=None):
     """Download data from Twelve Data - tries maximum range first"""
@@ -87,28 +170,65 @@ def download_twelvedata_data(ticker, start_date="1998-01-01", end_date=None):
             "apikey": TWELVEDATA_API_KEY
         }
         
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=30)
         
-        if response.status_code != 200:
-            print(f"❌ HTTP Error {response.status_code}. Falling back to Yahoo Finance.")
+        if response.status_code == 429:
+            print(f"🚫 Rate limit exceeded for Twelve Data API (HTTP 429)")
+            print(f"   • This is likely due to too many requests in a short period")
+            print(f"   • Consider upgrading your Twelve Data plan for higher limits")
+            print(f"   • Falling back to Yahoo Finance (which may also have rate limits)")
+            return download_yahoo_finance_data(ticker, start_date, end_date)
+        elif response.status_code == 403:
+            print(f"🚫 API access forbidden (HTTP 403)")
+            print(f"   • Check if your Twelve Data API key is valid")
+            print(f"   • Verify you have access to the requested ticker: {ticker}")
+            print(f"   • Falling back to Yahoo Finance...")
+            return download_yahoo_finance_data(ticker, start_date, end_date)
+        elif response.status_code != 200:
+            print(f"❌ HTTP Error {response.status_code} from Twelve Data")
+            if response.status_code >= 500:
+                print(f"   • Server error - this is likely temporary")
+                print(f"   • Try again in a few minutes")
+            print(f"   • Falling back to Yahoo Finance...")
             return download_yahoo_finance_data(ticker, start_date, end_date)
             
-        data = response.json()
+        try:
+            data = response.json()
+        except json.JSONDecodeError as e:
+            print(f"❌ Invalid JSON response from Twelve Data: {e}")
+            print(f"   • Response content: {response.text[:200]}...")
+            print(f"   • Falling back to Yahoo Finance...")
+            return download_yahoo_finance_data(ticker, start_date, end_date)
         
         if "status" in data and data["status"] == "error":
             error_msg = data.get('message', 'Unknown error')
-            print(f"❌ API Error: {error_msg}")
+            error_code = data.get('code', 'N/A')
+            print(f"❌ Twelve Data API Error [{error_code}]: {error_msg}")
             
-            # Check if it's a date range issue
+            # Check for specific error types
             if "start_date" in error_msg.lower() or "too early" in error_msg.lower():
                 print("🔄 Date range too early for Twelve Data. Will use Yahoo Finance for older data.")
                 return {}  # Return empty, let caller handle fallback
+            elif "rate limit" in error_msg.lower() or "quota" in error_msg.lower():
+                print("� Rate limit or quota exceeded:")
+                print(f"   • Message: {error_msg}")
+                print(f"   • Consider upgrading your Twelve Data plan")
+                print(f"   • Falling back to Yahoo Finance (may also have limits)...")
+                return download_yahoo_finance_data(ticker, start_date, end_date)
+            elif "invalid" in error_msg.lower() and "symbol" in error_msg.lower():
+                print(f"❌ Invalid ticker symbol '{ticker}' for Twelve Data")
+                print(f"   • Verify the ticker symbol is correct")
+                print(f"   • Trying with Yahoo Finance instead...")
+                return download_yahoo_finance_data(ticker, start_date, end_date)
             else:
-                print("🔄 Falling back to Yahoo Finance.")
+                print("�🔄 Falling back to Yahoo Finance...")
                 return download_yahoo_finance_data(ticker, start_date, end_date)
         
         if "values" not in data:
-            print(f"❌ No values in response. Falling back to Yahoo Finance.")
+            print(f"❌ No 'values' field in Twelve Data response")
+            print(f"   • Response keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
+            print(f"   • This might indicate an API structure change")
+            print(f"   • Falling back to Yahoo Finance...")
             return download_yahoo_finance_data(ticker, start_date, end_date)
         
         values = data["values"]
@@ -142,9 +262,28 @@ def download_twelvedata_data(ticker, start_date="1998-01-01", end_date=None):
         
         return stock_data
         
+    except requests.exceptions.Timeout:
+        print(f"⏱️  Timeout error downloading {ticker} from Twelve Data")
+        print(f"   • The API request took too long to complete")
+        print(f"   • This might indicate server overload or network issues")
+        print(f"   • Falling back to Yahoo Finance...")
+        return download_yahoo_finance_data(ticker, start_date, end_date)
+    except requests.exceptions.ConnectionError:
+        print(f"🔌 Connection error downloading {ticker} from Twelve Data")
+        print(f"   • Unable to connect to the Twelve Data API")
+        print(f"   • Check your internet connection")
+        print(f"   • Falling back to Yahoo Finance...")
+        return download_yahoo_finance_data(ticker, start_date, end_date)
+    except requests.exceptions.RequestException as e:
+        print(f"🌐 Network error downloading {ticker} from Twelve Data: {e}")
+        print(f"   • This is likely a temporary network issue")
+        print(f"   • Falling back to Yahoo Finance...")
+        return download_yahoo_finance_data(ticker, start_date, end_date)
     except Exception as e:
-        print(f"❌ Error downloading {ticker} from Twelve Data: {e}")
-        print("🔄 Falling back to Yahoo Finance...")
+        print(f"❌ Unexpected error downloading {ticker} from Twelve Data: {e}")
+        print(f"   • Error type: {type(e).__name__}")
+        print(f"   • This might be a code issue or API change")
+        print(f"   • Falling back to Yahoo Finance...")
         return download_yahoo_finance_data(ticker, start_date, end_date)
 
 def download_hybrid_data(ticker, target_start_date="1998-01-01"):
@@ -311,16 +450,100 @@ def simulate_tqqq_from_qqq(qqq_data):
     return tqqq_data
 
 def save_data(ticker, data, output_dir):
-    """Save data to JSON file"""
+    """Save data to JSON file with protection against overwriting good data with bad data"""
     output_path = os.path.join(output_dir, f"{ticker}.json")
     
-    with open(output_path, 'w') as f:
-        json.dump(data, f, indent=2)
+    # Check if existing data file exists
+    existing_data = {}
+    existing_count = 0
+    if os.path.exists(output_path):
+        try:
+            with open(output_path, 'r') as f:
+                existing_data = json.load(f)
+            existing_count = len(existing_data)
+            if existing_data:
+                existing_start = min(existing_data.keys())
+                existing_end = max(existing_data.keys())
+                print(f"📋 Found existing {ticker} data: {existing_start} to {existing_end} ({existing_count} days)")
+        except Exception as e:
+            print(f"⚠️  Could not read existing {ticker} data: {e}")
     
+    # Validate new data before saving
+    if not data:
+        print(f"❌ No new data to save for {ticker}")
+        if existing_count > 0:
+            print(f"🛡️  Keeping existing data ({existing_count} days) - not overwriting with empty data")
+            return output_path
+        else:
+            print(f"⚠️  No existing data either - creating empty file")
+    
+    new_count = len(data)
+    
+    # Quality checks for new data
     if data:
-        start_date = min(data.keys())
-        end_date = max(data.keys())
-        print(f"✅ Saved {ticker} data: {start_date} to {end_date} ({len(data)} days)")
+        new_start = min(data.keys())
+        new_end = max(data.keys())
+        
+        # Check if new data is significantly smaller than existing data (possible error)
+        if existing_count > 0 and new_count < existing_count * 0.8:  # New data is less than 80% of existing
+            print(f"⚠️  Data quality warning for {ticker}:")
+            print(f"   • New data: {new_start} to {new_end} ({new_count} days)")
+            print(f"   • Existing data: {existing_count} days")
+            print(f"   • New data is {new_count/existing_count*100:.1f}% of existing data size")
+            
+            # Ask user for confirmation (in production, you might want to auto-reject)
+            response = input(f"🤔 New data seems incomplete. Overwrite anyway? (y/N): ")
+            if response.lower() != 'y':
+                print(f"🛡️  Keeping existing data for {ticker} - not overwriting")
+                return output_path
+        
+        # Check for data quality issues
+        valid_entries = 0
+        for date, entry in data.items():
+            if (isinstance(entry.get('open'), (int, float)) and 
+                isinstance(entry.get('close'), (int, float)) and 
+                entry.get('open', 0) > 0 and 
+                entry.get('close', 0) > 0):
+                valid_entries += 1
+        
+        valid_percentage = valid_entries / new_count * 100 if new_count > 0 else 0
+        
+        if valid_percentage < 50:  # Less than 50% valid data
+            print(f"❌ Data quality check failed for {ticker}:")
+            print(f"   • Only {valid_entries}/{new_count} entries have valid prices ({valid_percentage:.1f}%)")
+            if existing_count > 0:
+                print(f"🛡️  Keeping existing data - not overwriting with poor quality data")
+                return output_path
+            else:
+                print(f"⚠️  No existing data to preserve, but data quality is poor")
+        
+        print(f"✅ Data quality check passed for {ticker}: {valid_entries}/{new_count} valid entries ({valid_percentage:.1f}%)")
+    
+    # Create backup of existing data before overwriting
+    if existing_count > 0:
+        backup_path = output_path + f".backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        try:
+            with open(backup_path, 'w') as f:
+                json.dump(existing_data, f, indent=2)
+            print(f"💾 Created backup: {backup_path}")
+        except Exception as e:
+            print(f"⚠️  Could not create backup: {e}")
+    
+    # Save new data
+    try:
+        with open(output_path, 'w') as f:
+            json.dump(data, f, indent=2)
+        
+        if data:
+            start_date = min(data.keys())
+            end_date = max(data.keys())
+            print(f"✅ Saved {ticker} data: {start_date} to {end_date} ({len(data)} days)")
+        else:
+            print(f"✅ Saved empty {ticker} file")
+    except Exception as e:
+        print(f"❌ Failed to save {ticker} data: {e}")
+        if existing_count > 0:
+            print(f"🛡️  Original data should still be intact")
     
     return output_path
 
@@ -377,6 +600,10 @@ def download_complete_data():
     print("📊 Sources: Yahoo Finance + Twelve Data")
     print("🎯 Output: Adjusted OHLC, Daily Returns, SMA200")
     print()
+    print("⚠️  Note: This script includes delays to prevent rate limiting")
+    print("    from data providers. Please be patient.")
+    print("🛡️  Data protection: Existing data will not be overwritten with incomplete/invalid data")
+    print()
     
     output_dir = os.path.join(root_dir, "src", "data")
     os.makedirs(output_dir, exist_ok=True)
@@ -386,78 +613,178 @@ def download_complete_data():
     print("📈 DOWNLOADING QQQ DATA")
     print("=" * 50)
     
-    qqq_data, qqq_twelvedata_start = download_hybrid_data("QQQ", "1998-01-01")
-    qqq_data = merge_and_calculate(qqq_data)
-    qqq_path = save_data("QQQ", qqq_data, output_dir)
+    try:
+        qqq_data, qqq_twelvedata_start = download_hybrid_data("QQQ", "1998-01-01")
+        
+        if not qqq_data:
+            print("❌ Failed to download QQQ data from all sources")
+            print("🛡️  Checking if existing QQQ data can be used...")
+            
+            # Check for existing QQQ data
+            existing_qqq_path = os.path.join(output_dir, "QQQ.json")
+            if os.path.exists(existing_qqq_path):
+                try:
+                    with open(existing_qqq_path, 'r') as f:
+                        qqq_data = json.load(f)
+                    print(f"✅ Using existing QQQ data ({len(qqq_data)} days)")
+                except Exception as e:
+                    print(f"❌ Could not load existing QQQ data: {e}")
+                    print("🚫 Cannot proceed without QQQ data")
+                    return
+            else:
+                print("🚫 No existing QQQ data found. Cannot proceed.")
+                return
+        else:
+            qqq_data = merge_and_calculate(qqq_data)
+            qqq_path = save_data("QQQ", qqq_data, output_dir)
+    
+    except Exception as e:
+        print(f"❌ Unexpected error downloading QQQ data: {e}")
+        print("🛡️  Checking if existing QQQ data can be used...")
+        
+        # Try to use existing data
+        existing_qqq_path = os.path.join(output_dir, "QQQ.json")
+        if os.path.exists(existing_qqq_path):
+            try:
+                with open(existing_qqq_path, 'r') as f:
+                    qqq_data = json.load(f)
+                print(f"✅ Using existing QQQ data ({len(qqq_data)} days)")
+            except Exception as e2:
+                print(f"❌ Could not load existing QQQ data: {e2}")
+                print("🚫 Cannot proceed without QQQ data")
+                return
+        else:
+            print("🚫 No existing QQQ data found. Cannot proceed.")
+            return
+    
+    # Add delay between different ticker downloads to avoid rate limiting
+    smart_delay(base_delay=3)
     
     # Download TQQQ data (real + simulated)
     print("\n" + "=" * 50)
     print("📈 DOWNLOADING TQQQ DATA")
     print("=" * 50)
     
-    # Step 1: Simulate TQQQ for early years (1998-2010) from QQQ data
-    print("🔄 Simulating TQQQ for early years (1998-2010)...")
-    early_qqq = {date: data for date, data in qqq_data.items() if date < "2010-02-11"}
-    simulated_tqqq = simulate_tqqq_from_qqq(early_qqq)
-    
-    # Step 2: Get real TQQQ data from launch date onwards using hybrid approach
-    print("🔄 Downloading real TQQQ data from launch date...")
-    tqqq_real_data, tqqq_twelvedata_start = download_hybrid_data("TQQQ", "2010-02-11")  # TQQQ launch date
-    
-    raw_real_tqqq_data = merge_and_calculate(tqqq_real_data)
-    
-    # Step 3: Adjust real TQQQ data to continue seamlessly from simulated data
-    adjusted_real_tqqq = adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data)
-    
-    # Step 4: Merge simulated and adjusted real TQQQ data
-    all_tqqq_data = {}
-    all_tqqq_data.update(simulated_tqqq)
-    all_tqqq_data.update(adjusted_real_tqqq)
-    
-    # Step 5: Recalculate rates and SMA200 for the complete dataset
-    print("🔄 Recalculating rates and SMA200 for complete TQQQ dataset...")
-    sorted_dates = sorted(all_tqqq_data.keys())
-    
-    # Recalculate all rates
-    for i, date in enumerate(sorted_dates):
-        close_value = all_tqqq_data[date]["close"]
-        open_value = all_tqqq_data[date]["open"]
+    try:
+        # Step 1: Simulate TQQQ for early years (1998-2010) from QQQ data
+        print("🔄 Simulating TQQQ for early years (1998-2010)...")
+        early_qqq = {date: data for date, data in qqq_data.items() if date < "2010-02-11"}
+        simulated_tqqq = simulate_tqqq_from_qqq(early_qqq)
         
-        if i == 0:
-            # First day - no previous data
-            overnight_rate = 0
-            combined_rate = 0
-        else:
-            prev_date = sorted_dates[i-1]
-            prev_close = all_tqqq_data[prev_date]["close"]
+        # Step 2: Get real TQQQ data from launch date onwards using hybrid approach
+        print("🔄 Downloading real TQQQ data from launch date...")
+        smart_delay(base_delay=2)  # Add delay before API call
+        tqqq_real_data, tqqq_twelvedata_start = download_hybrid_data("TQQQ", "2010-02-11")  # TQQQ launch date
+        
+        if not tqqq_real_data:
+            print("❌ Failed to download real TQQQ data from all sources")
+            print("🛡️  Checking if existing TQQQ data can be used...")
             
-            # Overnight rate: previous close to current open
-            overnight_rate = (open_value - prev_close) / prev_close * 100
-            
-            # Combined rate: previous close to current close
-            combined_rate = (close_value - prev_close) / prev_close * 100
-        
-        # Day rate: current open to current close
-        day_rate = (close_value - open_value) / open_value * 100
-        
-        # Update rates
-        all_tqqq_data[date]["overnight_rate"] = round(overnight_rate, 6)
-        all_tqqq_data[date]["day_rate"] = round(day_rate, 6)
-        all_tqqq_data[date]["rate"] = round(combined_rate, 6)
-    
-    # Recalculate SMA200
-    close_prices = [all_tqqq_data[date]["close"] for date in sorted_dates]
-    for i, date in enumerate(sorted_dates):
-        if i < 199:
-            all_tqqq_data[date]["sma200"] = None
+            # Check for existing TQQQ data
+            existing_tqqq_path = os.path.join(output_dir, "TQQQ.json")
+            if os.path.exists(existing_tqqq_path):
+                try:
+                    with open(existing_tqqq_path, 'r') as f:
+                        existing_tqqq_data = json.load(f)
+                    print(f"✅ Existing TQQQ data found ({len(existing_tqqq_data)} days)")
+                    print("🛡️  Keeping existing TQQQ data - not overwriting with incomplete data")
+                    
+                    # Still show final summary
+                    print("\n" + "🎉" * 20)
+                    print("✅ DATA DOWNLOAD COMPLETED (with existing data)")
+                    print("🎉" * 20)
+                    print(f"📁 QQQ data: {len(qqq_data)} days")
+                    print(f"📁 TQQQ data: {len(existing_tqqq_data)} days (existing)")
+                    return
+                    
+                except Exception as e:
+                    print(f"❌ Could not load existing TQQQ data: {e}")
+                    print("⚠️  Will proceed with simulated data only")
+                    
+            # Use only simulated data if no existing data
+            print("⚠️  Using simulated TQQQ data only (no real data available)")
+            tqqq_data = simulated_tqqq
         else:
-            sma200 = sum(close_prices[i - 199 : i + 1]) / 200
-            all_tqqq_data[date]["sma200"] = round(sma200, 6)
-    
-    # Sort by date
-    tqqq_data = {date: all_tqqq_data[date] for date in sorted_dates}
-    
-    tqqq_path = save_data("TQQQ", tqqq_data, output_dir)
+            raw_real_tqqq_data = merge_and_calculate(tqqq_real_data)
+            
+            # Step 3: Adjust real TQQQ data to continue seamlessly from simulated data
+            adjusted_real_tqqq = adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data)
+            
+            # Step 4: Merge simulated and adjusted real TQQQ data
+            all_tqqq_data = {}
+            all_tqqq_data.update(simulated_tqqq)
+            all_tqqq_data.update(adjusted_real_tqqq)
+            
+            # Step 5: Recalculate rates and SMA200 for the complete dataset
+            print("🔄 Recalculating rates and SMA200 for complete TQQQ dataset...")
+            sorted_dates = sorted(all_tqqq_data.keys())
+            
+            # Recalculate all rates
+            for i, date in enumerate(sorted_dates):
+                close_value = all_tqqq_data[date]["close"]
+                open_value = all_tqqq_data[date]["open"]
+                
+                if i == 0:
+                    # First day - no previous data
+                    overnight_rate = 0
+                    combined_rate = 0
+                else:
+                    prev_date = sorted_dates[i-1]
+                    prev_close = all_tqqq_data[prev_date]["close"]
+                    
+                    # Overnight rate: previous close to current open
+                    overnight_rate = (open_value - prev_close) / prev_close * 100
+                    
+                    # Combined rate: previous close to current close
+                    combined_rate = (close_value - prev_close) / prev_close * 100
+                
+                # Day rate: current open to current close
+                day_rate = (close_value - open_value) / open_value * 100
+                
+                # Update rates
+                all_tqqq_data[date]["overnight_rate"] = round(overnight_rate, 6)
+                all_tqqq_data[date]["day_rate"] = round(day_rate, 6)
+                all_tqqq_data[date]["rate"] = round(combined_rate, 6)
+            
+            # Recalculate SMA200
+            close_prices = [all_tqqq_data[date]["close"] for date in sorted_dates]
+            for i, date in enumerate(sorted_dates):
+                if i < 199:
+                    all_tqqq_data[date]["sma200"] = None
+                else:
+                    sma200 = sum(close_prices[i - 199 : i + 1]) / 200
+                    all_tqqq_data[date]["sma200"] = round(sma200, 6)
+            
+            # Sort by date
+            tqqq_data = {date: all_tqqq_data[date] for date in sorted_dates}
+        
+        tqqq_path = save_data("TQQQ", tqqq_data, output_dir)
+        
+    except Exception as e:
+        print(f"❌ Unexpected error processing TQQQ data: {e}")
+        print("🛡️  Checking if existing TQQQ data should be preserved...")
+        
+        # Check for existing TQQQ data
+        existing_tqqq_path = os.path.join(output_dir, "TQQQ.json")
+        if os.path.exists(existing_tqqq_path):
+            try:
+                with open(existing_tqqq_path, 'r') as f:
+                    existing_tqqq_data = json.load(f)
+                print(f"✅ Existing TQQQ data preserved ({len(existing_tqqq_data)} days)")
+                
+                # Show final summary with existing data
+                print("\n" + "🎉" * 20)
+                print("✅ DATA DOWNLOAD COMPLETED (with existing data)")
+                print("🎉" * 20)
+                print(f"📁 QQQ data: {len(qqq_data)} days")
+                print(f"📁 TQQQ data: {len(existing_tqqq_data)} days (existing)")
+                return
+                
+            except Exception as e2:
+                print(f"❌ Could not verify existing TQQQ data: {e2}")
+        
+        print("🚫 TQQQ data processing failed and no existing data available")
+        return
     
     print("\n" + "🎉" * 20)
     print("✅ COMPLETE DATA DOWNLOAD FINISHED!")
