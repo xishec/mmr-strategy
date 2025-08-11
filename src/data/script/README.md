@@ -28,7 +28,8 @@ python download_complete_data.py
 
 **What it does:**
 - Downloads complete historical data from 1998 to today
-- Uses Yahoo Finance (1998-2010) + Twelve Data (2010-today) 
+- Prioritizes Twelve Data for maximum date range possible
+- Uses Yahoo Finance only for older data not available on Twelve Data
 - For TQQQ: simulates early years (1998-2010) from QQQ, uses real data (2010+)
 - Calculates adjusted open/close prices, daily returns, and SMA200
 - Outputs: `QQQ.json` and `TQQQ.json` in `src/data/`
@@ -71,8 +72,9 @@ python daily_update.py
 ## Error Handling
 
 Both scripts include robust error handling:
-- API failures → Falls back to Yahoo Finance
-- Missing data → Logs warnings but continues
+- Prioritizes Twelve Data API for better accuracy and coverage
+- API failures → Falls back to Yahoo Finance automatically
+- Missing historical data → Yahoo Finance fills the gaps
 - Network issues → Retries with different data source
 - File errors → Clear error messages
 

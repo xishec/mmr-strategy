@@ -2,8 +2,8 @@
 """
 Complete Stock Data Downloader - From 1998 to Today
 ====================================================
-- Uses Yahoo Finance for historical data (1998-2010) 
-- Uses Twelve Data for recent data (2010-today)
+- Prioritizes Twelve Data for maximum date range possible
+- Uses Yahoo Finance only for older data not available on Twelve Data
 - Merges datasets seamlessly
 - Outputs: adjusted open, adjusted close, daily returns, SMA200
 """
@@ -62,13 +62,16 @@ def download_yahoo_finance_data(ticker, start_date="1998-01-01", end_date="2010-
         print(f"❌ Error downloading {ticker} from Yahoo Finance: {e}")
         return {}
 
-def download_twelvedata_data(ticker, start_date="2011-01-01"):
-    """Download recent data from Twelve Data (2011-today)"""
-    print(f"📊 Downloading {ticker} from Twelve Data ({start_date} to today)")
+def download_twelvedata_data(ticker, start_date="1998-01-01", end_date=None):
+    """Download data from Twelve Data - tries maximum range first"""
+    if end_date is None:
+        end_date = datetime.now().strftime('%Y-%m-%d')
+        
+    print(f"📊 Downloading {ticker} from Twelve Data ({start_date} to {end_date})")
     
     if not TWELVEDATA_API_KEY or TWELVEDATA_API_KEY == "your_api_key_here":
-        print("❌ Twelve Data API key not found. Using Yahoo Finance for all data.")
-        return download_yahoo_finance_data(ticker, start_date, datetime.now().strftime('%Y-%m-%d'))
+        print("❌ Twelve Data API key not found. Using Yahoo Finance instead.")
+        return download_yahoo_finance_data(ticker, start_date, end_date)
     
     try:
         url = "https://api.twelvedata.com/time_series"
@@ -76,7 +79,7 @@ def download_twelvedata_data(ticker, start_date="2011-01-01"):
             "symbol": ticker,
             "interval": "1day",
             "start_date": start_date,
-            "end_date": datetime.now().strftime('%Y-%m-%d'),
+            "end_date": end_date,
             "format": "JSON",
             "adjust": "all",  # Adjusted prices
             "apikey": TWELVEDATA_API_KEY
@@ -86,17 +89,25 @@ def download_twelvedata_data(ticker, start_date="2011-01-01"):
         
         if response.status_code != 200:
             print(f"❌ HTTP Error {response.status_code}. Falling back to Yahoo Finance.")
-            return download_yahoo_finance_data(ticker, start_date, datetime.now().strftime('%Y-%m-%d'))
+            return download_yahoo_finance_data(ticker, start_date, end_date)
             
         data = response.json()
         
         if "status" in data and data["status"] == "error":
-            print(f"❌ API Error: {data.get('message')}. Falling back to Yahoo Finance.")
-            return download_yahoo_finance_data(ticker, start_date, datetime.now().strftime('%Y-%m-%d'))
+            error_msg = data.get('message', 'Unknown error')
+            print(f"❌ API Error: {error_msg}")
+            
+            # Check if it's a date range issue
+            if "start_date" in error_msg.lower() or "too early" in error_msg.lower():
+                print("🔄 Date range too early for Twelve Data. Will use Yahoo Finance for older data.")
+                return {}  # Return empty, let caller handle fallback
+            else:
+                print("🔄 Falling back to Yahoo Finance.")
+                return download_yahoo_finance_data(ticker, start_date, end_date)
         
         if "values" not in data:
             print(f"❌ No values in response. Falling back to Yahoo Finance.")
-            return download_yahoo_finance_data(ticker, start_date, datetime.now().strftime('%Y-%m-%d'))
+            return download_yahoo_finance_data(ticker, start_date, end_date)
         
         values = data["values"]
         print(f"✅ Downloaded {len(values)} days from Twelve Data")
@@ -105,38 +116,85 @@ def download_twelvedata_data(ticker, start_date="2011-01-01"):
         stock_data = {}
         for bar in values:
             date_str = bar["datetime"]
-            stock_data[date_str] = {
-                "open": float(bar["open"]),
-                "close": float(bar["close"]),
-                "rate": 0,  # Will calculate later
-                "sma200": None  # Will calculate later
-            }
+            
+            # Verify we have valid data
+            try:
+                open_price = float(bar["open"])
+                close_price = float(bar["close"])
+                
+                if open_price <= 0 or close_price <= 0:
+                    print(f"⚠️  Skipping {date_str} - invalid prices: open={open_price}, close={close_price}")
+                    continue
+                    
+                stock_data[date_str] = {
+                    "open": open_price,
+                    "close": close_price,
+                    "rate": 0,  # Will calculate later
+                    "sma200": None  # Will calculate later
+                }
+            except (ValueError, KeyError) as e:
+                print(f"⚠️  Skipping {date_str} - data error: {e}")
+                continue
         
         return stock_data
         
     except Exception as e:
         print(f"❌ Error downloading {ticker} from Twelve Data: {e}")
         print("🔄 Falling back to Yahoo Finance...")
-        return download_yahoo_finance_data(ticker, start_date, datetime.now().strftime('%Y-%m-%d'))
+        return download_yahoo_finance_data(ticker, start_date, end_date)
 
-def merge_and_calculate(yahoo_data, twelvedata_data):
-    """Merge datasets and calculate rates and SMA200"""
-    print("🔄 Merging datasets and calculating metrics...")
+def download_hybrid_data(ticker, target_start_date="1998-01-01"):
+    """
+    Download data using Twelve Data first, then Yahoo Finance for older data
+    Returns: (combined_data, twelvedata_start_date)
+    """
+    print(f"\n🔄 Starting hybrid download for {ticker}")
+    print(f"📅 Target date range: {target_start_date} to today")
     
-    # Merge all data
-    all_data = {}
-    all_data.update(yahoo_data)
-    all_data.update(twelvedata_data)
+    # Step 1: Try Twelve Data for maximum possible range
+    twelvedata_data = download_twelvedata_data(ticker, target_start_date)
+    
+    # Step 2: Determine what date range Twelve Data actually provided
+    if twelvedata_data:
+        actual_start = min(twelvedata_data.keys())
+        print(f"📊 Twelve Data provided: {actual_start} to {max(twelvedata_data.keys())}")
+        
+        # Step 3: Fill gap with Yahoo Finance if needed
+        if actual_start > target_start_date:
+            gap_end = (datetime.strptime(actual_start, '%Y-%m-%d') - timedelta(days=1)).strftime('%Y-%m-%d')
+            print(f"🔄 Filling gap with Yahoo Finance: {target_start_date} to {gap_end}")
+            
+            yahoo_data = download_yahoo_finance_data(ticker, target_start_date, gap_end)
+            
+            # Combine datasets
+            combined_data = {}
+            combined_data.update(yahoo_data)
+            combined_data.update(twelvedata_data)
+            
+            print(f"✅ Combined dataset: {len(yahoo_data)} from Yahoo + {len(twelvedata_data)} from Twelve Data")
+            return combined_data, actual_start
+        else:
+            print(f"✅ Twelve Data covered full range - no Yahoo Finance needed")
+            return twelvedata_data, actual_start
+    else:
+        # Twelve Data failed completely, use Yahoo Finance
+        print(f"⚠️  Twelve Data unavailable, using Yahoo Finance for full range")
+        yahoo_data = download_yahoo_finance_data(ticker, target_start_date)
+        return yahoo_data, target_start_date
+
+def merge_and_calculate(data_dict):
+    """Calculate rates and SMA200 for a dataset"""
+    print("🔄 Calculating metrics...")
     
     # Sort by date
-    sorted_dates = sorted(all_data.keys())
+    sorted_dates = sorted(data_dict.keys())
     
     # Calculate daily returns and SMA200
     prev_close = None
     close_prices = []
     
     for i, date in enumerate(sorted_dates):
-        close_value = all_data[date]["close"]
+        close_value = data_dict[date]["close"]
         close_prices.append(close_value)
         
         # Calculate daily return (close-to-close)
@@ -152,13 +210,13 @@ def merge_and_calculate(yahoo_data, twelvedata_data):
             sma200 = sum(close_prices[i - 199 : i + 1]) / 200
         
         # Update data
-        all_data[date]["rate"] = round(daily_return, 6)
-        all_data[date]["sma200"] = round(sma200, 6) if sma200 is not None else None
+        data_dict[date]["rate"] = round(daily_return, 6)
+        data_dict[date]["sma200"] = round(sma200, 6) if sma200 is not None else None
         
         prev_close = close_value
     
     # Return sorted data
-    return {date: all_data[date] for date in sorted_dates}
+    return {date: data_dict[date] for date in sorted_dates}
 
 def simulate_tqqq_from_qqq(qqq_data):
     """Simulate TQQQ (3x leveraged) from QQQ data"""
@@ -303,10 +361,8 @@ def download_complete_data():
     print("📈 DOWNLOADING QQQ DATA")
     print("=" * 50)
     
-    yahoo_qqq = download_yahoo_finance_data("QQQ", "1998-01-01", "2010-12-31")
-    twelvedata_qqq = download_twelvedata_data("QQQ", "2011-01-01")
-    
-    qqq_data = merge_and_calculate(yahoo_qqq, twelvedata_qqq)
+    qqq_data, qqq_twelvedata_start = download_hybrid_data("QQQ", "1998-01-01")
+    qqq_data = merge_and_calculate(qqq_data)
     qqq_path = save_data("QQQ", qqq_data, output_dir)
     
     # Download TQQQ data (real + simulated)
@@ -319,11 +375,11 @@ def download_complete_data():
     early_qqq = {date: data for date, data in qqq_data.items() if date < "2010-02-11"}
     simulated_tqqq = simulate_tqqq_from_qqq(early_qqq)
     
-    # Step 2: Get real TQQQ data from launch date onwards
-    yahoo_tqqq = download_yahoo_finance_data("TQQQ", "2010-02-11", "2010-12-31")  # TQQQ launch date
-    twelvedata_tqqq = download_twelvedata_data("TQQQ", "2011-01-01")
+    # Step 2: Get real TQQQ data from launch date onwards using hybrid approach
+    print("🔄 Downloading real TQQQ data from launch date...")
+    tqqq_real_data, tqqq_twelvedata_start = download_hybrid_data("TQQQ", "2010-02-11")  # TQQQ launch date
     
-    raw_real_tqqq_data = merge_and_calculate(yahoo_tqqq, twelvedata_tqqq)
+    raw_real_tqqq_data = merge_and_calculate(tqqq_real_data)
     
     # Step 3: Adjust real TQQQ data to continue seamlessly from simulated data
     adjusted_real_tqqq = adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data)

@@ -56,7 +56,9 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation 
 
       <Box display="flex" alignItems="center" gap={1}>
         <Typography variant="body1">TQQQ rate :</Typography>
-        {lastSnapshot && <strong>{marketData.TQQQ[lastSnapshot.date].rate.toFixed(2)}%</strong>}
+        {lastSnapshot && marketData.TQQQ[lastSnapshot.date] && (
+          <strong>{marketData.TQQQ[lastSnapshot.date].rate.toFixed(2)}%</strong>
+        )}
       </Box>
 
       <Box display="flex" alignItems="center" gap={1}>

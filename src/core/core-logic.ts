@@ -54,11 +54,20 @@ const getSignal = (
 ): Signal => {
   const currentDateIndex = marketDates.indexOf(date);
   const last30DaysFromCurrent = marketDates.slice(Math.max(0, currentDateIndex - 30), currentDateIndex);
+  
+  // Safety check: ensure both QQQ and TQQQ data exist for this date
+  const qqqData = marketData.QQQ[date];
+  const tqqqData = marketData.TQQQ[date];
+  
+  if (!qqqData || !tqqqData) {
+    throw new Error(`Missing market data for date ${date}. QQQ: ${!!qqqData}, TQQQ: ${!!tqqqData}`);
+  }
+  
   return {
     date,
-    bigDropLast30Days: last30DaysFromCurrent.some((d) => marketData.TQQQ[d].rate < -20),
-    isAboveSMA200: marketData.QQQ[date].close >= marketData.QQQ[date].sma200! * (1 + simulationVariables.SMAUpMargin),
-    isBelowSMA200: marketData.QQQ[date].close < marketData.QQQ[date].sma200! * (1 + simulationVariables.SMADownMargin),
+    bigDropLast30Days: last30DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20),
+    isAboveSMA200: qqqData.close >= qqqData.sma200! * (1 + simulationVariables.SMAUpMargin),
+    isBelowSMA200: qqqData.close < qqqData.sma200! * (1 + simulationVariables.SMADownMargin),
   };
 };
 
@@ -113,7 +122,11 @@ const createMockPortfolioSnapshot = (simulation: Simulation, signal: Signal): Po
 };
 
 const getRelevantMarketDates = (marketData: MarketData, startDate: string, endDate: string): string[] => {
-  return Object.keys(marketData.TQQQ).filter((date) => date > startDate && date <= endDate);
+  return Object.keys(marketData.TQQQ).filter((date) => 
+    date > startDate && 
+    date <= endDate && 
+    marketData.QQQ[date] !== undefined
+  );
 };
 
 const addNewCashToPortfolio = (investments: Investments, newCash: number) => {
