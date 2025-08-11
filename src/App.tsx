@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
-import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
+import { ThemeProvider, createTheme, CssBaseline, Box, CircularProgress, Typography, Button } from "@mui/material";
 import { MarketData } from "./core/models";
 import Dashboard from "./components/Dashboard";
 import { loadData, refreshData } from "./core/functions";
@@ -32,26 +32,95 @@ function App() {
   // State for market data
   const [marketData, setMarketData] = useState<MarketData | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData(setDataLoading, setMarketData);
+    const loadDataWithErrorHandling = async () => {
+      try {
+        console.log("Starting data load...");
+        await loadData(setDataLoading, setMarketData);
+        console.log("Data loaded successfully");
+      } catch (error) {
+        console.error("Error in App useEffect:", error);
+        setError(error instanceof Error ? error.message : "Unknown error occurred");
+        setDataLoading(false);
+      }
+    };
+    
+    loadDataWithErrorHandling();
   }, []);
 
   const handleRefreshData = async () => {
     try {
+      setError(null);
       await refreshData(setDataLoading, setMarketData);
     } catch (error) {
       console.error("Failed to refresh data:", error);
-      // Could show a toast/snackbar here
+      setError(error instanceof Error ? error.message : "Unknown error occurred");
     }
   };
 
   const componentsManager = () => {
-    if (marketData && !dataLoading) {
-      return <Dashboard marketData={marketData} onRefreshData={handleRefreshData} />;
-    } else {
-      return <></>;
+    if (error) {
+      return (
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          minHeight="100vh"
+          padding={3}
+        >
+          <Typography variant="h5" color="error" gutterBottom>
+            Error Loading Data
+          </Typography>
+          <Typography variant="body1" color="textSecondary" gutterBottom textAlign="center">
+            {error}
+          </Typography>
+          <Button variant="contained" onClick={handleRefreshData} sx={{ mt: 2 }}>
+            Retry
+          </Button>
+        </Box>
+      );
     }
+    
+    if (dataLoading) {
+      return (
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          minHeight="100vh"
+        >
+          <CircularProgress size={60} />
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Loading market data...
+          </Typography>
+        </Box>
+      );
+    }
+    
+    if (marketData) {
+      return <Dashboard marketData={marketData} onRefreshData={handleRefreshData} />;
+    }
+    
+    return (
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        minHeight="100vh"
+      >
+        <Typography variant="h6">
+          No data available
+        </Typography>
+        <Button variant="contained" onClick={handleRefreshData} sx={{ mt: 2 }}>
+          Load Data
+        </Button>
+      </Box>
+    );
   };
 
   return (
