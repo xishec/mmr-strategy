@@ -114,6 +114,7 @@ const Chart: React.FC<ChartProps> = ({
     const ratioHeight = availableHeight * CHART_LAYOUT.RATIO_HEIGHT_RATIO;
     const priceTop = 0;
     const ratioTop = priceTop + priceHeight + spaceBetweenCharts;
+    const crosshairHeight = ratioTop + ratioHeight + spaceBetweenCharts / 2;
 
     // Separate series by type
     const priceKeys = [
@@ -348,8 +349,6 @@ const Chart: React.FC<ChartProps> = ({
         .attr("class", "crosshair")
         .style("display", selectedDate ? "block" : "none");
 
-      const crosshairHeight = ratioTop + ratioHeight + spaceBetweenCharts / 2;
-
       // Vertical crosshair line
       const crosshairLine = crosshair
         .append("line")
@@ -374,13 +373,11 @@ const Chart: React.FC<ChartProps> = ({
         .attr("stroke-dasharray", "3,3")
         .style("display", "none");
 
-      return { crosshair, crosshairLine, crosshairHorizontal, crosshairHeight };
+      return { crosshair, crosshairLine, crosshairHorizontal };
     };
 
-    const { crosshair, crosshairLine, crosshairHorizontal, crosshairHeight } = createCrosshair();
-
     // Helper function to create value labels
-    const createValueLabels = () => {
+    const createValueLabels = (crosshair: any) => {
       // Value label (floating)
       const valueLabel = crosshair.append("g").attr("class", "value-label").style("display", "none");
       const valueRect = valueLabel
@@ -444,18 +441,6 @@ const Chart: React.FC<ChartProps> = ({
       };
     };
 
-    const {
-      valueLabel,
-      valueRect,
-      valueText,
-      yAxisValueLabel,
-      yAxisValueRect,
-      yAxisValueText,
-      xAxisValueLabel,
-      xAxisValueRect,
-      xAxisValueText,
-    } = createValueLabels();
-
     // Add persistent selected date crosshair
     const selectedCrosshair = g.append("g").attr("class", "selected-crosshair").style("display", "none");
 
@@ -467,6 +452,23 @@ const Chart: React.FC<ChartProps> = ({
       .attr("y2", crosshairHeight)
       .attr("stroke-width", 2)
       .attr("stroke-dasharray", "3,3");
+
+    // Add persistent date label for selected crosshair
+    const selectedDateLabel = selectedCrosshair.append("g").attr("class", "selected-date-label");
+    const selectedDateRect = selectedDateLabel
+      .append("rect")
+      .attr("fill", "#666")
+      .attr("stroke", "#666")
+      .attr("rx", 3)
+      .attr("ry", 3);
+    const selectedDateText = selectedDateLabel
+      .append("text")
+      .attr("fill", "white")
+      .attr("font-size", "11px")
+      .attr("font-family", "monospace")
+      .attr("font-weight", "bold")
+      .attr("text-anchor", "middle")
+      .attr("dy", "0.35em");
 
     // Function to update selected crosshair
     const updateSelectedCrosshair = (date: string | null) => {
@@ -481,9 +483,39 @@ const Chart: React.FC<ChartProps> = ({
 
         selectedCrosshairLine.attr("x1", x).attr("x2", x).attr("stroke", "black");
 
+        // Update the date label
+        selectedDateText.text(date);
+
+        // Calculate text dimensions for the date label
+        const dateTextBBox = (selectedDateText.node() as SVGTextElement).getBBox();
+        const datePadding = 4;
+        selectedDateRect
+          .attr("x", -dateTextBBox.width / 2 - datePadding)
+          .attr("y", -dateTextBBox.height / 2 - datePadding)
+          .attr("width", dateTextBBox.width + datePadding * 2)
+          .attr("height", dateTextBBox.height + datePadding * 2);
+
+        selectedDateLabel.attr("transform", `translate(${x}, ${ratioTop + ratioHeight - 15})`);
+
         selectedCrosshair.style("display", "block");
       }
     };
+
+    // Create hover crosshair after selected crosshair so it renders on top
+    const { crosshair, crosshairLine, crosshairHorizontal } = createCrosshair();
+
+    // Create value labels for the hover crosshair
+    const {
+      valueLabel,
+      valueRect,
+      valueText,
+      yAxisValueLabel,
+      yAxisValueRect,
+      yAxisValueText,
+      xAxisValueLabel,
+      xAxisValueRect,
+      xAxisValueText,
+    } = createValueLabels(crosshair);
 
     // Initialize selected crosshair if we have a selected date
     if (selectedDate) {
@@ -626,9 +658,9 @@ const Chart: React.FC<ChartProps> = ({
         crosshair.style("display", "block");
       })
       .on("mouseleave", function (event) {
-        // Hide crosshair when mouse leaves chart area (unless we have a selected date)
+        // Hide crosshair when mouse leaves chart area
         if (!isDragging) {
-          crosshair.style("display", selectedDate ? "block" : "none");
+          crosshair.style("display", "none");
           // Hide horizontal line and labels when mouse leaves
           crosshairHorizontal.style("display", "none");
           valueLabel.style("display", "none");
