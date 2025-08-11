@@ -47,24 +47,45 @@ def check_rate_calculations(data, ticker, sample_size=10):
         prev_date = sorted_dates[prev_date_idx]
         
         current_close = data[date]["close"]
+        current_open = data[date]["open"]
         prev_close = data[prev_date]["close"]
-        recorded_rate = data[date]["rate"]
         
-        # Calculate expected rate
-        expected_rate = (current_close - prev_close) / prev_close * 100
+        recorded_combined_rate = data[date]["rate"]
+        recorded_overnight_rate = data[date].get("overnight_rate", 0)
+        recorded_day_rate = data[date].get("day_rate", 0)
+        
+        # Calculate expected rates
+        expected_combined_rate = (current_close - prev_close) / prev_close * 100
+        expected_overnight_rate = (current_open - prev_close) / prev_close * 100
+        expected_day_rate = (current_close - current_open) / current_open * 100
         
         # Check if rates match (within 0.001% tolerance)
-        if abs(recorded_rate - expected_rate) > 0.001:
-            errors.append(f"  ❌ {date}: recorded={recorded_rate:.6f}%, expected={expected_rate:.6f}%")
+        combined_error = abs(recorded_combined_rate - expected_combined_rate) > 0.001
+        overnight_error = abs(recorded_overnight_rate - expected_overnight_rate) > 0.001
+        day_error = abs(recorded_day_rate - expected_day_rate) > 0.001
+        
+        # Verify compound relationship: combined = overnight + day + (overnight * day / 100)
+        expected_compound = recorded_overnight_rate + recorded_day_rate + (recorded_overnight_rate * recorded_day_rate / 100)
+        compound_error = abs(recorded_combined_rate - expected_compound) > 0.000002  # Tolerance for floating-point precision
+        
+        if combined_error or overnight_error or day_error or compound_error:
+            if combined_error:
+                errors.append(f"  ❌ {date}: combined_rate recorded={recorded_combined_rate:.6f}%, expected={expected_combined_rate:.6f}%")
+            if overnight_error:
+                errors.append(f"  ❌ {date}: overnight_rate recorded={recorded_overnight_rate:.6f}%, expected={expected_overnight_rate:.6f}%")
+            if day_error:
+                errors.append(f"  ❌ {date}: day_rate recorded={recorded_day_rate:.6f}%, expected={expected_day_rate:.6f}%")
+            if compound_error:
+                errors.append(f"  ❌ {date}: compound check failed - combined={recorded_combined_rate:.6f}%, compound={expected_compound:.6f}%")
         else:
-            print(f"  ✅ {date}: rate={recorded_rate:.6f}% ✓")
+            print(f"  ✅ {date}: combined={recorded_combined_rate:.6f}%, overnight={recorded_overnight_rate:.6f}%, day={recorded_day_rate:.6f}% ✓")
     
     if errors:
         print("\n❌ Rate calculation errors:")
         for error in errors:
             print(error)
     else:
-        print(f"✅ All sampled rate calculations are correct for {ticker}")
+        print(f"✅ All sampled rate calculations and compound relationships are correct for {ticker}")
 
 def check_transitions(data, ticker):
     """Check for suspicious jumps in data that might indicate transition issues"""
@@ -172,12 +193,17 @@ def check_data_precision_and_sources(data, ticker):
     for date in recent_sample:
         close_price = data[date]["close"]
         rate = data[date]["rate"]
+        overnight_rate = data[date].get("overnight_rate", 0)
+        day_rate = data[date].get("day_rate", 0)
         
         # Check decimal precision
         close_decimals = len(str(close_price).split('.')[-1]) if '.' in str(close_price) else 0
         rate_decimals = len(str(rate).split('.')[-1]) if '.' in str(rate) else 0
+        overnight_decimals = len(str(overnight_rate).split('.')[-1]) if '.' in str(overnight_rate) else 0
+        day_decimals = len(str(day_rate).split('.')[-1]) if '.' in str(day_rate) else 0
         
-        if close_decimals >= 6 or rate_decimals >= 6:
+        if (close_decimals >= 6 or rate_decimals >= 6 or 
+            overnight_decimals >= 6 or day_decimals >= 6):
             high_precision_count += 1
         else:
             low_precision_count += 1
@@ -285,6 +311,7 @@ def check_data_quality():
     print(f"{'=' * 50}")
     print(f"📊 Summary:")
     print(f"   • All rate calculations verified ✅")
+    print(f"   • All compound relationships verified ✅") 
     print(f"   • All SMA200 calculations verified ✅") 
     print(f"   • Transition points checked ✅")
     print(f"   • Data precision analyzed ✅")

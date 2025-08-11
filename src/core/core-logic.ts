@@ -18,7 +18,7 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
   let lastCashAdditionDate = simulation.simulationVariables.startDate;
 
   for (const date of marketDates) {
-    const signal = getSignal(date, marketData, marketDates, simulation.simulationVariables);
+    const signal = getYesterdaySignal(date, marketData, marketDates, simulation.simulationVariables);
 
     const lastSnapshot =
       simulation.portfolioSnapshots.length === 0
@@ -46,14 +46,15 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
   return simulation;
 };
 
-const getSignal = (
+const getYesterdaySignal = (
   date: string,
   marketData: MarketData,
   marketDates: string[],
   simulationVariables: SimulationVariables
 ): Signal => {
-  const currentDateIndex = marketDates.indexOf(date);
-  const last30DaysFromCurrent = marketDates.slice(Math.max(0, currentDateIndex - 30), currentDateIndex);
+  const todayIndex = marketDates.indexOf(date);
+  const indexToCheck = todayIndex > 0 ? todayIndex - 1 : 0;
+  const last30DaysFromCurrent = marketDates.slice(Math.max(0, indexToCheck - 30), indexToCheck);
   
   // Safety check: ensure both QQQ and TQQQ data exist for this date
   const qqqData = marketData.QQQ[date];

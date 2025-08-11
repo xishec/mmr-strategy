@@ -74,7 +74,13 @@ def get_latest_data_twelvedata(ticker, start_date):
         data = response.json()
         
         if "status" in data and data["status"] == "error":
-            raise Exception(f"API Error: {data.get('message')}")
+            error_msg = data.get('message', 'Unknown error')
+            # Handle "no data available" as a normal case, not an error
+            if "no data is available" in error_msg.lower() or "try setting different" in error_msg.lower():
+                print(f"✅ No new data available for {ticker} (API: {error_msg})")
+                return {}
+            else:
+                raise Exception(f"API Error: {error_msg}")
         
         if "values" not in data:
             print(f"✅ No new data available for {ticker}")
@@ -90,7 +96,9 @@ def get_latest_data_twelvedata(ticker, start_date):
             new_data[date_str] = {
                 "open": float(bar["open"]),
                 "close": float(bar["close"]),
-                "rate": 0,  # Will calculate later
+                "overnight_rate": 0,  # Will calculate later
+                "day_rate": 0,  # Will calculate later
+                "rate": 0,  # Will calculate later (combined rate)
                 "sma200": None  # Will calculate later
             }
         
@@ -133,13 +141,24 @@ def calculate_metrics(existing_data, new_data):
             continue
         
         close_value = all_data[date]["close"]
+        open_value = all_data[date]["open"]
         
-        # Calculate daily return
+        # Calculate rates
         if i == 0:
-            daily_return = 0
+            # First day - no previous data
+            overnight_rate = 0
+            combined_rate = 0
         else:
             prev_close = all_data[sorted_dates[i-1]]["close"]
-            daily_return = (close_value - prev_close) / prev_close * 100
+            
+            # Overnight rate: previous close to current open
+            overnight_rate = (open_value - prev_close) / prev_close * 100
+            
+            # Combined rate: previous close to current close (existing calculation)
+            combined_rate = (close_value - prev_close) / prev_close * 100
+        
+        # Day rate: current open to current close
+        day_rate = (close_value - open_value) / open_value * 100
         
         # Calculate SMA200
         if i < 199:
@@ -147,8 +166,15 @@ def calculate_metrics(existing_data, new_data):
         else:
             sma200 = sum(close_prices[i - 199 : i + 1]) / 200
         
-        # Update data
-        all_data[date]["rate"] = round(daily_return, 6)
+        # Update data - ensure all fields exist for backward compatibility
+        if "overnight_rate" not in all_data[date]:
+            all_data[date]["overnight_rate"] = 0
+        if "day_rate" not in all_data[date]:
+            all_data[date]["day_rate"] = 0
+            
+        all_data[date]["overnight_rate"] = round(overnight_rate, 6)
+        all_data[date]["day_rate"] = round(day_rate, 6)
+        all_data[date]["rate"] = round(combined_rate, 6)
         all_data[date]["sma200"] = round(sma200, 6) if sma200 is not None else None
     
     return all_data

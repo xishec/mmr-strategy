@@ -52,7 +52,9 @@ def download_yahoo_finance_data(ticker, start_date="1998-01-01", end_date="2010-
             stock_data[date_str] = {
                 "open": float(row['Open']),
                 "close": float(row['Close']),
-                "rate": 0,  # Will calculate later
+                "overnight_rate": 0,  # Will calculate later
+                "day_rate": 0,  # Will calculate later
+                "rate": 0,  # Will calculate later (combined rate)
                 "sma200": None  # Will calculate later
             }
         
@@ -129,7 +131,9 @@ def download_twelvedata_data(ticker, start_date="1998-01-01", end_date=None):
                 stock_data[date_str] = {
                     "open": open_price,
                     "close": close_price,
-                    "rate": 0,  # Will calculate later
+                    "overnight_rate": 0,  # Will calculate later
+                    "day_rate": 0,  # Will calculate later
+                    "rate": 0,  # Will calculate later (combined rate)
                     "sma200": None  # Will calculate later
                 }
             except (ValueError, KeyError) as e:
@@ -195,13 +199,23 @@ def merge_and_calculate(data_dict):
     
     for i, date in enumerate(sorted_dates):
         close_value = data_dict[date]["close"]
+        open_value = data_dict[date]["open"]
         close_prices.append(close_value)
         
-        # Calculate daily return (close-to-close)
+        # Calculate rates
         if prev_close is None:
-            daily_return = 0
+            # First day - no previous data
+            overnight_rate = 0
+            combined_rate = 0
         else:
-            daily_return = (close_value - prev_close) / prev_close * 100
+            # Overnight rate: previous close to current open
+            overnight_rate = (open_value - prev_close) / prev_close * 100
+            
+            # Combined rate: previous close to current close (existing calculation)
+            combined_rate = (close_value - prev_close) / prev_close * 100
+        
+        # Day rate: current open to current close
+        day_rate = (close_value - open_value) / open_value * 100
         
         # Calculate SMA200
         if i < 199:  # Need 200 days for SMA200
@@ -210,7 +224,9 @@ def merge_and_calculate(data_dict):
             sma200 = sum(close_prices[i - 199 : i + 1]) / 200
         
         # Update data
-        data_dict[date]["rate"] = round(daily_return, 6)
+        data_dict[date]["overnight_rate"] = round(overnight_rate, 6)
+        data_dict[date]["day_rate"] = round(day_rate, 6)
+        data_dict[date]["rate"] = round(combined_rate, 6)
         data_dict[date]["sma200"] = round(sma200, 6) if sma200 is not None else None
         
         prev_close = close_value
@@ -249,12 +265,17 @@ def simulate_tqqq_from_qqq(qqq_data):
     for i, date in enumerate(sorted_dates):
         qqq_data_point = qqq_data_copy[date]
         
-        # Apply 3x leverage to daily return
-        qqq_daily_return = qqq_data_point["rate"]
-        tqqq_daily_return = qqq_daily_return * 3
+        # Apply 3x leverage to daily returns
+        qqq_combined_rate = qqq_data_point["rate"]
+        qqq_overnight_rate = qqq_data_point.get("overnight_rate", 0)
+        qqq_day_rate = qqq_data_point.get("day_rate", 0)
+        
+        tqqq_combined_rate = qqq_combined_rate * 3
+        tqqq_overnight_rate = qqq_overnight_rate * 3
+        tqqq_day_rate = qqq_day_rate * 3
         
         # Calculate new TQQQ close price
-        new_tqqq_close = tqqq_close * (1 + tqqq_daily_return / 100)
+        new_tqqq_close = tqqq_close * (1 + tqqq_combined_rate / 100)
         
         # Estimate TQQQ open price based on QQQ intraday movement
         qqq_open = qqq_data_point["open"]
@@ -281,7 +302,9 @@ def simulate_tqqq_from_qqq(qqq_data):
         tqqq_data[date] = {
             "open": round(tqqq_open, 6),
             "close": round(tqqq_close, 6),
-            "rate": round(tqqq_daily_return, 6),
+            "overnight_rate": round(tqqq_overnight_rate, 6),
+            "day_rate": round(tqqq_day_rate, 6),
+            "rate": round(tqqq_combined_rate, 6),
             "sma200": round(tqqq_sma200, 6) if tqqq_sma200 is not None else None
         }
     
@@ -333,6 +356,8 @@ def adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data):
         adjusted_real_data[date] = {
             "open": data["open"] * scaling_factor,
             "close": data["close"] * scaling_factor,
+            "overnight_rate": data.get("overnight_rate", 0),  # Keep original rate (percentage change)
+            "day_rate": data.get("day_rate", 0),  # Keep original rate (percentage change)
             "rate": data["rate"],  # Keep original rate (percentage change)
             "sma200": None  # Will recalculate later
         }
@@ -393,16 +418,32 @@ def download_complete_data():
     print("🔄 Recalculating rates and SMA200 for complete TQQQ dataset...")
     sorted_dates = sorted(all_tqqq_data.keys())
     
-    # Recalculate rates
+    # Recalculate all rates
     for i, date in enumerate(sorted_dates):
+        close_value = all_tqqq_data[date]["close"]
+        open_value = all_tqqq_data[date]["open"]
+        
         if i == 0:
-            all_tqqq_data[date]["rate"] = 0
+            # First day - no previous data
+            overnight_rate = 0
+            combined_rate = 0
         else:
             prev_date = sorted_dates[i-1]
-            current_close = all_tqqq_data[date]["close"]
             prev_close = all_tqqq_data[prev_date]["close"]
-            daily_return = (current_close - prev_close) / prev_close * 100
-            all_tqqq_data[date]["rate"] = round(daily_return, 6)
+            
+            # Overnight rate: previous close to current open
+            overnight_rate = (open_value - prev_close) / prev_close * 100
+            
+            # Combined rate: previous close to current close
+            combined_rate = (close_value - prev_close) / prev_close * 100
+        
+        # Day rate: current open to current close
+        day_rate = (close_value - open_value) / open_value * 100
+        
+        # Update rates
+        all_tqqq_data[date]["overnight_rate"] = round(overnight_rate, 6)
+        all_tqqq_data[date]["day_rate"] = round(day_rate, 6)
+        all_tqqq_data[date]["rate"] = round(combined_rate, 6)
     
     # Recalculate SMA200
     close_prices = [all_tqqq_data[date]["close"] for date in sorted_dates]
