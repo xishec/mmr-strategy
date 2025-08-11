@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import { formatValue } from "../core/functions";
-import { blue, red, yellow, grey, green } from "./Chart";
+import { blue, red, yellow, green } from "./Chart";
 import { D3ChartData } from "../core/models";
 
 interface LegendItem {

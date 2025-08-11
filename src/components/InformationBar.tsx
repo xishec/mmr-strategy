@@ -12,7 +12,7 @@ interface InformationBarProps {
 }
 
 const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation, onRefreshData }) => {
-  const lastSnapshot = simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
+  const lastDate = Object.keys(marketData.QQQ).slice(-1)[0];
 
   const testVariable = true;
 
@@ -68,36 +68,38 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation,
       </Box>
       <Box display="flex" alignItems="center" gap={1}>
         <Typography variant="body1">Data pulled :</Typography>
-        {lastDataPullTime && (
-          <strong>
-            {lastDataPullTime.toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "short",
-              day: "numeric",
-            })}{" "}
-            at{" "}
-            {lastDataPullTime.toLocaleTimeString("en-US", {
-              hour: "numeric",
-              minute: "2-digit",
-              hour12: true,
-            })}
-          </strong>
-        )}
-        {onRefreshData && (
-          <Tooltip
-            title={process.env.NODE_ENV === "development" ? "Refresh local data" : "Refresh market data from GitHub"}
-          >
-            <IconButton onClick={handleRefresh} disabled={isRefreshing} size="small" color="primary">
-              <RefreshIcon className={isRefreshing ? "spin" : ""} />
-            </IconButton>
-          </Tooltip>
-        )}
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          {lastDataPullTime && (
+            <strong>
+              {lastDataPullTime.toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "short",
+                day: "numeric",
+              })}{" "}
+              at{" "}
+              {lastDataPullTime.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })}
+            </strong>
+          )}
+          {onRefreshData && (
+            <Tooltip
+              title={process.env.NODE_ENV === "development" ? "Refresh local data" : "Refresh market data from GitHub"}
+            >
+              <IconButton onClick={handleRefresh} disabled={isRefreshing} size="small" color="primary">
+                <RefreshIcon className={isRefreshing ? "spin" : ""} />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
       </Box>
       <Box display="flex" alignItems="center" gap={1}>
         <Typography variant="body1">Last market data :</Typography>
-        {lastSnapshot && (
+        {lastDate && (
           <strong>
-            {parseDate(lastSnapshot.date).toLocaleDateString("en-US", {
+            {parseDate(lastDate).toLocaleDateString("en-US", {
               weekday: "long",
               month: "short",
               day: "numeric",
@@ -107,9 +109,9 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation,
       </Box>
       <Box display="flex" alignItems="center" gap={1}>
         <Typography variant="body1">Last TQQQ rate :</Typography>
-        {lastSnapshot && marketData.TQQQ[lastSnapshot.date] && (
-          <>
-            <strong>{marketData.TQQQ[lastSnapshot.date].rate.toFixed(2)}%</strong>
+        {lastDate && marketData.TQQQ && (
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <strong>{marketData.TQQQ[lastDate].rate.toFixed(2)}%</strong>
             <Tooltip title="View TQQQ on TradingView">
               <IconButton
                 onClick={() => window.open("https://www.tradingview.com/symbols/NASDAQ-TQQQ/", "_blank")}
@@ -119,12 +121,12 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation,
                 <OpenInNewIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-          </>
+          </Box>
         )}
       </Box>{" "}
       <Box display="flex" alignItems="center" gap={1}>
         <Typography variant="body1">Current Combined Signal :</Typography>
-        {lastSnapshot && (
+        {lastDate && (
           <Chip
             sx={{ fontSize: "0.9rem", fontWeight: "bolder", border: "2px solid", pt: 0.1, pr: 0.05 }}
             label={testVariable ? "ALL-IN" : "PANIC"}

@@ -79,7 +79,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData, onRefreshData }) => {
         >
           {/* Rebalance Details Section */}
           <Card elevation={0} sx={{ borderRadius: 2, gridColumn: { md: "1", lg: "1/3" } }}>
-            <Box sx={{ py: 5, px: 4 }}>
+            <Box sx={{ py: 4, px: 4 }}>
               <InformationBar marketData={marketData} simulation={simulation} onRefreshData={onRefreshData} />
             </Box>
           </Card>
@@ -206,7 +206,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData, onRefreshData }) => {
 
           {/* Legend Section */}
           <Card elevation={0} sx={{ borderRadius: 2, overflow: "visible" }}>
-            <Box sx={{ p: 4 }}>
+            <Box sx={{ px: 4, py: 3 }}>
               <Legend d3ChartData={d3ChartData} selectedDate={selectedDate} />
             </Box>
           </Card>
@@ -223,7 +223,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData, onRefreshData }) => {
               minHeight: { xs: "90vh", lg: "auto" },
             }}
           >
-            <Box sx={{ p: 4, pb: 3, flex: 1, display: "flex", flexDirection: "column" }}>
+            <Box sx={{ p: 4, pb: 3, pr: 0, flex: 1, display: "flex", flexDirection: "column" }}>
               <Box sx={{ flex: 1, minHeight: 0 }}>
                 <Chart
                   d3ChartData={d3ChartData}

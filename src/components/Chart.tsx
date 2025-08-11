@@ -82,7 +82,7 @@ const Chart: React.FC<ChartProps> = ({
     svg.on(".drag", null);
 
     // Setup dimensions and data
-    const margin = { top: 5, left: 35, right: 5, bottom: 40 };
+    const margin = { top: 5, left: 35, right: 40, bottom: 40 };
     const width = container.clientWidth - margin.left - margin.right;
     const totalChartHeight = container.clientHeight - margin.top - margin.bottom;
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
