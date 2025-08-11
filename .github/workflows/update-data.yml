@@ -6,7 +6,7 @@ on:
   workflow_dispatch: # Allow manual trigger
 
 jobs:
-  back_test:
+  update-data:
     runs-on: ubuntu-latest
     steps:
       - name: checkout repo content
@@ -22,6 +22,8 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install python-dotenv requests
       - name: update stock data
+        env:
+          TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
         run: |
           python3 ./src/data/script/daily_update.py
 

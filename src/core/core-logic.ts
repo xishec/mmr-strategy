@@ -16,9 +16,10 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
   );
 
   let lastCashAdditionDate = simulation.simulationVariables.startDate;
+  let lastSignal: Signal | null = null;
 
   for (const date of marketDates) {
-    const signal = getYesterdaySignal(date, marketData, marketDates, simulation.simulationVariables);
+    const signal = getYesterdaySignal(date, marketData, marketDates, simulation.simulationVariables, lastSignal);
 
     const lastSnapshot =
       simulation.portfolioSnapshots.length === 0
@@ -39,6 +40,7 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
     newSnapshot.peak = Math.max(lastSnapshot.peak, newSnapshot.investments.total);
     newSnapshot.pullback = -(newSnapshot.peak - newSnapshot.investments.total) / newSnapshot.peak;
     simulation.portfolioSnapshots.push(newSnapshot);
+    lastSignal = signal;
   }
 
   calculateAnnualizedRates(simulation);
@@ -50,48 +52,82 @@ const getYesterdaySignal = (
   date: string,
   marketData: MarketData,
   marketDates: string[],
-  simulationVariables: SimulationVariables
+  simulationVariables: SimulationVariables,
+  lastSignal: Signal | null
 ): Signal => {
   const todayIndex = marketDates.indexOf(date);
   const indexToCheck = todayIndex > 0 ? todayIndex - 1 : 0;
   const last30DaysFromCurrent = marketDates.slice(Math.max(0, indexToCheck - 30), indexToCheck);
-  
+
   // Safety check: ensure both QQQ and TQQQ data exist for this date
   const qqqData = marketData.QQQ[date];
   const tqqqData = marketData.TQQQ[date];
-  
+
   if (!qqqData || !tqqqData) {
     throw new Error(`Missing market data for date ${date}. QQQ: ${!!qqqData}, TQQQ: ${!!tqqqData}`);
   }
-  
+
+  const bigDropLast30Days = last30DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
+  const isAboveSMA200 = qqqData.close >= qqqData.sma200! * (1 + simulationVariables.SMAUpMargin);
+  const isBelowSMA200 = qqqData.close < qqqData.sma200! * (1 + simulationVariables.SMADownMargin);
+
+  const combinedShouldPanicSignal = isBelowSMA200 || bigDropLast30Days;
+  const isNew = !lastSignal || (!lastSignal.combinedShouldPanicSignal && combinedShouldPanicSignal);
+
   return {
     date,
-    bigDropLast30Days: last30DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20),
-    isAboveSMA200: qqqData.close >= qqqData.sma200! * (1 + simulationVariables.SMAUpMargin),
-    isBelowSMA200: qqqData.close < qqqData.sma200! * (1 + simulationVariables.SMADownMargin),
+    bigDropLast30Days,
+    isAboveSMA200,
+    isBelowSMA200,
+    combinedShouldPanicSignal,
+    isNew,
   };
 };
 
 const updateStrategyToSnapshot = (newSnapshot: PortfolioSnapshot, marketData: MarketData, signal: Signal) => {
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
+  const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
+  const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
 
-  if (signal.isAboveSMA200 && !signal.bigDropLast30Days) {
-    // all-in
-    newSnapshot.investments.TQQQ = newSnapshot.investments.total;
-    newSnapshot.investments.cash = 0;
-    newSnapshot.investments.ratio = 1;
-  } else if (signal.isBelowSMA200 || signal.bigDropLast30Days) {
-    // panic
-    newSnapshot.investments.TQQQ = 0;
-    newSnapshot.investments.cash = newSnapshot.investments.total;
-    newSnapshot.investments.ratio = 0;
+  if (signal.isNew) {
+    if (signal.combinedShouldPanicSignal) {
+      // apply overnight rate first
+      newSnapshot.investments.TQQQ *= TQQQOvernightRate / 100 + 1;
+      newSnapshot.investments.cash *= 1;
+      newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
+      newSnapshot.signal = signal;
+      // panic
+      newSnapshot.investments.TQQQ = 0;
+      newSnapshot.investments.cash = newSnapshot.investments.total;
+      newSnapshot.investments.ratio = 0;
+    } else {
+      // all-in
+      newSnapshot.investments.TQQQ = newSnapshot.investments.total;
+      newSnapshot.investments.cash = 0;
+      newSnapshot.investments.ratio = 1;
+      // apply day rate after all-in
+      newSnapshot.investments.TQQQ *= TQQQDayRate / 100 + 1;
+      newSnapshot.investments.cash *= 1;
+      newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
+      newSnapshot.signal = signal;
+    }
   } else {
-    // hold
+    if (signal.combinedShouldPanicSignal) {
+      // panic
+      newSnapshot.investments.TQQQ = 0;
+      newSnapshot.investments.cash = newSnapshot.investments.total;
+      newSnapshot.investments.ratio = 0;
+    } else {
+      // all-in
+      newSnapshot.investments.TQQQ = newSnapshot.investments.total;
+      newSnapshot.investments.cash = 0;
+      newSnapshot.investments.ratio = 1;
+    }
+    newSnapshot.investments.TQQQ *= TQQQRate / 100 + 1;
+    newSnapshot.investments.cash *= 1;
+    newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
+    newSnapshot.signal = signal;
   }
-  newSnapshot.investments.TQQQ *= TQQQRate / 100 + 1;
-  newSnapshot.investments.cash *= 1;
-  newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
-  newSnapshot.signal = signal;
 };
 
 const updateMockToSnapshot = (newSnapshot: PortfolioSnapshot, marketData: MarketData) => {
@@ -123,10 +159,8 @@ const createMockPortfolioSnapshot = (simulation: Simulation, signal: Signal): Po
 };
 
 const getRelevantMarketDates = (marketData: MarketData, startDate: string, endDate: string): string[] => {
-  return Object.keys(marketData.TQQQ).filter((date) => 
-    date > startDate && 
-    date <= endDate && 
-    marketData.QQQ[date] !== undefined
+  return Object.keys(marketData.TQQQ).filter(
+    (date) => date > startDate && date <= endDate && marketData.QQQ[date] !== undefined
   );
 };
 

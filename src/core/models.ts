@@ -78,6 +78,8 @@ export interface Signal {
   bigDropLast30Days: boolean;
   isAboveSMA200: boolean;
   isBelowSMA200: boolean;
+  combinedShouldPanicSignal: boolean;
+  isNew: boolean;
 }
 
 export interface Investments {
@@ -94,6 +96,8 @@ export interface DailyData {
   rate: number;
   close: number;
   sma200: number | null;
+  overnight_rate: number;
+  day_rate: number;
 }
 
 export interface MarketData {
