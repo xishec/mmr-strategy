@@ -73,7 +73,17 @@ const getYesterdaySignal = (
 
   const combinedShouldPanicSignal = isBelowSMA200 || bigDropLast30Days;
   const combinedShouldAllInSignal = isAboveSMA200 && !bigDropLast30Days;
-  const isNew = !lastSignal || (!lastSignal.combinedShouldPanicSignal && combinedShouldPanicSignal);
+
+  let isNew = false;
+  if (!lastSignal) {
+    isNew = true;
+  } else {
+    if (!lastSignal.combinedShouldPanicSignal && combinedShouldPanicSignal) {
+      isNew = true;
+    } else if (!lastSignal.combinedShouldAllInSignal && combinedShouldAllInSignal) {
+      isNew = true;
+    }
+  }
 
   return {
     date,
