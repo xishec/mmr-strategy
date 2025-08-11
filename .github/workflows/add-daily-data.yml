@@ -1,4 +1,4 @@
-name: Add daily data
+name: Add Daily Data
 
 on:
   schedule:

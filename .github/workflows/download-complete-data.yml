@@ -1,4 +1,4 @@
-name: Add daily data
+name: Download Complete Data
 
 on:
   workflow_dispatch:
