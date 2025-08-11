@@ -47,8 +47,15 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation,
         <Typography variant="h1" fontSize="1.75rem" fontWeight="bold">
           MMR Strategy App
         </Typography>
+        <Chip 
+          label={process.env.NODE_ENV === 'development' ? 'DEV' : 'PROD'}
+          color={process.env.NODE_ENV === 'development' ? 'warning' : 'success'}
+          size="small"
+          variant="outlined"
+          sx={{ fontSize: '0.75rem', fontWeight: 'bold' }}
+        />
         {onRefreshData && (
-          <Tooltip title="Refresh market data">
+          <Tooltip title={process.env.NODE_ENV === 'development' ? 'Refresh local data' : 'Refresh market data from GitHub'}>
             <IconButton 
               onClick={handleRefresh} 
               disabled={isRefreshing}
