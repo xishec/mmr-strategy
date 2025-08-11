@@ -2,6 +2,7 @@ import { runSingleSimulation } from "./core-logic";
 import { DashboardVariables, MarketData, MultiSimulationResults, PortfolioSnapshot, Simulation } from "./models";
 import { addDays, yearsBetween, addYears, today } from "./date-utils";
 import { TIME_CONSTANTS } from "./constants";
+import { DataService } from "./data-service";
 
 export const loadData = async (
   setDataLoading: (loading: boolean) => void,
@@ -9,14 +10,30 @@ export const loadData = async (
 ) => {
   try {
     setDataLoading(true);
-    const marketData = {
-      QQQ: (await import("../data/QQQ.json")).default,
-      TQQQ: (await import("../data/TQQQ.json")).default,
-    };
-
+    const dataService = DataService.getInstance();
+    const marketData = await dataService.loadMarketData();
     setMarketData(marketData);
   } catch (error) {
     console.error("Error loading data:", error);
+    // You could show a user-friendly error message here
+    throw error;
+  } finally {
+    setDataLoading(false);
+  }
+};
+
+export const refreshData = async (
+  setDataLoading: (loading: boolean) => void,
+  setMarketData: (data: MarketData) => void
+) => {
+  try {
+    setDataLoading(true);
+    const dataService = DataService.getInstance();
+    const marketData = await dataService.refreshData();
+    setMarketData(marketData);
+  } catch (error) {
+    console.error("Error refreshing data:", error);
+    throw error;
   } finally {
     setDataLoading(false);
   }

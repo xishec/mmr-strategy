@@ -3,7 +3,7 @@ import "./App.css";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
 import { MarketData } from "./core/models";
 import Dashboard from "./components/Dashboard";
-import { loadData } from "./core/functions";
+import { loadData, refreshData } from "./core/functions";
 
 const theme = createTheme({
   palette: {
@@ -37,9 +37,18 @@ function App() {
     loadData(setDataLoading, setMarketData);
   }, []);
 
+  const handleRefreshData = async () => {
+    try {
+      await refreshData(setDataLoading, setMarketData);
+    } catch (error) {
+      console.error("Failed to refresh data:", error);
+      // Could show a toast/snackbar here
+    }
+  };
+
   const componentsManager = () => {
     if (marketData && !dataLoading) {
-      return <Dashboard marketData={marketData} />;
+      return <Dashboard marketData={marketData} onRefreshData={handleRefreshData} />;
     } else {
       return <></>;
     }

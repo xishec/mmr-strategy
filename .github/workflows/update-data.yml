@@ -2,7 +2,7 @@ name: Update Stock Data
 
 on:
   schedule:
-    - cron: "30 2 * * *"
+    - cron: "*/5 * * * *"  # Runs every 5 minutes
   workflow_dispatch: # Allow manual trigger
 
 jobs:
@@ -23,7 +23,7 @@ jobs:
           python3 -m pip install yfinance
       - name: download stock data
         run: |
-          python3 ./src/data/download_stocks.py
+          python3 ./src/data/script/download_complete_data.py
 
       - name: Commit and push if changes
         run: |

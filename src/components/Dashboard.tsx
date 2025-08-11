@@ -13,9 +13,10 @@ import InformationBar from "./InformationBar";
 
 interface DashboardProps {
   marketData: MarketData;
+  onRefreshData?: () => Promise<void>;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
+const Dashboard: React.FC<DashboardProps> = ({ marketData, onRefreshData }) => {
   // Unified simulation state management - now handles both single and multiple simulations
   const { simulation, dashboardVariables, multiSimulationResults, updateVariable, runMultipleSimulationsHandler } =
     useSimulation(marketData);
@@ -79,7 +80,7 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData }) => {
           {/* Rebalance Details Section */}
           <Card elevation={0} sx={{ borderRadius: 2, gridColumn: { md: "1", lg: "1/3" } }}>
             <Box sx={{ py: 5, px: 4 }}>
-              <InformationBar marketData={marketData} simulation={simulation} />
+              <InformationBar marketData={marketData} simulation={simulation} onRefreshData={onRefreshData} />
             </Box>
           </Card>
 
