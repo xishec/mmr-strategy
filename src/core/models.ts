@@ -80,6 +80,7 @@ export interface Signal {
   isAboveSMA200: boolean;
   isBelowSMA200: boolean;
   combinedShouldPanicSignal: boolean;
+  combinedShouldAllInSignal: boolean;
   isNew: boolean;
 }
 

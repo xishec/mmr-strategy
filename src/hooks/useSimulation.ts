@@ -15,19 +15,19 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   // Simulation variables
   const [dashboardVariables, setDashboardVariables] = useState<DashboardVariables>({
     simulationVariables: {
-      initialMoney: 100000,
+      initialMoney: 50000,
       startDate: Object.keys(marketData!.QQQ)[0],
       endDate: Object.keys(marketData!.QQQ).slice(-1)[0],
       cashYearRate: 0.0,
-      SMAUpMargin: 0.03,
+      SMAUpMargin: 0.0,
       SMADownMargin: -0.0,
-      monthlyNewCash: 2000,
+      monthlyNewCash: 1500,
       buyAtOpen: true,
     },
     multiSimulationVariables: {
       simulationFrequencyDays: 3,
-      simulationDurationYears: 10,
-      simulationAnalysisMinusYears: 1,
+      simulationDurationYears: 5,
+      simulationAnalysisMinusYears: 5,
     },
     uiVariables: {
       isLogScale: true,

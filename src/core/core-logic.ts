@@ -72,6 +72,7 @@ const getYesterdaySignal = (
   const isBelowSMA200 = qqqData.close < qqqData.sma200! * (1 + simulationVariables.SMADownMargin);
 
   const combinedShouldPanicSignal = isBelowSMA200 || bigDropLast30Days;
+  const combinedShouldAllInSignal = isAboveSMA200 && !bigDropLast30Days;
   const isNew = !lastSignal || (!lastSignal.combinedShouldPanicSignal && combinedShouldPanicSignal);
 
   return {
@@ -80,6 +81,7 @@ const getYesterdaySignal = (
     isAboveSMA200,
     isBelowSMA200,
     combinedShouldPanicSignal,
+    combinedShouldAllInSignal,
     isNew,
   };
 };
@@ -105,7 +107,7 @@ const updateStrategyToSnapshot = (
       newSnapshot.investments.TQQQ = 0;
       newSnapshot.investments.cash = newSnapshot.investments.total;
       newSnapshot.investments.ratio = 0;
-    } else {
+    } else if (signal.combinedShouldAllInSignal) {
       // all-in
       newSnapshot.investments.TQQQ = newSnapshot.investments.total;
       newSnapshot.investments.cash = 0;
@@ -122,7 +124,7 @@ const updateStrategyToSnapshot = (
       newSnapshot.investments.TQQQ = 0;
       newSnapshot.investments.cash = newSnapshot.investments.total;
       newSnapshot.investments.ratio = 0;
-    } else {
+    } else if (signal.combinedShouldAllInSignal) {
       // all-in
       newSnapshot.investments.TQQQ = newSnapshot.investments.total;
       newSnapshot.investments.cash = 0;
