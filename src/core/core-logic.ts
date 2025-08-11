@@ -33,7 +33,7 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
       lastCashAdditionDate = date;
     }
 
-    updateStrategyToSnapshot(newSnapshot, marketData, signal);
+    updateStrategyToSnapshot(newSnapshot, marketData, signal, simulation.simulationVariables.buyAtOpen);
     updateMockToSnapshot(newSnapshot, marketData);
 
     newSnapshot.date = date;
@@ -84,12 +84,17 @@ const getYesterdaySignal = (
   };
 };
 
-const updateStrategyToSnapshot = (newSnapshot: PortfolioSnapshot, marketData: MarketData, signal: Signal) => {
+const updateStrategyToSnapshot = (
+  newSnapshot: PortfolioSnapshot,
+  marketData: MarketData,
+  signal: Signal,
+  buyAtOpen: boolean
+) => {
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
   const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
   const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
 
-  if (signal.isNew) {
+  if (signal.isNew && buyAtOpen) {
     if (signal.combinedShouldPanicSignal) {
       // apply overnight rate first
       newSnapshot.investments.TQQQ *= TQQQOvernightRate / 100 + 1;

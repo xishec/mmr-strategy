@@ -107,8 +107,16 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData, onRefreshData }) => {
                 simulationYears={dashboardVariables.multiSimulationVariables.simulationDurationYears}
                 isLogScale={dashboardVariables.uiVariables.isLogScale}
                 showSignalMarkers={dashboardVariables.uiVariables.showSignalMarkers}
+                buyAtOpen={dashboardVariables.simulationVariables.buyAtOpen}
                 simulationFrequencyDays={dashboardVariables.multiSimulationVariables.simulationFrequencyDays}
                 simulationAnalysisMinusYears={dashboardVariables.multiSimulationVariables.simulationAnalysisMinusYears}
+                onBuyAtOpenChange={(checked: boolean) => {
+                  const updatedSimulationVariables = {
+                    ...dashboardVariables.simulationVariables,
+                    buyAtOpen: checked,
+                  };
+                  updateVariable("simulationVariables", updatedSimulationVariables);
+                }}
                 onStartDateChange={(newValue: Date | null) => {
                   if (newValue) {
                     const updatedSimulationVariables = {

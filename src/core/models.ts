@@ -12,6 +12,7 @@ export interface SimulationVariables {
   SMAUpMargin: number;
   SMADownMargin: number;
   monthlyNewCash: number;
+  buyAtOpen: boolean;
 }
 
 export interface SimulationResults {

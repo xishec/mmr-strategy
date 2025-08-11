@@ -22,6 +22,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
       SMAUpMargin: 0.03,
       SMADownMargin: -0.0,
       monthlyNewCash: 2000,
+      buyAtOpen: true,
     },
     multiSimulationVariables: {
       simulationFrequencyDays: 3,
@@ -44,6 +45,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
       SMAUpMargin: dashboardVariables.simulationVariables.SMAUpMargin,
       SMADownMargin: dashboardVariables.simulationVariables.SMADownMargin,
       monthlyNewCash: dashboardVariables.simulationVariables.monthlyNewCash,
+      buyAtOpen: dashboardVariables.simulationVariables.buyAtOpen,
     },
     simulationResults: undefined,
   });
@@ -82,6 +84,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
         SMAUpMargin: dashboardVariables.simulationVariables.SMAUpMargin,
         SMADownMargin: dashboardVariables.simulationVariables.SMADownMargin,
         monthlyNewCash: dashboardVariables.simulationVariables.monthlyNewCash,
+        buyAtOpen: dashboardVariables.simulationVariables.buyAtOpen,
       },
     }));
   }, [dashboardVariables.simulationVariables]);

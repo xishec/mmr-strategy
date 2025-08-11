@@ -36,6 +36,7 @@ interface SimulationSetupProps {
   simulationYears: number;
   isLogScale: boolean;
   showSignalMarkers: boolean;
+  buyAtOpen: boolean;
   simulationFrequencyDays: number;
   simulationAnalysisMinusYears: number;
   onStartDateChange: (date: Date | null) => void;
@@ -48,6 +49,7 @@ interface SimulationSetupProps {
   onSimulationYearsChange: (value: number) => void;
   onLogScaleChange: (checked: boolean) => void;
   onShowSignalMarkersChange: (checked: boolean) => void;
+  onBuyAtOpenChange: (checked: boolean) => void;
   onRunMultipleSimulations: () => void;
   onSimulationFrequencyDaysChange: (value: number) => void;
   onSimulationAnalysisMinusYearsChange: (value: number) => void;
@@ -66,6 +68,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   simulationYears,
   isLogScale,
   showSignalMarkers,
+  buyAtOpen,
   simulationFrequencyDays,
   simulationAnalysisMinusYears,
   onStartDateChange,
@@ -78,6 +81,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
   onSimulationYearsChange,
   onLogScaleChange,
   onShowSignalMarkersChange,
+  onBuyAtOpenChange,
   onRunMultipleSimulations,
   onSimulationFrequencyDaysChange,
   onSimulationAnalysisMinusYearsChange,
@@ -369,6 +373,22 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
                 },
                 htmlInput: { step: 0.5 },
               }}
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={buyAtOpen}
+                  onChange={(e) => onBuyAtOpenChange(e.target.checked)}
+                  color="primary"
+                  size="medium"
+                />
+              }
+              label={
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  {buyAtOpen ? "Buy at open" : "Buy at close"}
+                </Typography>
+              }
+              sx={{ ml: 0 }}
             />
           </Box>
         </CardContent>
