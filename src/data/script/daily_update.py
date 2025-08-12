@@ -56,11 +56,13 @@ def get_latest_data_twelvedata(ticker, start_date):
     
     try:
         url = "https://api.twelvedata.com/time_series"
+        
+        # First, try to get recent data without date constraints
+        # This approach works better than specifying start/end dates
         params = {
             "symbol": ticker,
             "interval": "1day",
-            "start_date": start_date,
-            "end_date": datetime.now().strftime('%Y-%m-%d'),
+            "outputsize": "30",  # Get last 30 days to ensure we have enough
             "format": "JSON",
             "adjust": "all",
             "apikey": TWELVEDATA_API_KEY
@@ -75,32 +77,39 @@ def get_latest_data_twelvedata(ticker, start_date):
         
         if "status" in data and data["status"] == "error":
             error_msg = data.get('message', 'Unknown error')
-            # Handle "no data available" as a normal case, not an error
-            if "no data is available" in error_msg.lower() or "try setting different" in error_msg.lower():
-                print(f"✅ No new data available for {ticker} (API: {error_msg})")
-                return {}
-            else:
-                raise Exception(f"API Error: {error_msg}")
+            raise Exception(f"API Error: {error_msg}")
         
         if "values" not in data:
-            print(f"✅ No new data available for {ticker}")
+            print(f"✅ No data available for {ticker}")
             return {}
         
         values = data["values"]
-        print(f"✅ Fetched {len(values)} new days from Twelve Data")
+        print(f"✅ Fetched {len(values)} days from Twelve Data")
         
-        # Convert to our format
+        # Filter to only include dates >= start_date
+        from datetime import datetime
+        start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+        
+        # Convert to our format, filtering by date
         new_data = {}
         for bar in values:
             date_str = bar["datetime"]
-            new_data[date_str] = {
-                "open": float(bar["open"]),
-                "close": float(bar["close"]),
-                "overnight_rate": 0,  # Will calculate later
-                "day_rate": 0,  # Will calculate later
-                "rate": 0,  # Will calculate later (combined rate)
-                "sma200": None  # Will calculate later
-            }
+            bar_dt = datetime.strptime(date_str, '%Y-%m-%d')
+            
+            # Only include dates on or after start_date
+            if bar_dt >= start_dt:
+                new_data[date_str] = {
+                    "open": float(bar["open"]),
+                    "close": float(bar["close"]),
+                    "overnight_rate": 0,  # Will calculate later
+                    "day_rate": 0,  # Will calculate later
+                    "rate": 0,  # Will calculate later (combined rate)
+                    "sma200": None  # Will calculate later
+                }
+        
+        if new_data:
+            filtered_dates = sorted(new_data.keys())
+            print(f"📅 Filtered to {len(new_data)} new days: {filtered_dates[0]} to {filtered_dates[-1]}")
         
         return new_data
         
@@ -208,26 +217,45 @@ def update_ticker(ticker):
     
     # Check if we need to update
     today = datetime.now().strftime('%Y-%m-%d')
-    if last_date >= today:
-        print(f"✅ {ticker} is already up to date (last date: {last_date})")
+    
+    # Only skip if last_date is in the future (which shouldn't happen)
+    if last_date > today:
+        print(f"✅ {ticker} data is from the future?! (last date: {last_date})")
         return True
     
-    # Get new data starting from the day after last_date
+    # Always try to fetch data starting from the day after last_date
+    # This will include today if last_date is yesterday, or it will try to update today if we already have partial data
     last_dt = datetime.strptime(last_date, '%Y-%m-%d')
     start_date = (last_dt + timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    # If start_date is in the future, no data to fetch
+    if start_date > today:
+        print(f"✅ {ticker} is up to date (last date: {last_date}, today: {today})")
+        return True
     
     new_data = get_latest_data_twelvedata(ticker, start_date)
     
     if not new_data:
-        print(f"✅ No new data to add for {ticker}")
+        print(f"✅ No new data available for {ticker}")
         return True
     
-    # Remove any duplicate dates
-    filtered_new_data = {date: data for date, data in new_data.items() 
-                        if date not in existing_data}
+    # Allow updating today's data even if it already exists
+    # (in case we got incomplete data earlier in the day)
+    today = datetime.now().strftime('%Y-%m-%d')
+    filtered_new_data = {}
+    
+    for date, data in new_data.items():
+        if date not in existing_data:
+            # Completely new date
+            filtered_new_data[date] = data
+        elif date == today:
+            # Allow refreshing today's data
+            print(f"🔄 Refreshing today's data for {ticker} ({date})")
+            filtered_new_data[date] = data
+        # Skip dates that already exist and are not today
     
     if not filtered_new_data:
-        print(f"✅ No new unique data for {ticker}")
+        print(f"✅ No new data to add for {ticker}")
         return True
     
     print(f"📊 Adding {len(filtered_new_data)} new days to {ticker}")

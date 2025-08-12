@@ -378,6 +378,7 @@ const SimulationSetup: React.FC<SimulationSetupProps> = ({
               control={
                 <Switch
                   checked={buyAtOpen}
+                  disabled
                   onChange={(e) => onBuyAtOpenChange(e.target.checked)}
                   color="primary"
                   size="medium"
