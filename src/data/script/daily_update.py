@@ -117,7 +117,7 @@ def get_latest_data_twelvedata(ticker, start_date):
         print(f"❌ Error fetching from Twelve Data: {e}")
         raise
 
-def calculate_metrics(existing_data, new_data):
+def calculate_metrics(existing_data, new_data, ticker=""):
     """Calculate rates and SMA200 for the combined dataset"""
     print("🔄 Calculating daily returns and SMA200...")
     
@@ -128,25 +128,16 @@ def calculate_metrics(existing_data, new_data):
     # Sort by date
     sorted_dates = sorted(all_data.keys())
     
-    # Recalculate only for dates that need updating
-    # (new data + enough previous data for SMA200 calculation)
+    # For new data, we'll calculate rates using API data directly
+    # This ensures we get the correct overnight rates even with stock splits
     new_dates = set(new_data.keys())
-    if new_dates:
-        # Find earliest new date
-        earliest_new_date = min(new_dates)
-        earliest_index = sorted_dates.index(earliest_new_date)
-        
-        # Include previous 200 days for SMA200 calculation
-        start_index = max(0, earliest_index - 200)
-        dates_to_recalc = sorted_dates[start_index:]
-    else:
-        dates_to_recalc = []
     
     # Collect close prices for SMA calculation
     close_prices = [all_data[date]["close"] for date in sorted_dates]
     
     for i, date in enumerate(sorted_dates):
-        if date not in dates_to_recalc:
+        # Only process new dates
+        if date not in new_dates:
             continue
         
         close_value = all_data[date]["close"]
@@ -158,12 +149,39 @@ def calculate_metrics(existing_data, new_data):
             overnight_rate = 0
             combined_rate = 0
         else:
-            prev_close = all_data[sorted_dates[i-1]]["close"]
+            prev_date = sorted_dates[i-1]
             
-            # Overnight rate: previous close to current open
+            # Check if yesterday's data is in the new_data (API data) - if so, use it
+            # Otherwise use existing data
+            if prev_date in new_data:
+                # Both today and yesterday are from API - use directly
+                prev_close = new_data[prev_date]["close"]
+                print(f"📊 Using API data for {prev_date}: close=${prev_close:.2f}")
+            else:
+                # Yesterday is from existing data, today is from API
+                # This could be a stock split situation
+                prev_close = all_data[prev_date]["close"]
+                
+                # Check for potential stock split
+                price_gap_ratio = abs(open_value - prev_close) / prev_close
+                if price_gap_ratio > 0.3:  # More than 30% gap indicates potential split
+                    print(f"⚠️  Stock split detected between {prev_date} and {date}")
+                    print(f"   Existing prev_close: ${prev_close:.2f}, API open: ${open_value:.2f}")
+                    print(f"   Need to get split-adjusted previous close from API...")
+                    
+                    # Get yesterday's split-adjusted close from API
+                    try:
+                        api_data = get_latest_data_twelvedata(ticker, prev_date)
+                        if api_data and prev_date in api_data:
+                            prev_close = api_data[prev_date]["close"]
+                            print(f"   Using split-adjusted prev_close: ${prev_close:.2f}")
+                        else:
+                            print(f"   ❌ Could not get API data for {prev_date}")
+                    except Exception as e:
+                        print(f"   ❌ Error fetching API data: {e}")
+            
+            # Calculate rates using the correct previous close
             overnight_rate = (open_value - prev_close) / prev_close * 100
-            
-            # Combined rate: previous close to current close (existing calculation)
             combined_rate = (close_value - prev_close) / prev_close * 100
         
         # Day rate: current open to current close
@@ -176,15 +194,12 @@ def calculate_metrics(existing_data, new_data):
             sma200 = sum(close_prices[i - 199 : i + 1]) / 200
         
         # Update data - ensure all fields exist for backward compatibility
-        if "overnight_rate" not in all_data[date]:
-            all_data[date]["overnight_rate"] = 0
-        if "day_rate" not in all_data[date]:
-            all_data[date]["day_rate"] = 0
-            
-        all_data[date]["overnight_rate"] = round(overnight_rate, 6)
-        all_data[date]["day_rate"] = round(day_rate, 6)
-        all_data[date]["rate"] = round(combined_rate, 6)
-        all_data[date]["sma200"] = round(sma200, 6) if sma200 is not None else None
+        all_data[date].update({
+            "overnight_rate": overnight_rate,
+            "day_rate": day_rate,
+            "rate": combined_rate,
+            "sma200": sma200 if sma200 is not None else close_value
+        })
     
     return all_data
 
@@ -261,7 +276,7 @@ def update_ticker(ticker):
     print(f"📊 Adding {len(filtered_new_data)} new days to {ticker}")
     
     # Calculate metrics for combined data
-    updated_data = calculate_metrics(existing_data, filtered_new_data)
+    updated_data = calculate_metrics(existing_data, filtered_new_data, ticker)
     
     # Save updated data
     return save_updated_data(ticker, updated_data, file_path)
