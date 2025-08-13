@@ -20,6 +20,41 @@ root_dir = os.path.dirname(os.path.dirname(os.path.dirname(DIR)))
 # API Keys
 TWELVEDATA_API_KEY = os.getenv("TWELVEDATA_API_KEY")
 
+def is_market_closed():
+    """
+    Check if US stock market is closed
+    Market hours: 9:30 AM - 4:00 PM ET (Monday-Friday)
+    """
+    try:
+        import pytz
+        # Get current time in ET
+        et_tz = pytz.timezone('US/Eastern')
+        now_et = datetime.now(et_tz)
+        
+        # Market is closed on weekends
+        if now_et.weekday() >= 5:  # Saturday = 5, Sunday = 6
+            return True
+        
+        # Market hours: 9:30 AM - 4:00 PM ET
+        market_open = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+        market_close = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
+        
+        # Market is closed if current time is before 9:30 AM or after 4:00 PM ET
+        return now_et < market_open or now_et >= market_close
+        
+    except ImportError:
+        # If pytz is not available, use a simple heuristic
+        # Assume script is run in a timezone close to ET
+        now = datetime.now()
+        
+        # Weekend check
+        if now.weekday() >= 5:
+            return True
+        
+        # Simple time check (this assumes local time is close to ET)
+        current_hour = now.hour
+        return current_hour < 9 or current_hour >= 16
+
 def load_existing_data(ticker):
     """Load existing data from JSON file"""
     data_dir = os.path.join(root_dir, "src", "data")
@@ -204,13 +239,18 @@ def calculate_metrics(existing_data, new_data, ticker=""):
     return all_data
 
 def save_updated_data(ticker, data, file_path):
-    """Save updated data back to JSON file"""
+    """Save updated data back to JSON file with dates in chronological order"""
     try:
-        with open(file_path, 'w') as f:
-            json.dump(data, f, indent=2)
+        # Ensure data is sorted by date before saving
+        sorted_data = {}
+        for date in sorted(data.keys()):
+            sorted_data[date] = data[date]
         
-        sorted_dates = sorted(data.keys())
-        print(f"✅ Updated {ticker}: {sorted_dates[0]} to {sorted_dates[-1]} ({len(data)} days)")
+        with open(file_path, 'w') as f:
+            json.dump(sorted_data, f, indent=2)
+        
+        sorted_dates = sorted(sorted_data.keys())
+        print(f"✅ Updated {ticker}: {sorted_dates[0]} to {sorted_dates[-1]} ({len(sorted_data)} days)")
         return True
         
     except Exception as e:
@@ -230,16 +270,19 @@ def update_ticker(ticker):
         print("💡 Run download_complete_data.py first to create initial data")
         return False
     
-    # Check if we need to update
+    # Check market status
+    market_closed = is_market_closed()
     today = datetime.now().strftime('%Y-%m-%d')
+    
+    print(f"🕐 Market Status: {'CLOSED' if market_closed else 'OPEN'}")
+    print(f"📅 Last existing date: {last_date}, Today: {today}")
     
     # Only skip if last_date is in the future (which shouldn't happen)
     if last_date > today:
         print(f"✅ {ticker} data is from the future?! (last date: {last_date})")
         return True
     
-    # Always try to fetch data starting from the day after last_date
-    # This will include today if last_date is yesterday, or it will try to update today if we already have partial data
+    # Calculate the start date for new data (day after last existing date)
     last_dt = datetime.strptime(last_date, '%Y-%m-%d')
     start_date = (last_dt + timedelta(days=1)).strftime('%Y-%m-%d')
     
@@ -248,32 +291,44 @@ def update_ticker(ticker):
         print(f"✅ {ticker} is up to date (last date: {last_date}, today: {today})")
         return True
     
+    # If today is the start_date and market is still open, don't fetch today's data
+    if start_date == today and not market_closed:
+        print(f"🕐 Market is still open - will not fetch today's incomplete data")
+        print(f"   Run this script after market close (4:00 PM ET) for complete daily data")
+        return True
+    
     new_data = get_latest_data_twelvedata(ticker, start_date)
     
     if not new_data:
         print(f"✅ No new data available for {ticker}")
         return True
     
-    # Allow updating today's data even if it already exists
-    # (in case we got incomplete data earlier in the day)
-    today = datetime.now().strftime('%Y-%m-%d')
+    # Filter new data based on market status
     filtered_new_data = {}
     
     for date, data in new_data.items():
+        # Don't add today's data if market is still open
+        if date == today and not market_closed:
+            print(f"🕐 Skipping today's data ({date}) - market still open")
+            continue
+            
         if date not in existing_data:
             # Completely new date
             filtered_new_data[date] = data
-        elif date == today:
-            # Allow refreshing today's data
-            print(f"🔄 Refreshing today's data for {ticker} ({date})")
+            print(f"📅 Adding new date: {date}")
+        elif date == today and market_closed:
+            # Allow refreshing today's data only if market is closed
+            print(f"🔄 Refreshing today's data for {ticker} ({date}) - market closed")
             filtered_new_data[date] = data
-        # Skip dates that already exist and are not today
+        # Skip dates that already exist
     
     if not filtered_new_data:
         print(f"✅ No new data to add for {ticker}")
         return True
     
-    print(f"📊 Adding {len(filtered_new_data)} new days to {ticker}")
+    # Ensure dates are in chronological order
+    sorted_new_dates = sorted(filtered_new_data.keys())
+    print(f"📊 Adding {len(filtered_new_data)} new days to {ticker}: {sorted_new_dates[0]} to {sorted_new_dates[-1]}")
     
     # Calculate metrics for combined data
     updated_data = calculate_metrics(existing_data, filtered_new_data, ticker)
@@ -286,6 +341,15 @@ def update_all_data():
     print("🔄 Daily Stock Data Updater")
     print("===========================")
     print(f"📅 Update Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    # Check and display market status
+    market_closed = is_market_closed()
+    print(f"🕐 Market Status: {'CLOSED' if market_closed else 'OPEN'}")
+    
+    if not market_closed:
+        print("⚠️  Market is currently open - today's data will not be fetched")
+        print("   Run this script after market close (4:00 PM ET) for complete daily data")
+    
     print()
     
     success_count = 0
