@@ -28,6 +28,7 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
         ? createMockPortfolioSnapshot(simulation, signal)
         : simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 1];
     const newSnapshot = deepCopyPortfolioSnapshot(lastSnapshot);
+    newSnapshot.date = date;
 
     const daysSinceLastCashAddition = daysBetween(lastCashAdditionDate, date);
     if (daysSinceLastCashAddition >= 30 && simulation.simulationVariables.monthlyNewCash > 0) {
@@ -38,7 +39,6 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
     updateStrategyToSnapshot(newSnapshot, marketData, signal, simulation);
     updateMockToSnapshot(newSnapshot, marketData);
 
-    newSnapshot.date = date;
     newSnapshot.peak = Math.max(lastSnapshot.peak, newSnapshot.investments.total);
     newSnapshot.pullback = -(newSnapshot.peak - newSnapshot.investments.total) / newSnapshot.peak;
     simulation.portfolioSnapshots.push(newSnapshot);
@@ -68,7 +68,7 @@ export const getYesterdaySignal = (
   }
 
   const bigDropLast30Days = last30DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
-  const isAboveSMA200 = qqqData.close >= qqqData.sma200! * (1 - 0.05);
+  const isAboveSMA200 = qqqData.close >= qqqData.sma200! * (1 + 0.05);
   const isBelowSMA200 = qqqData.close < qqqData.sma200! * (1 + 0.05);
 
   const bigPullbackLast30Days = (() => {
