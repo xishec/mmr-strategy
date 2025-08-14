@@ -46,9 +46,9 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
 
   calculateAnnualizedRates(simulation);
   calculateTradeStatistics(simulation);
-  console.log('=== SIMULATION REPORT ===');
-  console.log('Orders:', simulation.report.orders);
-  console.log('Trade Statistics:', simulation.report.tradeStatistics);
+  console.log("=== SIMULATION REPORT ===");
+  console.log("Orders:", simulation.report.orders);
+  console.log("Trade Statistics:", simulation.report.tradeStatistics);
   return simulation;
 };
 
