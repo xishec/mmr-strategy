@@ -57,6 +57,14 @@ const Chart: React.FC<ChartProps> = ({
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const chartInstanceRef = useRef<any>(null);
+  
+  // Use ref to avoid recreating createD3Chart when onDateChange changes
+  const onDateChangeRef = useRef(onDateChange);
+  onDateChangeRef.current = onDateChange;
+  
+  // Use ref for selectedDate to avoid recreating createD3Chart
+  const selectedDateRef = useRef(selectedDate);
+  selectedDateRef.current = selectedDate;
 
   // Memoize expensive data processing to prevent unnecessary re-computations
   const chartDataMemo = useMemo(() => {
@@ -285,7 +293,7 @@ const Chart: React.FC<ChartProps> = ({
     // Render markers above everything else
     if (markerSeriesInfo && showSignalMarkers) {
       const { data: processedData, name: seriesName, yScale } = markerSeriesInfo;
-      
+
       // Render X marker points for mockTotalTQQQ when hasXMarker is true
       const markerData = processedData.filter((d: any) => d.hasXMarker);
 
@@ -353,7 +361,9 @@ const Chart: React.FC<ChartProps> = ({
         .attr("points", (d: any) => {
           const size = 5;
           // Upward pointing arrow
-          return `0,${-size} ${-size},${size} ${-size/2},${size} ${-size/2},${size*2} ${size/2},${size*2} ${size/2},${size} ${size},${size}`;
+          return `0,${-size} ${-size},${size} ${-size / 2},${size} ${-size / 2},${size * 2} ${size / 2},${size * 2} ${
+            size / 2
+          },${size} ${size},${size}`;
         })
         .attr("fill", COLORS.blue)
         .attr("stroke", COLORS.black)
@@ -365,7 +375,7 @@ const Chart: React.FC<ChartProps> = ({
       const crosshair = g
         .append("g")
         .attr("class", "crosshair")
-        .style("display", selectedDate ? "block" : "none");
+        .style("display", selectedDateRef.current ? "block" : "none");
 
       // Vertical crosshair line
       const crosshairLine = crosshair
@@ -536,8 +546,8 @@ const Chart: React.FC<ChartProps> = ({
     } = createValueLabels(crosshair);
 
     // Initialize selected crosshair if we have a selected date
-    if (selectedDate) {
-      updateSelectedCrosshair(selectedDate);
+    if (selectedDateRef.current) {
+      updateSelectedCrosshair(selectedDateRef.current);
     }
 
     // Dragging state
@@ -575,6 +585,36 @@ const Chart: React.FC<ChartProps> = ({
       });
 
       return nearestDate;
+    };
+
+    // Helper function to get all available dates in chronological order
+    const getAllAvailableDates = (): string[] => {
+      let dates: string[] = [];
+      const allSeries = Object.values(seriesData);
+      for (const series of allSeries) {
+        if (Array.isArray(series) && series.length > 0) {
+          dates = series.map((point: any) => point.time);
+          break;
+        }
+      }
+      return dates.sort();
+    };
+
+    // Helper function to find next/previous date
+    const findAdjacentDate = (currentDate: string, direction: "next" | "prev"): string | null => {
+      const availableDates = getAllAvailableDates();
+      const currentIndex = availableDates.indexOf(currentDate);
+
+      if (currentIndex === -1) return null;
+
+      if (direction === "next" && currentIndex < availableDates.length - 1) {
+        return availableDates[currentIndex + 1];
+      }
+      if (direction === "prev" && currentIndex > 0) {
+        return availableDates[currentIndex - 1];
+      }
+
+      return null;
     };
 
     // Helper function to update crosshair position
@@ -695,8 +735,8 @@ const Chart: React.FC<ChartProps> = ({
         if (isDragging) {
           // Find and set the nearest date when dragging
           const nearestDate = findNearestDate(mouseX);
-          if (nearestDate && onDateChange) {
-            onDateChange(nearestDate);
+          if (nearestDate && onDateChangeRef.current) {
+            onDateChangeRef.current(nearestDate);
           }
           event.preventDefault();
         }
@@ -711,8 +751,8 @@ const Chart: React.FC<ChartProps> = ({
 
         // Snap to nearest date immediately on mousedown
         const nearestDate = findNearestDate(mouseX);
-        if (nearestDate && onDateChange) {
-          onDateChange(nearestDate);
+        if (nearestDate && onDateChangeRef.current) {
+          onDateChangeRef.current(nearestDate);
         }
       })
       .on("mouseup", function (event) {
@@ -740,9 +780,31 @@ const Chart: React.FC<ChartProps> = ({
 
             // Find and set the nearest date
             const nearestDate = findNearestDate(mouseX);
-            if (nearestDate && onDateChange) {
-              onDateChange(nearestDate);
+            if (nearestDate && onDateChangeRef.current) {
+              onDateChangeRef.current(nearestDate);
             }
+          }
+        }
+      })
+      .on("keydown.chart", function (event) {
+        // Handle arrow key navigation with throttling to prevent infinite loops
+        if (onDateChangeRef.current) {
+          // Get current selected date from the component
+          const currentDate = selectedDateRef.current;
+          if (!currentDate) return;
+          
+          let newDate: string | null = null;
+          
+          if (event.key === 'ArrowLeft') {
+            newDate = findAdjacentDate(currentDate, 'prev');
+            event.preventDefault();
+          } else if (event.key === 'ArrowRight') {
+            newDate = findAdjacentDate(currentDate, 'next');
+            event.preventDefault();
+          }
+          
+          if (newDate && newDate !== currentDate) {
+            onDateChangeRef.current(newDate);
           }
         }
       });
@@ -815,7 +877,7 @@ const Chart: React.FC<ChartProps> = ({
     };
 
     return { chart: chartLikeObject, mainSeries };
-  }, [isLogScale, chartDataMemo, onDateChange, selectedDate, showSignalMarkers]);
+  }, [isLogScale, chartDataMemo, showSignalMarkers]);
 
   // Handle selectedDate changes
   useEffect(() => {
@@ -836,10 +898,6 @@ const Chart: React.FC<ChartProps> = ({
     const chartInstance = createD3Chart();
     chartInstanceRef.current = chartInstance;
 
-    if (selectedDate && chartInstance) {
-      chartInstance.chart.setCrosshairPosition(0, selectedDate);
-    }
-
     const handleResize = () => {
       // Cleanup existing chart before creating new one
       if (chartInstanceRef.current && svgRef.current) {
@@ -856,7 +914,10 @@ const Chart: React.FC<ChartProps> = ({
     // Cleanup function with more thorough removal
     const cleanup = () => {
       // Remove global event listeners
-      d3.select("body").on("mouseup.chart", null).on("mousemove.chart", null);
+      d3.select("body")
+        .on("mouseup.chart", null)
+        .on("mousemove.chart", null)
+        .on("keydown.chart", null);
 
       if (currentSvgRef) {
         const svg = d3.select(currentSvgRef);
@@ -872,7 +933,7 @@ const Chart: React.FC<ChartProps> = ({
       window.removeEventListener("resize", handleResize);
       cleanup();
     };
-  }, [createD3Chart, d3ChartData, selectedDate]);
+  }, [createD3Chart, d3ChartData]);
 
   return (
     <div
