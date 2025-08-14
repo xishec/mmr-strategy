@@ -91,7 +91,7 @@ export const getYesterdaySignal = (
     return false;
   })();
 
-  const combinedShouldPanicSignal = isBelowSMA200 || bigDropLast30Days ;
+  const combinedShouldPanicSignal = isBelowSMA200 || bigDropLast30Days || bigPullbackLast30Days;
 
   let isNew = false;
   const lastSignal = simulation.portfolioSnapshots[indexToCheck]?.signal;
