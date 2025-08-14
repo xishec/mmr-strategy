@@ -241,6 +241,7 @@ def get_latest_data_twelvedata(ticker, start_date):
                     "day_rate": 0,  # Will calculate later
                     "rate": 0,  # Will calculate later (combined rate)
                     "sma200": None,  # Will calculate later
+                    "sma5": None,  # Will calculate later
                 }
 
         if new_data:
@@ -257,8 +258,8 @@ def get_latest_data_twelvedata(ticker, start_date):
 
 
 def calculate_metrics(existing_data, new_data, ticker=""):
-    """Calculate rates and SMA200 for the combined dataset"""
-    print("🔄 Calculating daily returns and SMA200...")
+    """Calculate rates, SMA200, and SMA5 for the combined dataset"""
+    print("🔄 Calculating daily returns, SMA200, and SMA5...")
 
     # Combine all data
     all_data = existing_data.copy()
@@ -336,6 +337,12 @@ def calculate_metrics(existing_data, new_data, ticker=""):
         else:
             sma200 = sum(close_prices[i - 199 : i + 1]) / 200
 
+        # Calculate SMA5
+        if i < 4:
+            sma5 = None
+        else:
+            sma5 = sum(close_prices[i - 4 : i + 1]) / 5
+
         # Update data - ensure all fields exist for backward compatibility
         all_data[date].update(
             {
@@ -343,6 +350,7 @@ def calculate_metrics(existing_data, new_data, ticker=""):
                 "day_rate": day_rate,
                 "rate": combined_rate,
                 "sma200": sma200 if sma200 is not None else close_value,
+                "sma5": sma5 if sma5 is not None else close_value,
             }
         )
 
@@ -466,7 +474,7 @@ def create_email_content(qqq_data=None, tqqq_data=None, date_override=None):
     """Create email subject and body for notifications
 
     Args:
-        qqq_data: Dict with QQQ data (close, sma200, day_rate)
+        qqq_data: Dict with QQQ data (close, sma200, sma5, day_rate)
         tqqq_data: Dict with TQQQ data (close, day_rate)
         date_override: Optional date string to use instead of current date
 

@@ -4,8 +4,14 @@ Complete Stock Data Downloader - From 1998 to Today
 ====================================================
 - Prioritizes Twelve Data for maximum date range possible
 - Uses Yahoo Finance only for older data not available on Twelve Data
+- Caches Yahoo Finance data to avoid repeated downloads
 - Merges datasets seamlessly
-- Outputs: adjusted open, adjusted close, daily returns, SMA200
+- Outputs: adjusted open, adjusted close, daily returns, SMA200, SMA5
+
+Caching:
+- Yahoo Finance data is cached in yahoo_finance_cache/ directory
+- Use --clear-cache argument to force fresh downloads
+- Cache improves performance and reduces API calls
 """
 
 import json
@@ -24,6 +30,59 @@ root_dir = os.path.dirname(os.path.dirname(os.path.dirname(DIR)))
 # API Keys
 TWELVEDATA_API_KEY = os.getenv("TWELVEDATA_API_KEY")
 
+# Cache directory for Yahoo Finance data
+CACHE_DIR = os.path.join(DIR, "yahoo_finance_cache")
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+def get_cache_filename(ticker, start_date, end_date):
+    """Generate cache filename for Yahoo Finance data"""
+    return os.path.join(CACHE_DIR, f"{ticker}_{start_date}_{end_date}.json")
+
+def load_cached_yahoo_data(ticker, start_date, end_date):
+    """Load cached Yahoo Finance data if it exists"""
+    cache_file = get_cache_filename(ticker, start_date, end_date)
+    
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, 'r') as f:
+                cached_data = json.load(f)
+            print(f"📄 Loaded cached Yahoo Finance data for {ticker} ({len(cached_data)} days)")
+            return cached_data
+        except Exception as e:
+            print(f"⚠️  Error loading cache for {ticker}: {e}")
+            # Delete corrupted cache file
+            try:
+                os.remove(cache_file)
+                print(f"🗑️  Deleted corrupted cache file")
+            except:
+                pass
+    
+    return None
+
+def save_cached_yahoo_data(ticker, start_date, end_date, data):
+    """Save Yahoo Finance data to cache"""
+    if not data:  # Don't cache empty data
+        return
+        
+    cache_file = get_cache_filename(ticker, start_date, end_date)
+    
+    try:
+        with open(cache_file, 'w') as f:
+            json.dump(data, f, indent=2)
+        print(f"💾 Cached Yahoo Finance data for {ticker} ({len(data)} days)")
+    except Exception as e:
+        print(f"⚠️  Error saving cache for {ticker}: {e}")
+
+def clear_yahoo_cache():
+    """Clear all cached Yahoo Finance data"""
+    try:
+        cache_files = [f for f in os.listdir(CACHE_DIR) if f.endswith('.json')]
+        for cache_file in cache_files:
+            os.remove(os.path.join(CACHE_DIR, cache_file))
+        print(f"🗑️  Cleared {len(cache_files)} cached files")
+    except Exception as e:
+        print(f"⚠️  Error clearing cache: {e}")
+
 def smart_delay(attempt=0, base_delay=1):
     """
     Add intelligent delays to prevent rate limiting
@@ -36,8 +95,15 @@ def smart_delay(attempt=0, base_delay=1):
         time.sleep(delay_time)
 
 def download_yahoo_finance_data(ticker, start_date="1998-01-01", end_date="2010-12-31"):
-    """Download historical data from Yahoo Finance (1998-2010)"""
+    """Download historical data from Yahoo Finance (1998-2010) with caching"""
     print(f"📈 Downloading {ticker} from Yahoo Finance ({start_date} to {end_date})")
+    
+    # Try to load from cache first
+    cached_data = load_cached_yahoo_data(ticker, start_date, end_date)
+    if cached_data:
+        return cached_data
+    
+    print(f"🌐 No cache found, downloading from Yahoo Finance...")
     
     max_retries = 3
     retry_delay = 5  # seconds
@@ -110,11 +176,15 @@ def download_yahoo_finance_data(ticker, start_date="1998-01-01", end_date="2010-
                     "overnight_rate": 0,  # Will calculate later
                     "day_rate": 0,  # Will calculate later
                     "rate": 0,  # Will calculate later (combined rate)
-                    "sma200": None  # Will calculate later
+                    "sma200": None,  # Will calculate later
+                    "sma5": None  # Will calculate later
                 }
             
             if skipped_count > 5:
                 print(f"⚠️  ... and {skipped_count - 5} more rows with invalid data")
+            
+            # Cache the successfully downloaded data
+            save_cached_yahoo_data(ticker, start_date, end_date, stock_data)
             
             return stock_data
             
@@ -254,7 +324,8 @@ def download_twelvedata_data(ticker, start_date="1998-01-01", end_date=None):
                     "overnight_rate": 0,  # Will calculate later
                     "day_rate": 0,  # Will calculate later
                     "rate": 0,  # Will calculate later (combined rate)
-                    "sma200": None  # Will calculate later
+                    "sma200": None,  # Will calculate later
+                    "sma5": None  # Will calculate later
                 }
             except (ValueError, KeyError) as e:
                 print(f"⚠️  Skipping {date_str} - data error: {e}")
@@ -326,7 +397,7 @@ def download_hybrid_data(ticker, target_start_date="1998-01-01"):
         return yahoo_data, target_start_date
 
 def merge_and_calculate(data_dict):
-    """Calculate rates and SMA200 for a dataset"""
+    """Calculate rates, SMA200, and SMA5 for a dataset"""
     print("🔄 Calculating metrics...")
     
     # Sort by date
@@ -361,12 +432,19 @@ def merge_and_calculate(data_dict):
             sma200 = None
         else:
             sma200 = sum(close_prices[i - 199 : i + 1]) / 200
+
+        # Calculate SMA5
+        if i < 4:  # Need 5 days for SMA5
+            sma5 = None
+        else:
+            sma5 = sum(close_prices[i - 4 : i + 1]) / 5
         
         # Update data
         data_dict[date]["overnight_rate"] = round(overnight_rate, 6)
         data_dict[date]["day_rate"] = round(day_rate, 6)
         data_dict[date]["rate"] = round(combined_rate, 6)
         data_dict[date]["sma200"] = round(sma200, 6) if sma200 is not None else None
+        data_dict[date]["sma5"] = round(sma5, 6) if sma5 is not None else None
         
         prev_close = close_value
     
@@ -436,6 +514,12 @@ def simulate_tqqq_from_qqq(qqq_data):
             tqqq_sma200 = None
         else:
             tqqq_sma200 = sum(tqqq_close_prices[i - 199 : i + 1]) / 200
+
+        # Calculate TQQQ SMA5
+        if i < 4:
+            tqqq_sma5 = None
+        else:
+            tqqq_sma5 = sum(tqqq_close_prices[i - 4 : i + 1]) / 5
         
         # Store TQQQ data
         tqqq_data[date] = {
@@ -444,7 +528,8 @@ def simulate_tqqq_from_qqq(qqq_data):
             "overnight_rate": round(tqqq_overnight_rate, 6),
             "day_rate": round(tqqq_day_rate, 6),
             "rate": round(tqqq_combined_rate, 6),
-            "sma200": round(tqqq_sma200, 6) if tqqq_sma200 is not None else None
+            "sma200": round(tqqq_sma200, 6) if tqqq_sma200 is not None else None,
+            "sma5": round(tqqq_sma5, 6) if tqqq_sma5 is not None else None
         }
     
     return tqqq_data
@@ -582,7 +667,8 @@ def adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data):
             "overnight_rate": data.get("overnight_rate", 0),  # Keep original rate (percentage change)
             "day_rate": data.get("day_rate", 0),  # Keep original rate (percentage change)
             "rate": data["rate"],  # Keep original rate (percentage change)
-            "sma200": None  # Will recalculate later
+            "sma200": None,  # Will recalculate later
+            "sma5": None  # Will recalculate later
         }
     
     # Verify the transition
@@ -598,7 +684,7 @@ def download_complete_data():
     print("==================================")
     print("📅 Period: 1998 to Today")
     print("📊 Sources: Yahoo Finance + Twelve Data")
-    print("🎯 Output: Adjusted OHLC, Daily Returns, SMA200")
+    print("🎯 Output: Adjusted OHLC, Daily Returns, SMA200, SMA5")
     print()
     print("⚠️  Note: This script includes delays to prevent rate limiting")
     print("    from data providers. Please be patient.")
@@ -746,7 +832,7 @@ def download_complete_data():
                 all_tqqq_data[date]["day_rate"] = round(day_rate, 6)
                 all_tqqq_data[date]["rate"] = round(combined_rate, 6)
             
-            # Recalculate SMA200
+            # Recalculate SMA200 and SMA5
             close_prices = [all_tqqq_data[date]["close"] for date in sorted_dates]
             for i, date in enumerate(sorted_dates):
                 if i < 199:
@@ -754,6 +840,12 @@ def download_complete_data():
                 else:
                     sma200 = sum(close_prices[i - 199 : i + 1]) / 200
                     all_tqqq_data[date]["sma200"] = round(sma200, 6)
+                
+                if i < 4:
+                    all_tqqq_data[date]["sma5"] = None
+                else:
+                    sma5 = sum(close_prices[i - 4 : i + 1]) / 5
+                    all_tqqq_data[date]["sma5"] = round(sma5, 6)
             
             # Sort by date
             tqqq_data = {date: all_tqqq_data[date] for date in sorted_dates}
@@ -798,4 +890,26 @@ def download_complete_data():
         print(f"📊 TQQQ: {min(tqqq_data.keys())} to {max(tqqq_data.keys())} ({len(tqqq_data)} days)")
 
 if __name__ == "__main__":
+    import sys
+    
+    # Check for command-line arguments
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--clear-cache":
+            print("🗑️  Clearing Yahoo Finance cache...")
+            clear_yahoo_cache()
+            sys.exit(0)
+        elif sys.argv[1] == "--help" or sys.argv[1] == "-h":
+            print("Complete Stock Data Downloader")
+            print("Usage:")
+            print("  python download_complete_data.py              # Download data (use cache if available)")
+            print("  python download_complete_data.py --clear-cache # Clear Yahoo Finance cache")
+            print("  python download_complete_data.py --help       # Show this help")
+            print()
+            print("Features:")
+            print("  • Automatically caches Yahoo Finance data to avoid re-downloading")
+            print("  • Cache is stored in: yahoo_finance_cache/")
+            print("  • Use --clear-cache if you need fresh data from Yahoo Finance")
+            sys.exit(0)
+    
+    # Run the main download process
     download_complete_data()
