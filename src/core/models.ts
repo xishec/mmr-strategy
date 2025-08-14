@@ -2,6 +2,17 @@ export interface Simulation {
   portfolioSnapshots: PortfolioSnapshot[];
   simulationVariables: SimulationVariables;
   simulationResults?: SimulationResults;
+  report: Report;
+}
+
+export interface Report {
+  orders: Order[];
+}
+
+export interface Order {
+  date: string;
+  type: SignalType;
+  deltaMoney: number;
 }
 
 export interface SimulationVariables {

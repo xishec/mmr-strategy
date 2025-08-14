@@ -7,6 +7,9 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
     ...oldSimulation,
     portfolioSnapshots: [],
     simulationVariables: { ...oldSimulation.simulationVariables },
+    report: {
+      orders: [],
+    },
   };
 
   const marketDates = getRelevantMarketDates(
@@ -32,7 +35,7 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
       lastCashAdditionDate = date;
     }
 
-    updateStrategyToSnapshot(newSnapshot, marketData, signal, simulation.simulationVariables.buyAtOpen);
+    updateStrategyToSnapshot(newSnapshot, marketData, signal, simulation);
     updateMockToSnapshot(newSnapshot, marketData);
 
     newSnapshot.date = date;
@@ -42,7 +45,7 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
   }
 
   calculateAnnualizedRates(simulation);
-
+  console.log(simulation.report);
   return simulation;
 };
 
@@ -119,7 +122,7 @@ const updateStrategyToSnapshot = (
   newSnapshot: PortfolioSnapshot,
   marketData: MarketData,
   signal: Signal,
-  buyAtOpen: boolean
+  simulation: Simulation
 ) => {
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
   const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
@@ -148,12 +151,24 @@ const updateStrategyToSnapshot = (
       newSnapshot.investments.TQQQ = 0;
       newSnapshot.investments.cash = newSnapshot.investments.total;
       newSnapshot.investments.ratio = 0;
+      // report
+      simulation.report.orders.push({
+        date: newSnapshot.date,
+        type: SignalType.Sell,
+        deltaMoney: newSnapshot.investments.total,
+      });
       break;
     case SignalType.Buy:
       // buy
       newSnapshot.investments.TQQQ = newSnapshot.investments.total;
       newSnapshot.investments.cash = 0;
       newSnapshot.investments.ratio = 1;
+      // report
+      simulation.report.orders.push({
+        date: newSnapshot.date,
+        type: SignalType.Buy,
+        deltaMoney: newSnapshot.investments.total,
+      });
       // apply day rate after all-in
       newSnapshot.investments.TQQQ *= TQQQDayRate / 100 + 1;
       newSnapshot.investments.cash *= 1;

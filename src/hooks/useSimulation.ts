@@ -48,6 +48,9 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
       buyAtOpen: dashboardVariables.simulationVariables.buyAtOpen,
     },
     simulationResults: undefined,
+    report: {
+      orders: [],
+    },
   });
 
   const [multiSimulation, setMultiSimulation] = useState<MultiSimulation>({

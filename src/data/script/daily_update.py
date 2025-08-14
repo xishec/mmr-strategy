@@ -500,7 +500,7 @@ def create_email_content(qqq_data=None, tqqq_data=None, date_override=None):
         )
 
         email_body += f"<p><strong>QQQ Close :</strong> ${qqq_data['close']:.2f}<br>"
-        email_body += f"<strong>Threshold :</strong> ${sma_threshold:.2f}</p>"
+        email_body += f"<strong>Threshold :</strong> >${sma_threshold:.2f}</p>"
 
         # Add a celebratory GIF if QQQ is above threshold, panic GIF if below
         if qqq_data["close"] > sma_threshold:

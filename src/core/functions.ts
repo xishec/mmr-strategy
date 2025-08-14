@@ -173,6 +173,9 @@ export const runMultipleSimulations = async (
               startDate: nextAvailableDate,
               endDate: simulationEndDateString,
             },
+            report: {
+              orders: [],
+            },
           };
 
           // Run the simulation using the existing logic
