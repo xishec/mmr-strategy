@@ -91,7 +91,7 @@ export const getYesterdaySignal = (
 
   const lastPortfolioSnapshot = simulation.portfolioSnapshots[indexToCheck];
   let signalType = SignalType.Hold;
-  if (isBelowSMA200 || bigDropLast30Days || bigPullbackLast30Days) {
+  if (isBelowSMA200 || bigPullbackLast30Days) {
     if (lastPortfolioSnapshot?.investments.ratio === 0) {
       signalType = SignalType.Hold;
     } else {
