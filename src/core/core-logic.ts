@@ -1,6 +1,6 @@
 import { daysBetween } from "./date-utils";
 import { calculateAnnualizedRates, deepCopyPortfolioSnapshot } from "./functions";
-import { Investments, MarketData, PortfolioSnapshot, Signal, Simulation } from "./models";
+import { Investments, MarketData, PortfolioSnapshot, Signal, SignalType, Simulation } from "./models";
 
 export const runSingleSimulation = (oldSimulation: Simulation, marketData: MarketData): Simulation => {
   const simulation: Simulation = {
@@ -65,16 +65,15 @@ export const getYesterdaySignal = (
   }
 
   const bigDropLast30Days = last30DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
-  const isAboveSMA200 = qqqData.close >= qqqData.sma200! * (1 + (simulation.simulationVariables?.SMAUpMargin ?? 0));
-  const isBelowSMA200 = qqqData.close < qqqData.sma200! * (1 + (simulation.simulationVariables?.SMADownMargin ?? 0));
+  const isAboveSMA200 = qqqData.close >= qqqData.sma200! * (1 - 0.05);
+  const isBelowSMA200 = qqqData.close < qqqData.sma200! * (1 + 0.05);
 
-  // Check if portfolio crossed from >-0.4 pullback to <-0.4 pullback in last 30 days
   const bigPullbackLast30Days = (() => {
     if (simulation.portfolioSnapshots.length === 0) return false;
-
-    const last30Snapshots = simulation.portfolioSnapshots.filter((snapshot) =>
-      last30DaysFromCurrent.includes(snapshot.date)
-    );
+    
+    const startIndex = Math.max(0, indexToCheck - 30);
+    const endIndex = indexToCheck;
+    const last30Snapshots = simulation.portfolioSnapshots.slice(startIndex, endIndex);
 
     if (last30Snapshots.length < 2) return false;
 
@@ -82,7 +81,6 @@ export const getYesterdaySignal = (
       const prevPullback = last30Snapshots[i - 1].pullback;
       const currPullback = last30Snapshots[i].pullback;
 
-      // Check if crossed from above -0.4 to below -0.4
       if (prevPullback > -0.4 && currPullback < -0.4) {
         return true;
       }
@@ -91,12 +89,20 @@ export const getYesterdaySignal = (
     return false;
   })();
 
-  const combinedShouldPanicSignal = isBelowSMA200 || bigDropLast30Days || bigPullbackLast30Days;
-
-  let isNew = false;
-  const lastSignal = simulation.portfolioSnapshots[indexToCheck]?.signal;
-  if (lastSignal?.combinedShouldPanicSignal !== combinedShouldPanicSignal) {
-    isNew = true;
+  const lastPortfolioSnapshot = simulation.portfolioSnapshots[indexToCheck];
+  let signalType = SignalType.Hold;
+  if (isBelowSMA200 || bigDropLast30Days || bigPullbackLast30Days) {
+    if (lastPortfolioSnapshot?.investments.ratio === 0) {
+      signalType = SignalType.Hold;
+    } else {
+      signalType = SignalType.Sell;
+    }
+  } else if (isAboveSMA200) {
+    if (lastPortfolioSnapshot?.investments.ratio > 0) {
+      signalType = SignalType.Hold;
+    } else {
+      signalType = SignalType.Buy;
+    }
   }
 
   return {
@@ -105,8 +111,7 @@ export const getYesterdaySignal = (
     bigPullbackLast30Days,
     isAboveSMA200,
     isBelowSMA200,
-    combinedShouldPanicSignal,
-    isNew,
+    signalType,
   };
 };
 
@@ -119,19 +124,33 @@ const updateStrategyToSnapshot = (
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
   const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
   const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
-  if (signal.isNew) {
-    if (signal.combinedShouldPanicSignal) {
+
+  switch (signal.signalType) {
+    case SignalType.Hold:
+      if (newSnapshot.investments.ratio > 0) {
+        // if have position, add new cash
+        newSnapshot.investments.TQQQ = newSnapshot.investments.total;
+        newSnapshot.investments.cash = 0;
+        newSnapshot.investments.ratio = 1;
+      }
+      newSnapshot.investments.TQQQ *= TQQQRate / 100 + 1;
+      newSnapshot.investments.cash *= 1;
+      newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
+      newSnapshot.signal = signal;
+      break;
+    case SignalType.Sell:
       // apply overnight rate first
       newSnapshot.investments.TQQQ *= TQQQOvernightRate / 100 + 1;
       newSnapshot.investments.cash *= 1;
       newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
       newSnapshot.signal = signal;
-      // panic
+      // sell
       newSnapshot.investments.TQQQ = 0;
       newSnapshot.investments.cash = newSnapshot.investments.total;
       newSnapshot.investments.ratio = 0;
-    } else {
-      // all-in
+      break;
+    case SignalType.Buy:
+      // buy
       newSnapshot.investments.TQQQ = newSnapshot.investments.total;
       newSnapshot.investments.cash = 0;
       newSnapshot.investments.ratio = 1;
@@ -140,23 +159,9 @@ const updateStrategyToSnapshot = (
       newSnapshot.investments.cash *= 1;
       newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
       newSnapshot.signal = signal;
-    }
-  } else {
-    if (signal.combinedShouldPanicSignal) {
-      // panic
-      newSnapshot.investments.TQQQ = 0;
-      newSnapshot.investments.cash = newSnapshot.investments.total;
-      newSnapshot.investments.ratio = 0;
-    } else {
-      // all-in
-      newSnapshot.investments.TQQQ = newSnapshot.investments.total;
-      newSnapshot.investments.cash = 0;
-      newSnapshot.investments.ratio = 1;
-    }
-    newSnapshot.investments.TQQQ *= TQQQRate / 100 + 1;
-    newSnapshot.investments.cash *= 1;
-    newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
-    newSnapshot.signal = signal;
+      break;
+    default:
+      break;
   }
 };
 

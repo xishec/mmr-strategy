@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Chip, Typography } from "@mui/material";
 import { formatValue } from "../core/functions";
 import { blue, red, yellow, green } from "./Chart";
-import { D3ChartData, MarketData, Simulation } from "../core/models";
+import { D3ChartData, MarketData, SignalType, Simulation } from "../core/models";
 import { getYesterdaySignal } from "../core/core-logic";
 
 interface LegendItem {
@@ -122,8 +122,8 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate, marketData, 
                     pr: 0.05,
                     width: "75px",
                   }}
-                  label={signal.combinedShouldPanicSignal ? "PANIC" : "ALL-IN"}
-                  color={signal.combinedShouldPanicSignal ? "error" : "success"}
+                  label={signal.signalType}
+                  color={signal.signalType === SignalType.Sell ? "error" : "success"}
                   variant="outlined"
                   size="small"
                 />

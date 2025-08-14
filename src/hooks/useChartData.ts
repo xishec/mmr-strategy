@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Simulation, PortfolioSnapshot, D3ChartData } from "../core/models";
+import { Simulation, PortfolioSnapshot, D3ChartData, SignalType } from "../core/models";
 
 export const useChartData = (simulation: Simulation, selectedDate: string | null): D3ChartData => {
   // Memoize expensive chart data calculations
@@ -36,16 +36,8 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
         hasArrowMarker:
           snapshot.signal.bigPullbackLast30Days &&
           (i === 0 || !simulation.portfolioSnapshots[i - 1]?.signal.bigPullbackLast30Days),
-        hasGreenTriangle:
-          snapshot.signal.isAboveSMA200 &&
-          (i === 0 ||
-            (!simulation.portfolioSnapshots[i - 1]?.signal.isAboveSMA200 &&
-              simulation.portfolioSnapshots[i - 1].investments.ratio === 0)),
-        hasBlackTriangle:
-          snapshot.signal.isBelowSMA200 &&
-          (i === 0 ||
-            (!simulation.portfolioSnapshots[i - 1]?.signal.isBelowSMA200 &&
-              simulation.portfolioSnapshots[i - 1].investments.ratio > 0)),
+        hasGreenTriangle: snapshot.signal.signalType === SignalType.Buy,
+        hasBlackTriangle: snapshot.signal.signalType === SignalType.Sell,
       })),
       strategyTotal: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,

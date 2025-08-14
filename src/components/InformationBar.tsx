@@ -1,5 +1,5 @@
 import React from "react";
-import { MarketData, Simulation } from "../core/models";
+import { MarketData, SignalType, Simulation } from "../core/models";
 import { Box, Typography, Chip, IconButton, Tooltip } from "@mui/material";
 import { Refresh as RefreshIcon, OpenInNew as OpenInNewIcon } from "@mui/icons-material";
 import { parseDate } from "../core/date-utils";
@@ -129,8 +129,8 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation,
         {lastDate && (
           <Chip
             sx={{ fontSize: "0.9rem", fontWeight: "bold", border: "2px solid", pt: 0.1, pr: 0.05, width: "75px" }}
-            label={signal.combinedShouldPanicSignal ? "PANIC" : "ALL-IN"}
-            color={signal.combinedShouldPanicSignal ? "error" : "success"}
+            label={signal.signalType}
+            color={signal.signalType === SignalType.Sell ? "error" : "success"}
             variant="outlined"
             size="small"
           />

@@ -80,8 +80,13 @@ export interface Signal {
   bigPullbackLast30Days: boolean;
   isAboveSMA200: boolean;
   isBelowSMA200: boolean;
-  combinedShouldPanicSignal: boolean;
-  isNew: boolean;
+  signalType: SignalType;
+}
+
+export const enum SignalType {
+  Buy = "buy",
+  Hold = "hold",
+  Sell = "sell",
 }
 
 export interface Investments {
