@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Chip, Typography } from "@mui/material";
 import { formatValue } from "../core/functions";
 import { blue, red, yellow, green } from "./Chart";
-import { D3ChartData, MarketData } from "../core/models";
+import { D3ChartData, MarketData, Simulation } from "../core/models";
 import { getYesterdaySignal } from "../core/core-logic";
 
 interface LegendItem {
@@ -17,9 +17,10 @@ interface LegendProps {
   d3ChartData: D3ChartData;
   selectedDate?: string | null;
   marketData: MarketData;
+  simulation: Simulation;
 }
 
-const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate, marketData }) => {
+const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate, marketData, simulation }) => {
   // Define all legend items in the requested order
   const allLegendItems: LegendItem[] = [
     { label: "Strategy Total", color: yellow, type: "line", seriesKey: "strategyTotal" },
@@ -100,7 +101,7 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate, marketData }
       {/* Signal */}
       {selectedDate &&
         (() => {
-          const signal = getYesterdaySignal(selectedDate, marketData, Object.keys(marketData.QQQ), null, null);
+          const signal = getYesterdaySignal(selectedDate, marketData, Object.keys(marketData.QQQ), simulation);
           return (
             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
               <Typography

@@ -33,6 +33,9 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
         hasXMarker:
           snapshot.signal.bigDropLast30Days &&
           (i === 0 || !simulation.portfolioSnapshots[i - 1]?.signal.bigDropLast30Days),
+        hasArrowMarker:
+          snapshot.signal.bigPullbackLast30Days &&
+          (i === 0 || !simulation.portfolioSnapshots[i - 1]?.signal.bigPullbackLast30Days),
         hasGreenTriangle:
           snapshot.signal.isAboveSMA200 &&
           (i === 0 ||

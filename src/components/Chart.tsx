@@ -340,6 +340,24 @@ const Chart: React.FC<ChartProps> = ({
           return `${x},${y + size} ${x - size},${y - size} ${x + size},${y - size}`;
         })
         .attr("fill", COLORS.red);
+
+      // Render arrow markers for hasArrowMarker
+      const arrowMarkerData = processedData.filter((d: any) => d.hasArrowMarker);
+      g.selectAll(`.arrow-marker-${seriesName}`)
+        .data(arrowMarkerData)
+        .enter()
+        .append("g")
+        .attr("class", `arrow-marker-${seriesName}`)
+        .attr("transform", (d: any) => `translate(${xScale(d.parsedTime)}, ${yScale(d.value) + 15})`) // 15 pixels below the line
+        .append("polygon")
+        .attr("points", (d: any) => {
+          const size = 5;
+          // Upward pointing arrow
+          return `0,${-size} ${-size},${size} ${-size/2},${size} ${-size/2},${size*2} ${size/2},${size*2} ${size/2},${size} ${size},${size}`;
+        })
+        .attr("fill", COLORS.blue)
+        .attr("stroke", COLORS.black)
+        .attr("stroke-width", 1);
     }
 
     // Helper function to create crosshair elements

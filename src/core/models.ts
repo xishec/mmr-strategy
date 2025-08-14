@@ -77,6 +77,7 @@ export interface PortfolioSnapshot {
 export interface Signal {
   date: string;
   bigDropLast30Days: boolean;
+  bigPullbackLast30Days: boolean;
   isAboveSMA200: boolean;
   isBelowSMA200: boolean;
   combinedShouldPanicSignal: boolean;

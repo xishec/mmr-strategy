@@ -14,13 +14,7 @@ interface InformationBarProps {
 
 const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation, onRefreshData }) => {
   const lastDate = Object.keys(marketData.QQQ).slice(-1)[0];
-  const signal = getYesterdaySignal(
-    lastDate,
-    marketData,
-    Object.keys(marketData.QQQ),
-    simulation.simulationVariables,
-    null
-  );
+  const signal = getYesterdaySignal(lastDate, marketData, Object.keys(marketData.QQQ), simulation);
 
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 

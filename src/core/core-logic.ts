@@ -1,6 +1,6 @@
 import { daysBetween } from "./date-utils";
 import { calculateAnnualizedRates, deepCopyPortfolioSnapshot } from "./functions";
-import { Investments, MarketData, PortfolioSnapshot, Signal, Simulation, SimulationVariables } from "./models";
+import { Investments, MarketData, PortfolioSnapshot, Signal, Simulation } from "./models";
 
 export const runSingleSimulation = (oldSimulation: Simulation, marketData: MarketData): Simulation => {
   const simulation: Simulation = {
@@ -16,10 +16,9 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
   );
 
   let lastCashAdditionDate = simulation.simulationVariables.startDate;
-  let lastSignal: Signal | null = null;
 
   for (const date of marketDates) {
-    const signal = getYesterdaySignal(date, marketData, marketDates, simulation.simulationVariables, lastSignal);
+    const signal = getYesterdaySignal(date, marketData, marketDates, simulation);
 
     const lastSnapshot =
       simulation.portfolioSnapshots.length === 0
@@ -40,7 +39,6 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
     newSnapshot.peak = Math.max(lastSnapshot.peak, newSnapshot.investments.total);
     newSnapshot.pullback = -(newSnapshot.peak - newSnapshot.investments.total) / newSnapshot.peak;
     simulation.portfolioSnapshots.push(newSnapshot);
-    lastSignal = signal;
   }
 
   calculateAnnualizedRates(simulation);
@@ -52,8 +50,7 @@ export const getYesterdaySignal = (
   date: string,
   marketData: MarketData,
   marketDates: string[],
-  simulationVariables: SimulationVariables | null,
-  lastSignal: Signal | null
+  simulation: Simulation
 ): Signal => {
   const todayIndex = marketDates.indexOf(date);
   const indexToCheck = todayIndex > 0 ? todayIndex - 1 : 0;
@@ -68,25 +65,47 @@ export const getYesterdaySignal = (
   }
 
   const bigDropLast30Days = last30DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
-  const isAboveSMA200 = qqqData.close >= qqqData.sma200! * (1 + (simulationVariables?.SMAUpMargin ?? 0));
-  const isBelowSMA200 = qqqData.close < qqqData.sma200! * (1 + (simulationVariables?.SMADownMargin ?? 0));
+  const isAboveSMA200 = qqqData.close >= qqqData.sma200! * (1 + (simulation.simulationVariables?.SMAUpMargin ?? 0));
+  const isBelowSMA200 = qqqData.close < qqqData.sma200! * (1 + (simulation.simulationVariables?.SMADownMargin ?? 0));
 
-  const combinedShouldPanicSignal = isBelowSMA200 || bigDropLast30Days;
+  // Check if portfolio crossed from >-0.4 pullback to <-0.4 pullback in last 30 days
+  const bigPullbackLast30Days = (() => {
+    if (simulation.portfolioSnapshots.length === 0) return false;
+
+    const last30Snapshots = simulation.portfolioSnapshots.filter((snapshot) =>
+      last30DaysFromCurrent.includes(snapshot.date)
+    );
+
+    if (last30Snapshots.length < 2) return false;
+
+    for (let i = 1; i < last30Snapshots.length; i++) {
+      const prevPullback = last30Snapshots[i - 1].pullback;
+      const currPullback = last30Snapshots[i].pullback;
+
+      // Check if crossed from above -0.4 to below -0.4
+      if (prevPullback > -0.4 && currPullback < -0.4) {
+        return true;
+      }
+    }
+
+    return false;
+  })();
+
+  const combinedShouldPanicSignal = isBelowSMA200 || bigDropLast30Days ;
 
   let isNew = false;
-  if (!lastSignal) {
-    isNew = true;
-  } else if (lastSignal.combinedShouldPanicSignal !== combinedShouldPanicSignal) {
+  const lastSignal = simulation.portfolioSnapshots[indexToCheck]?.signal;
+  if (lastSignal?.combinedShouldPanicSignal !== combinedShouldPanicSignal) {
     isNew = true;
   }
 
   return {
     date,
     bigDropLast30Days,
+    bigPullbackLast30Days,
     isAboveSMA200,
     isBelowSMA200,
     combinedShouldPanicSignal,
-    // combinedShouldAllInSignal,
     isNew,
   };
 };
@@ -100,8 +119,7 @@ const updateStrategyToSnapshot = (
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
   const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
   const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
-
-  if (signal.isNew && buyAtOpen) {
+  if (signal.isNew) {
     if (signal.combinedShouldPanicSignal) {
       // apply overnight rate first
       newSnapshot.investments.TQQQ *= TQQQOvernightRate / 100 + 1;

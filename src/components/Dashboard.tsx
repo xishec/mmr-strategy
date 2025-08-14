@@ -215,7 +215,12 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData, onRefreshData }) => {
           {/* Legend Section */}
           <Card elevation={0} sx={{ borderRadius: 2, overflow: "visible" }}>
             <Box sx={{ px: 4, py: 3 }}>
-              <Legend d3ChartData={d3ChartData} selectedDate={selectedDate} marketData={marketData} />
+              <Legend
+                d3ChartData={d3ChartData}
+                selectedDate={selectedDate}
+                marketData={marketData}
+                simulation={simulation}
+              />
             </Box>
           </Card>
 
