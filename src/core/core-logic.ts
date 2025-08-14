@@ -96,20 +96,33 @@ export const getYesterdaySignal = (
   })();
 
   const lastPortfolioSnapshot = simulation.portfolioSnapshots[indexToCheck];
+  const inMarket = lastPortfolioSnapshot?.investments.ratio > 0;
+
   let signalType = SignalType.Hold;
-  if (isBelowSMA200 || bigPullbackLast30Days) {
-    if (lastPortfolioSnapshot?.investments.ratio === 0) {
-      signalType = SignalType.Hold;
-    } else {
+
+  if (inMarket) {
+    if (isBelowSMA200 || bigPullbackLast30Days) {
       signalType = SignalType.Sell;
     }
-  } else if (isAboveSMA200) {
-    if (lastPortfolioSnapshot?.investments.ratio > 0) {
-      signalType = SignalType.Hold;
-    } else {
+  } else {
+    if (!isBelowSMA200 && !bigPullbackLast30Days) {
       signalType = SignalType.Buy;
     }
   }
+
+  // if (isBelowSMA200 || bigPullbackLast30Days) {
+  //   if (inMarket) {
+  //     signalType = SignalType.Sell;
+  //   } else {
+  //     signalType = SignalType.Hold;
+  //   }
+  // } else if (isAboveSMA200) {
+  //   if (inMarket) {
+  //     signalType = SignalType.Hold;
+  //   } else {
+  //     signalType = SignalType.Buy;
+  //   }
+  // }
 
   return {
     date,
