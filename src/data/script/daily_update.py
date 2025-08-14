@@ -489,11 +489,14 @@ def create_email_content(qqq_data=None, tqqq_data=None, date_override=None):
 
     if qqq_data and tqqq_data:
         sma_threshold = qqq_data["sma200"] * 1.05
+        # Use the date from QQQ data, or fall back to today's date
+        display_date = qqq_data.get('date', date_override or datetime.now().strftime('%Y-%m-%d'))
+        email_body += f"<p><strong>Update for :</strong> {display_date}</p>"
         email_body += (
-            f"<p><strong>QQQ Change :</strong> {qqq_data['day_rate']:+.2f}%<br>"
+            f"<p><strong>QQQ Change :</strong> {qqq_data['rate']:+.2f}%<br>"
         )
         email_body += (
-            f"<strong>TQQQ Change :</strong> {tqqq_data['day_rate']:+.2f}%</p>"
+            f"<strong>TQQQ Change :</strong> {tqqq_data['rate']:+.2f}%</p>"
         )
 
         email_body += f"<p><strong>QQQ Close :</strong> ${qqq_data['close']:.2f}<br>"
@@ -534,20 +537,20 @@ def send_update_notifications(updates_summary):
             latest_data = data[latest_date]
             close_price = latest_data["close"]
             sma200 = latest_data.get("sma200", close_price)
-            day_rate = latest_data["day_rate"]
+            rate = latest_data["rate"]
 
             if ticker == "QQQ":
                 qqq_data = {
                     "close": close_price,
                     "sma200": sma200,
-                    "day_rate": day_rate,
+                    "rate": rate,
                     "date": latest_date,
                 }
             elif ticker == "TQQQ":
                 tqqq_data = {
                     "close": close_price,
                     "sma200": sma200,
-                    "day_rate": day_rate,
+                    "rate": rate,
                     "date": latest_date,
                 }
         except Exception as e:
