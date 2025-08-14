@@ -99,6 +99,59 @@ export const calculateAnnualizedRates = (simulation: Simulation) => {
   };
 };
 
+export const calculateTradeStatistics = (simulation: Simulation) => {
+  const totalTrades = simulation.report.orders.length;
+  
+  if (totalTrades === 0) {
+    simulation.report.tradeStatistics = {
+      totalTrades: 0,
+      tradesPerYear: {
+        average: 0,
+        min: 0,
+        max: 0,
+      },
+    };
+    return;
+  }
+
+  // Calculate the total duration of the simulation in years
+  const totalYears = yearsBetween(simulation.simulationVariables.startDate, simulation.simulationVariables.endDate);
+  
+  if (totalYears <= 0) {
+    simulation.report.tradeStatistics = {
+      totalTrades,
+      tradesPerYear: {
+        average: 0,
+        min: 0,
+        max: 0,
+      },
+    };
+    return;
+  }
+
+  // Group trades by year
+  const tradesByYear: Record<string, number> = {};
+  
+  simulation.report.orders.forEach(order => {
+    const year = order.date.substring(0, 4); // Extract year from date (YYYY-MM-DD format)
+    tradesByYear[year] = (tradesByYear[year] || 0) + 1;
+  });
+  
+  const tradesPerYearValues = Object.values(tradesByYear);
+  const averageTradesPerYear = totalTrades / totalYears;
+  const minTradesPerYear = tradesPerYearValues.length > 0 ? Math.min(...tradesPerYearValues) : 0;
+  const maxTradesPerYear = tradesPerYearValues.length > 0 ? Math.max(...tradesPerYearValues) : 0;
+
+  simulation.report.tradeStatistics = {
+    totalTrades,
+    tradesPerYear: {
+      average: Number(averageTradesPerYear.toFixed(2)),
+      min: minTradesPerYear,
+      max: maxTradesPerYear,
+    },
+  };
+};
+
 export const deepCopyPortfolioSnapshot = (snapshot: PortfolioSnapshot): PortfolioSnapshot => {
   return {
     ...snapshot,

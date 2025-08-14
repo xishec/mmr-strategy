@@ -7,6 +7,16 @@ export interface Simulation {
 
 export interface Report {
   orders: Order[];
+  tradeStatistics?: TradeStatistics;
+}
+
+export interface TradeStatistics {
+  totalTrades: number;
+  tradesPerYear: {
+    average: number;
+    min: number;
+    max: number;
+  };
 }
 
 export interface Order {

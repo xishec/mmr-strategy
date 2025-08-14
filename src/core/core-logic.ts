@@ -1,5 +1,5 @@
 import { daysBetween } from "./date-utils";
-import { calculateAnnualizedRates, deepCopyPortfolioSnapshot } from "./functions";
+import { calculateAnnualizedRates, calculateTradeStatistics, deepCopyPortfolioSnapshot } from "./functions";
 import { Investments, MarketData, PortfolioSnapshot, Signal, SignalType, Simulation } from "./models";
 
 export const runSingleSimulation = (oldSimulation: Simulation, marketData: MarketData): Simulation => {
@@ -45,7 +45,10 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
   }
 
   calculateAnnualizedRates(simulation);
-  console.log(simulation.report);
+  calculateTradeStatistics(simulation);
+  console.log('=== SIMULATION REPORT ===');
+  console.log('Orders:', simulation.report.orders);
+  console.log('Trade Statistics:', simulation.report.tradeStatistics);
   return simulation;
 };
 
