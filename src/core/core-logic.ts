@@ -70,7 +70,7 @@ export const getYesterdaySignal = (
 
   const bigPullbackLast30Days = (() => {
     if (simulation.portfolioSnapshots.length === 0) return false;
-    
+
     const startIndex = Math.max(0, indexToCheck - 30);
     const endIndex = indexToCheck;
     const last30Snapshots = simulation.portfolioSnapshots.slice(startIndex, endIndex);

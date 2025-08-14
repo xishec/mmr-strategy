@@ -634,36 +634,6 @@ const Chart: React.FC<ChartProps> = ({
       return nearestDate;
     };
 
-    // Helper function to get all available dates in chronological order
-    const getAllAvailableDates = (): string[] => {
-      let dates: string[] = [];
-      const allSeries = Object.values(seriesData);
-      for (const series of allSeries) {
-        if (Array.isArray(series) && series.length > 0) {
-          dates = series.map((point: any) => point.time);
-          break;
-        }
-      }
-      return dates.sort();
-    };
-
-    // Helper function to find next/previous date
-    const findAdjacentDate = (currentDate: string, direction: "next" | "prev"): string | null => {
-      const availableDates = getAllAvailableDates();
-      const currentIndex = availableDates.indexOf(currentDate);
-
-      if (currentIndex === -1) return null;
-
-      if (direction === "next" && currentIndex < availableDates.length - 1) {
-        return availableDates[currentIndex + 1];
-      }
-      if (direction === "prev" && currentIndex > 0) {
-        return availableDates[currentIndex - 1];
-      }
-
-      return null;
-    };
-
     // Helper function to update crosshair position
     const updateCrosshairPosition = (xPosition: number, mouseY?: number) => {
       const constrainedX = Math.max(0, Math.min(width, xPosition));
@@ -833,28 +803,8 @@ const Chart: React.FC<ChartProps> = ({
           }
         }
       })
-      .on("keydown.chart", function (event) {
-        // Handle arrow key navigation with throttling to prevent infinite loops
-        if (onDateChangeRef.current) {
-          // Get current selected date from the component
-          const currentDate = selectedDateRef.current;
-          if (!currentDate) return;
-          
-          let newDate: string | null = null;
-          
-          if (event.key === 'ArrowLeft') {
-            newDate = findAdjacentDate(currentDate, 'prev');
-            event.preventDefault();
-          } else if (event.key === 'ArrowRight') {
-            newDate = findAdjacentDate(currentDate, 'next');
-            event.preventDefault();
-          }
-          
-          if (newDate && newDate !== currentDate) {
-            onDateChangeRef.current(newDate);
-          }
-        }
-      });
+      // Note: Keyboard navigation is handled by the global useDateNavigation hook
+      // so we don't need to handle keydown events here to avoid conflicts
 
     // Helper function to add axes and grid
     const addAxesAndGrid = () => {
