@@ -1,17 +1,17 @@
 {
   "files": {
     "main.css": "/mmr-strategy/static/css/main.97176015.css",
-    "main.js": "/mmr-strategy/static/js/main.7a2c3c68.js",
+    "main.js": "/mmr-strategy/static/js/main.236b7d06.js",
     "static/js/107.57c16467.chunk.js": "/mmr-strategy/static/js/107.57c16467.chunk.js",
     "static/js/851.8e6cd532.chunk.js": "/mmr-strategy/static/js/851.8e6cd532.chunk.js",
     "static/js/453.d358f4d3.chunk.js": "/mmr-strategy/static/js/453.d358f4d3.chunk.js",
     "index.html": "/mmr-strategy/index.html",
     "main.97176015.css.map": "/mmr-strategy/static/css/main.97176015.css.map",
-    "main.7a2c3c68.js.map": "/mmr-strategy/static/js/main.7a2c3c68.js.map",
+    "main.236b7d06.js.map": "/mmr-strategy/static/js/main.236b7d06.js.map",
     "453.d358f4d3.chunk.js.map": "/mmr-strategy/static/js/453.d358f4d3.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.97176015.css",
-    "static/js/main.7a2c3c68.js"
+    "static/js/main.236b7d06.js"
   ]
 }
