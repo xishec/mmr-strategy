@@ -71,7 +71,7 @@ export const getYesterdaySignal = (
   }
 
   const bigDropLast30Days = last30DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
-  const isAboveSMA200 = qqqData.close >= qqqData.sma200! * (1 + 0.05);
+  const isAboveSMA200 = qqqData.sma5! >= qqqData.sma200! * (1 + 0.05);
   const isBelowSMA200 = qqqData.close < qqqData.sma200! * (1 + 0.05);
 
   const bigPullbackLast30Days = (() => {
@@ -105,7 +105,7 @@ export const getYesterdaySignal = (
       signalType = SignalType.Sell;
     }
   } else {
-    if (!isBelowSMA200 && !bigPullbackLast30Days) {
+    if (isAboveSMA200 && !bigPullbackLast30Days) {
       signalType = SignalType.Buy;
     }
   }

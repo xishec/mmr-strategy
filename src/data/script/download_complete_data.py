@@ -4,14 +4,8 @@ Complete Stock Data Downloader - From 1998 to Today
 ====================================================
 - Prioritizes Twelve Data for maximum date range possible
 - Uses Yahoo Finance only for older data not available on Twelve Data
-- Caches Yahoo Finance data to avoid repeated downloads
 - Merges datasets seamlessly
 - Outputs: adjusted open, adjusted close, daily returns, SMA200, SMA5
-
-Caching:
-- Yahoo Finance data is cached in yahoo_finance_cache/ directory
-- Use --clear-cache argument to force fresh downloads
-- Cache improves performance and reduces API calls
 """
 
 import json
@@ -30,59 +24,6 @@ root_dir = os.path.dirname(os.path.dirname(os.path.dirname(DIR)))
 # API Keys
 TWELVEDATA_API_KEY = os.getenv("TWELVEDATA_API_KEY")
 
-# Cache directory for Yahoo Finance data
-CACHE_DIR = os.path.join(DIR, "yahoo_finance_cache")
-os.makedirs(CACHE_DIR, exist_ok=True)
-
-def get_cache_filename(ticker, start_date, end_date):
-    """Generate cache filename for Yahoo Finance data"""
-    return os.path.join(CACHE_DIR, f"{ticker}_{start_date}_{end_date}.json")
-
-def load_cached_yahoo_data(ticker, start_date, end_date):
-    """Load cached Yahoo Finance data if it exists"""
-    cache_file = get_cache_filename(ticker, start_date, end_date)
-    
-    if os.path.exists(cache_file):
-        try:
-            with open(cache_file, 'r') as f:
-                cached_data = json.load(f)
-            print(f"📄 Loaded cached Yahoo Finance data for {ticker} ({len(cached_data)} days)")
-            return cached_data
-        except Exception as e:
-            print(f"⚠️  Error loading cache for {ticker}: {e}")
-            # Delete corrupted cache file
-            try:
-                os.remove(cache_file)
-                print(f"🗑️  Deleted corrupted cache file")
-            except:
-                pass
-    
-    return None
-
-def save_cached_yahoo_data(ticker, start_date, end_date, data):
-    """Save Yahoo Finance data to cache"""
-    if not data:  # Don't cache empty data
-        return
-        
-    cache_file = get_cache_filename(ticker, start_date, end_date)
-    
-    try:
-        with open(cache_file, 'w') as f:
-            json.dump(data, f, indent=2)
-        print(f"💾 Cached Yahoo Finance data for {ticker} ({len(data)} days)")
-    except Exception as e:
-        print(f"⚠️  Error saving cache for {ticker}: {e}")
-
-def clear_yahoo_cache():
-    """Clear all cached Yahoo Finance data"""
-    try:
-        cache_files = [f for f in os.listdir(CACHE_DIR) if f.endswith('.json')]
-        for cache_file in cache_files:
-            os.remove(os.path.join(CACHE_DIR, cache_file))
-        print(f"🗑️  Cleared {len(cache_files)} cached files")
-    except Exception as e:
-        print(f"⚠️  Error clearing cache: {e}")
-
 def smart_delay(attempt=0, base_delay=1):
     """
     Add intelligent delays to prevent rate limiting
@@ -95,15 +36,8 @@ def smart_delay(attempt=0, base_delay=1):
         time.sleep(delay_time)
 
 def download_yahoo_finance_data(ticker, start_date="1998-01-01", end_date="2010-12-31"):
-    """Download historical data from Yahoo Finance (1998-2010) with caching"""
+    """Download historical data from Yahoo Finance (1998-2010)"""
     print(f"📈 Downloading {ticker} from Yahoo Finance ({start_date} to {end_date})")
-    
-    # Try to load from cache first
-    cached_data = load_cached_yahoo_data(ticker, start_date, end_date)
-    if cached_data:
-        return cached_data
-    
-    print(f"🌐 No cache found, downloading from Yahoo Finance...")
     
     max_retries = 3
     retry_delay = 5  # seconds
@@ -182,9 +116,6 @@ def download_yahoo_finance_data(ticker, start_date="1998-01-01", end_date="2010-
             
             if skipped_count > 5:
                 print(f"⚠️  ... and {skipped_count - 5} more rows with invalid data")
-            
-            # Cache the successfully downloaded data
-            save_cached_yahoo_data(ticker, start_date, end_date, stock_data)
             
             return stock_data
             
@@ -890,26 +821,4 @@ def download_complete_data():
         print(f"📊 TQQQ: {min(tqqq_data.keys())} to {max(tqqq_data.keys())} ({len(tqqq_data)} days)")
 
 if __name__ == "__main__":
-    import sys
-    
-    # Check for command-line arguments
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "--clear-cache":
-            print("🗑️  Clearing Yahoo Finance cache...")
-            clear_yahoo_cache()
-            sys.exit(0)
-        elif sys.argv[1] == "--help" or sys.argv[1] == "-h":
-            print("Complete Stock Data Downloader")
-            print("Usage:")
-            print("  python download_complete_data.py              # Download data (use cache if available)")
-            print("  python download_complete_data.py --clear-cache # Clear Yahoo Finance cache")
-            print("  python download_complete_data.py --help       # Show this help")
-            print()
-            print("Features:")
-            print("  • Automatically caches Yahoo Finance data to avoid re-downloading")
-            print("  • Cache is stored in: yahoo_finance_cache/")
-            print("  • Use --clear-cache if you need fresh data from Yahoo Finance")
-            sys.exit(0)
-    
-    # Run the main download process
     download_complete_data()

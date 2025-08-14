@@ -124,6 +124,7 @@ export interface DailyData {
   rate: number;
   close: number;
   sma200: number | null;
+  sma5: number | null;
   overnight_rate: number;
   day_rate: number;
 }
