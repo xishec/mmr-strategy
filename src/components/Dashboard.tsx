@@ -245,6 +245,8 @@ const Dashboard: React.FC<DashboardProps> = ({ marketData, onRefreshData }) => {
                   showSignalMarkers={dashboardVariables.uiVariables.showSignalMarkers}
                   height="100%"
                   onDateChange={handleDateChange}
+                  startDate={simulation.simulationVariables.startDate}
+                  endDate={simulation.simulationVariables.endDate}
                 />
               </Box>
             </Box>
