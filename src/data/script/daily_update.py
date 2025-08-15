@@ -214,6 +214,7 @@ def get_latest_data_twelvedata(ticker, start_date):
                     "day_rate": 0,  # Will calculate later
                     "rate": 0,  # Will calculate later (combined rate)
                     "sma200": None,  # Will calculate later
+                    "sma300": None,  # Will calculate later
                     "sma3": None,  # Will calculate later
                 }
 
@@ -231,8 +232,8 @@ def get_latest_data_twelvedata(ticker, start_date):
 
 
 def calculate_metrics(existing_data, new_data, ticker=""):
-    """Calculate rates, SMA200, and SMA3 for the combined dataset"""
-    print("🔄 Calculating daily returns, SMA200, and SMA3...")
+    """Calculate rates, SMA200, SMA300, and SMA3 for the combined dataset"""
+    print("🔄 Calculating daily returns, SMA200, SMA300, and SMA3...")
 
     # Combine all data
     all_data = existing_data.copy()
@@ -310,6 +311,12 @@ def calculate_metrics(existing_data, new_data, ticker=""):
         else:
             sma200 = sum(close_prices[i - 199 : i + 1]) / 200
 
+        # Calculate SMA300
+        if i < 299:
+            sma300 = None
+        else:
+            sma300 = sum(close_prices[i - 299 : i + 1]) / 300
+
         # Calculate SMA3
         if i < 2:
             sma3 = None
@@ -323,6 +330,7 @@ def calculate_metrics(existing_data, new_data, ticker=""):
                 "day_rate": day_rate,
                 "rate": combined_rate,
                 "sma200": sma200 if sma200 is not None else close_value,
+                "sma300": sma300 if sma300 is not None else close_value,
                 "sma3": sma3 if sma3 is not None else close_value,
             }
         )
@@ -447,7 +455,7 @@ def create_email_content(qqq_data=None, tqqq_data=None, date_override=None):
     """Create email subject and body for notifications
 
     Args:
-        qqq_data: Dict with QQQ data (close, sma200, sma3, day_rate)
+        qqq_data: Dict with QQQ data (close, sma200, sma300, sma3, day_rate)
         tqqq_data: Dict with TQQQ data (close, day_rate)
         date_override: Optional date string to use instead of current date
 

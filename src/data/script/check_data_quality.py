@@ -6,7 +6,8 @@ Checks for issues in the downloaded stock data:
 1. Transition discontinuities between data sources
 2. Rate calculation accuracy  
 3. SMA200 calculation accuracy
-4. SMA3 calculation accuracy
+4. SMA300 calculation accuracy
+5. SMA3 calculation accuracy
 5. Missing trading days
 6. Data source quality validation (Twelve Data + Yahoo Finance hybrid)
 7. Precision and accuracy verification
@@ -217,6 +218,46 @@ def check_sma3_calculations(data, ticker, sample_size=10):
     else:
         print(f"✅ All sampled SMA3 calculations are correct for {ticker}")
 
+def check_sma300_calculations(data, ticker, sample_size=10):
+    """Verify SMA300 calculations"""
+    print(f"\n🔍 Checking SMA300 calculations for {ticker}")
+    print("-" * 40)
+    
+    sorted_dates = sorted(data.keys())
+    errors = []
+    
+    # Check a few SMA300 values around different parts of the dataset
+    check_indices = [300, 500, 1000, 3000, len(sorted_dates) - 100]
+    check_indices = [i for i in check_indices if i < len(sorted_dates)]
+    
+    for idx in check_indices[:sample_size]:
+        if idx < 299:  # Need at least 300 days
+            continue
+            
+        date = sorted_dates[idx]
+        recorded_sma300 = data[date]["sma300"]
+        
+        # Calculate expected SMA300
+        close_prices = []
+        for i in range(idx - 299, idx + 1):
+            close_prices.append(data[sorted_dates[i]]["close"])
+        
+        expected_sma300 = sum(close_prices) / 300
+        
+        if recorded_sma300 is None:
+            errors.append(f"  ❌ {date}: SMA300 is null but should be {expected_sma300:.6f}")
+        elif abs(recorded_sma300 - expected_sma300) > 0.001:
+            errors.append(f"  ❌ {date}: recorded={recorded_sma300:.6f}, expected={expected_sma300:.6f}")
+        else:
+            print(f"  ✅ {date}: SMA300={recorded_sma300:.6f} ✓")
+    
+    if errors:
+        print("\n❌ SMA300 calculation errors:")
+        for error in errors:
+            print(error)
+    else:
+        print(f"✅ All sampled SMA300 calculations are correct for {ticker}")
+
 def check_data_precision_and_sources(data, ticker):
     """Check data precision levels and estimate data source quality"""
     print(f"\n🔍 Checking data precision and source quality for {ticker}")
@@ -340,6 +381,7 @@ def check_data_quality():
             check_rate_calculations(data, ticker)
             check_transitions(data, ticker)
             check_sma200_calculations(data, ticker)
+            check_sma300_calculations(data, ticker)
             check_sma3_calculations(data, ticker)
             check_data_precision_and_sources(data, ticker)
             gaps = check_data_integrity(data, ticker)
