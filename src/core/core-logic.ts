@@ -118,6 +118,142 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
 //   };
 // };
 
+// Helper functions for predicting pullbacks
+const detectVolatilityExpansion = (marketData: MarketData, date: string, marketDates: string[]): boolean => {
+  const dateIndex = marketDates.indexOf(date);
+  const lookbackDays = 20;
+  const recentDates = marketDates.slice(Math.max(0, dateIndex - lookbackDays), dateIndex);
+
+  if (recentDates.length < lookbackDays) return false;
+
+  const recentVolatility = calculateRollingVolatility(marketData, recentDates);
+  const longerTermDates = marketDates.slice(Math.max(0, dateIndex - 60), dateIndex - 20);
+  const longerTermVolatility = calculateRollingVolatility(marketData, longerTermDates);
+
+  return recentVolatility > longerTermVolatility * 2;
+};
+
+const calculateRollingVolatility = (marketData: MarketData, dates: string[]): number => {
+  if (dates.length < 2) return 0;
+  const returns = dates.map((d) => marketData.TQQQ[d]?.rate || 0);
+  const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+  const variance = returns.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / returns.length;
+  return Math.sqrt(variance);
+};
+
+const detectMomentumDivergence = (marketData: MarketData, date: string, marketDates: string[]): boolean => {
+  const dateIndex = marketDates.indexOf(date);
+  const lookback = 20;
+
+  if (dateIndex < lookback) return false;
+
+  const currentPrice = marketData.QQQ[date].close;
+  const recentDates = marketDates.slice(dateIndex - lookback, dateIndex);
+  const recentHighs = recentDates.map((d) => marketData.QQQ[d].close);
+  const recentHigh = Math.max(...recentHighs);
+
+  const isPriceAtHigh = currentPrice >= recentHigh * 0.99;
+
+  // Simple momentum check: compare recent 5-day average rate vs previous 5-day average
+  const recent5Days = marketDates.slice(dateIndex - 4, dateIndex + 1);
+  const previous5Days = marketDates.slice(dateIndex - 9, dateIndex - 4);
+
+  const recentMomentum = recent5Days.reduce((sum, d) => sum + (marketData.QQQ[d]?.rate || 0), 0) / 5;
+  const previousMomentum = previous5Days.reduce((sum, d) => sum + (marketData.QQQ[d]?.rate || 0), 0) / 5;
+
+  const momentumDeclining = recentMomentum < previousMomentum - 0.5;
+
+  return isPriceAtHigh && momentumDeclining;
+};
+
+const detectDistributionPattern = (marketData: MarketData, date: string, marketDates: string[]): boolean => {
+  const dateIndex = marketDates.indexOf(date);
+  const lookback = 10;
+
+  if (dateIndex < lookback) return false;
+
+  let distributionDays = 0;
+
+  for (let i = dateIndex - lookback; i < dateIndex; i++) {
+    const dayData = marketData.TQQQ[marketDates[i]];
+    const priceChange = dayData.rate;
+
+    // Look for days with small gains but high volume (potential distribution)
+    // Since we might not have volume data, use rate volatility as proxy
+    if (priceChange > 0 && priceChange < 2) {
+      distributionDays++;
+    }
+  }
+
+  return distributionDays >= 4;
+};
+
+const detectDangerousGapPattern = (marketData: MarketData, date: string, marketDates: string[]): boolean => {
+  const dateIndex = marketDates.indexOf(date);
+  if (dateIndex < 5) return false;
+
+  let largeMoveDays = 0;
+
+  // Since we don't have open prices, look for large daily moves as proxy for gaps
+  for (let i = Math.max(1, dateIndex - 4); i <= dateIndex; i++) {
+    const dayData = marketData.TQQQ[marketDates[i]];
+    const dailyMove = Math.abs(dayData.rate);
+
+    // Consider moves > 3% as potentially gappy/volatile days
+    if (dailyMove > 3) {
+      largeMoveDays++;
+    }
+  }
+
+  return largeMoveDays >= 2; // 2+ large move days in last 5 days
+};
+
+const detectConsecutiveSellingPressure = (marketData: MarketData, date: string, marketDates: string[]): boolean => {
+  const dateIndex = marketDates.indexOf(date);
+  const lookback = 7;
+
+  if (dateIndex < lookback) return false;
+
+  let consecutiveSellingDays = 0;
+  let maxConsecutive = 0;
+
+  for (let i = dateIndex - lookback; i <= dateIndex; i++) {
+    const dayData = marketData.TQQQ[marketDates[i]];
+    const isSellingDay = dayData.rate < -1;
+
+    if (isSellingDay) {
+      consecutiveSellingDays++;
+      maxConsecutive = Math.max(maxConsecutive, consecutiveSellingDays);
+    } else {
+      consecutiveSellingDays = 0;
+    }
+  }
+
+  return maxConsecutive >= 3;
+};
+
+const detectExtendedRally = (marketData: MarketData, date: string, marketDates: string[]): boolean => {
+  const dateIndex = marketDates.indexOf(date);
+  const qqqData = marketData.QQQ[date];
+
+  if (!qqqData.sma200) return false;
+
+  const distanceFromSMA200 = (qqqData.close - qqqData.sma200) / qqqData.sma200;
+  const farAboveSMA200 = distanceFromSMA200 > 0.25;
+
+  // Check consecutive up days
+  let consecutiveUpDays = 0;
+  for (let i = dateIndex; i >= Math.max(0, dateIndex - 10); i--) {
+    if (marketData.QQQ[marketDates[i]].rate > 0) {
+      consecutiveUpDays++;
+    } else {
+      break;
+    }
+  }
+
+  return farAboveSMA200 || consecutiveUpDays >= 7;
+};
+
 export const getYesterdaySignal = (
   date: string,
   marketData: MarketData,
@@ -134,29 +270,48 @@ export const getYesterdaySignal = (
   const qqqData = marketData.QQQ[dateToCheck];
 
   const lastPortfolioSnapshot = simulation.portfolioSnapshots[yesterdayIndex];
-  const lastYearPortfolioSnapshot =
-    simulation.portfolioSnapshots.length >= 150
-      ? simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 250]
-      : null;
+  // const lastYearPortfolioSnapshot =
+  //   simulation.portfolioSnapshots.length >= 150
+  //     ? simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 250]
+  //     : null;
 
   const recentBigDrop = last120DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
   const isAboveSMA200 = qqqData.close >= qqqData.sma200! * 1.05;
-  const isBelowLastYear =
-    lastPortfolioSnapshot && lastYearPortfolioSnapshot
-      ? lastPortfolioSnapshot.investments.mockTotalQQQ < lastYearPortfolioSnapshot.investments.mockTotalQQQ
-      : false;
+  // const isBelowLastYear =
+  //   lastPortfolioSnapshot && lastYearPortfolioSnapshot
+  //     ? lastPortfolioSnapshot.investments.mockTotalQQQ < lastYearPortfolioSnapshot.investments.mockTotalQQQ
+  //     : false;
   const newBigPullback =
     simulation.portfolioSnapshots.slice(-1)[0]?.pullback < -0.6 &&
     simulation.portfolioSnapshots.slice(-2)[0]?.pullback >= -0.6;
 
+  // Predictive pullback indicators
+  const volatilityExpanding = detectVolatilityExpansion(marketData, dateToCheck, marketDates);
+  const momentumDivergence = detectMomentumDivergence(marketData, dateToCheck, marketDates);
+  const distributionPattern = detectDistributionPattern(marketData, dateToCheck, marketDates);
+  const dangerousGaps = detectDangerousGapPattern(marketData, dateToCheck, marketDates);
+  const sellingPressure = detectConsecutiveSellingPressure(marketData, dateToCheck, marketDates);
+  const extendedRally = detectExtendedRally(marketData, dateToCheck, marketDates);
+
+  // Calculate composite pullback risk score
+  let pullbackRiskScore = 0;
+  if (volatilityExpanding) pullbackRiskScore += 25;
+  if (momentumDivergence) pullbackRiskScore += 20;
+  if (distributionPattern) pullbackRiskScore += 15;
+  if (dangerousGaps) pullbackRiskScore += 15;
+  if (sellingPressure) pullbackRiskScore += 20;
+  if (extendedRally) pullbackRiskScore += 10;
+
+  const highPullbackRisk = pullbackRiskScore > 60;
+
   const inMarket = lastPortfolioSnapshot?.investments.ratio > 0;
   let signalType = SignalType.Hold;
   if (inMarket) {
-    if (recentBigDrop || newBigPullback) {
+    if (recentBigDrop || newBigPullback || highPullbackRisk) {
       signalType = SignalType.Sell;
     }
   } else {
-    if (isAboveSMA200 && !recentBigDrop) {
+    if (isAboveSMA200 && !recentBigDrop && !highPullbackRisk) {
       signalType = SignalType.Buy;
     }
   }
@@ -166,7 +321,7 @@ export const getYesterdaySignal = (
     bigDropLast30Days: recentBigDrop,
     bigPullbackLast30Days: newBigPullback,
     isAboveSMA200,
-    isBelowSMA200: isBelowLastYear,
+    isBelowSMA200: highPullbackRisk,
     signalType,
   };
 };

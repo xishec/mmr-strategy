@@ -11,6 +11,7 @@ pullback_threshold = input.float(-60.0, "Pullback Threshold (%)", maxval=-50.0, 
 // Always get QQQ data for signals, regardless of which chart this is running on
 qqq_close = request.security("QQQ", timeframe.period, close)
 qqq_close_prev = request.security("QQQ", timeframe.period, close[1])
+vix_close = request.security("VIX", timeframe.period, close)
 
 // Calculate SMAs using QQQ data
 sma200 = ta.sma(qqq_close, 200)
@@ -72,9 +73,13 @@ if signal == 1 and strategy.position_size == 0
 if signal == -1 and strategy.position_size > 0
     strategy.close("Long")
 
+
+// VIX high volatility marker when VIX > 30
+plotshape(vix_close > 30, title="High VIX", location=location.top, color=color.purple, style=shape.circle, size=size.tiny)
+
 // Plot signals and indicators
-// plot(sma200, "SMA 200", color=color.blue, linewidth=2)
-plot(sma200 * sma200_multiplier, "SMA 200 Buy Level", color=color.green, linewidth=1, style=plot.style_line)
+plot(ta.sma(close, 200)*0.9, "SMA 200", color=color.blue, linewidth=2)
+// plot(sma200 * sma200_multiplier, "SMA 200 Buy Level", color=color.green, linewidth=1, style=plot.style_line)
 // plot(sma300 * sma300_multiplier, "SMA 300 Sell Level", color=color.red, linewidth=1, style=plot.style_line)
 
 // Plot buy/sell signals
@@ -89,7 +94,7 @@ plotshape(signal == -1, title="Sell Signal", location=location.abovebar, color=c
 bgcolor(recentBigDrop ? color.new(color.red, 90) : na, title="Recent Big Drop Background")
 
 // Table to show current status
-var table info_table = table.new(position.top_right, 3, 6, bgcolor=color.white, border_width=1)
+var table info_table = table.new(position.top_right, 3, 7, bgcolor=color.white, border_width=1)
 if barstate.islast
     table.cell(info_table, 0, 0, "Metric", text_color=color.black, bgcolor=color.gray)
     table.cell(info_table, 1, 0, "Value", text_color=color.black, bgcolor=color.gray)
@@ -110,16 +115,22 @@ if barstate.islast
     table.cell(info_table, 2, 3, recentBigDrop ? "✗" : "✓", 
                text_color=recentBigDrop ? color.red : color.green)
     
-    table.cell(info_table, 0, 4, "Portfolio Pullback", text_color=color.black)
-    table.cell(info_table, 1, 4, str.tostring(math.round(current_pullback, 2)) + "%", text_color=color.black)
-    table.cell(info_table, 2, 4, current_pullback > pullback_threshold ? "✓" : "✗", 
+    table.cell(info_table, 0, 4, "VIX Level", text_color=color.black)
+    vix_status = vix_close < 20 ? "Low Vol" : vix_close > 30 ? "High Vol" : "Normal"
+    vix_status_color = vix_close < 20 ? color.green : vix_close > 30 ? color.red : color.gray
+    table.cell(info_table, 1, 4, str.tostring(math.round(vix_close, 2)), text_color=color.black)
+    table.cell(info_table, 2, 4, vix_status, text_color=vix_status_color)
+    
+    table.cell(info_table, 0, 5, "Portfolio Pullback", text_color=color.black)
+    table.cell(info_table, 1, 5, str.tostring(math.round(current_pullback, 2)) + "%", text_color=color.black)
+    table.cell(info_table, 2, 5, current_pullback > pullback_threshold ? "✓" : "✗", 
                text_color=current_pullback > pullback_threshold ? color.green : color.red)
     
-    table.cell(info_table, 0, 5, "Signal", text_color=color.black)
+    table.cell(info_table, 0, 6, "Signal", text_color=color.black)
     signal_text = signal == 1 ? "BUY" : signal == -1 ? "SELL" : "HOLD"
     signal_color = signal == 1 ? color.green : signal == -1 ? color.red : color.gray
-    table.cell(info_table, 1, 5, signal_text, text_color=signal_color)
-    table.cell(info_table, 2, 5, signal != 0 ? "!" : "-", text_color=signal_color)
+    table.cell(info_table, 1, 6, signal_text, text_color=signal_color)
+    table.cell(info_table, 2, 6, signal != 0 ? "!" : "-", text_color=signal_color)
 
 // Alert conditions
 alertcondition(signal == 1, title="Buy Alert", message="MMR Strategy: BUY signal generated")
