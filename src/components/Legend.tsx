@@ -3,7 +3,7 @@ import { Box, Chip, Typography } from "@mui/material";
 import { formatValue } from "../core/functions";
 import { blue, red, yellow, green } from "./Chart";
 import { D3ChartData, MarketData, SignalType, Simulation } from "../core/models";
-import { getYesterdaySignal } from "../core/core-logic";
+import { getTodaySignal } from "../core/core-logic";
 
 interface LegendItem {
   label: string;
@@ -101,7 +101,7 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate, marketData, 
       {/* Signal */}
       {selectedDate &&
         (() => {
-          const signal = getYesterdaySignal(selectedDate, marketData, Object.keys(marketData.QQQ), simulation);
+          const signal = getTodaySignal(selectedDate, marketData, Object.keys(marketData.QQQ), simulation);
           return (
             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
               <Typography
