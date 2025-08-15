@@ -128,7 +128,7 @@ export const getYesterdaySignal = (
   const yesterdayIndex = todayIndex > 0 ? todayIndex - 1 : 0;
 
   const last120DaysFromCurrent = marketDates.slice(Math.max(0, yesterdayIndex - 90), yesterdayIndex);
-  const lastShortDaysFromCurrent = marketDates.slice(Math.max(0, yesterdayIndex - 2), yesterdayIndex);
+  // const lastShortDaysFromCurrent = marketDates.slice(Math.max(0, yesterdayIndex - 2), yesterdayIndex);
 
   const dateToCheck = marketDates[yesterdayIndex];
   const qqqData = marketData.QQQ[dateToCheck];
