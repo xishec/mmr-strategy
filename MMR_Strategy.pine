@@ -1,0 +1,126 @@
+//@version=5
+strategy("MMR Strategy", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+
+// Input parameters
+lookback_period = input.int(90, "Lookback Period for Big Drops", minval=1, maxval=252)
+sma200_multiplier = input.float(1.03, "SMA200 Buy Multiplier", minval=1.0, maxval=1.1, step=0.01)
+sma300_multiplier = input.float(0.9, "SMA300 Sell Multiplier", minval=0.8, maxval=1.0, step=0.01)
+big_drop_threshold = input.float(-20.0, "Big Drop Threshold (%)", maxval=-10.0, step=0.5)
+pullback_threshold = input.float(-60.0, "Pullback Threshold (%)", maxval=-50.0, step=1.0)
+
+// Get QQQ data for signals (assuming we're trading QQQ, but you can change this to trade TQQQ)
+// Note: Pine Script doesn't have direct access to TQQQ data unless you're on that chart
+// This implementation assumes you're running it on QQQ chart for signals
+
+// Calculate SMAs
+sma200 = ta.sma(close, 200)
+sma300 = ta.sma(close, 300)
+
+// Calculate daily rate (percentage change)
+daily_rate = (close - close[1]) / close[1] * 100
+
+// Check for recent big drops in the last 90 days (including today)
+recentBigDrop = false
+if daily_rate < big_drop_threshold
+    recentBigDrop := true
+
+// Calculate portfolio value and pullback
+var float portfolio_peak = 100000  // Starting value
+var float portfolio_value = 100000
+var float current_pullback = 0.0
+
+// Update portfolio value based on position
+if strategy.position_size > 0
+    // If in position, update portfolio value with today's return
+    portfolio_value := portfolio_value * (1 + daily_rate / 100)
+else
+    // If in cash, portfolio value stays the same (assuming 0% cash return)
+    portfolio_value := portfolio_value
+
+// Update peak and calculate pullback
+portfolio_peak := math.max(portfolio_peak, portfolio_value)
+current_pullback := -(portfolio_peak - portfolio_value) / portfolio_peak * 100
+
+// Check for new big pullback (crossing below -60% threshold)
+newBigPullback = current_pullback < pullback_threshold and current_pullback[1] >= pullback_threshold
+
+// Entry conditions
+isAboveSMA200 = close >= sma200 * sma200_multiplier
+inMarket = strategy.position_size > 0
+
+// Signal logic
+var int signal = 0  // 0 = hold, 1 = buy, -1 = sell
+
+if inMarket
+    // Exit conditions when in market
+    if recentBigDrop or newBigPullback
+        signal := -1  // Sell
+    else
+        signal := 0   // Hold
+else
+    // Entry conditions when not in market
+    if isAboveSMA200 and not recentBigDrop
+        signal := 1   // Buy
+    else
+        signal := 0   // Hold
+
+// Execute trades at next day's market open (after signal is generated)
+// Signal generated at today's close, trade executed at tomorrow's open
+if signal == 1 and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    
+if signal == -1 and strategy.position_size > 0
+    strategy.close("Long")
+
+// Plot signals and indicators
+// plot(sma200, "SMA 200", color=color.blue, linewidth=2)
+plot(sma200 * sma200_multiplier, "SMA 200 Buy Level", color=color.green, linewidth=1, style=plot.style_line)
+// plot(sma300 * sma300_multiplier, "SMA 300 Sell Level", color=color.red, linewidth=1, style=plot.style_line)
+
+// Plot buy/sell signals
+plotshape(signal == 1, title="Buy Signal", location=location.belowbar, color=color.green, style=shape.triangleup, size=size.small)
+plotshape(signal == -1, title="Sell Signal", location=location.abovebar, color=color.red, style=shape.triangledown, size=size.small)
+
+// // Plot portfolio pullback in a separate pane
+// pullback_plot = plot(current_pullback, title="Portfolio Pullback %", color=color.purple, display=display.pane)
+// hline(pullback_threshold, "Pullback Threshold", color=color.red, linestyle=hline.style_dashed)
+
+// Background color for big drop detection
+bgcolor(recentBigDrop ? color.new(color.red, 90) : na, title="Recent Big Drop Background")
+
+// Table to show current status
+var table info_table = table.new(position.top_right, 3, 6, bgcolor=color.white, border_width=1)
+if barstate.islast
+    table.cell(info_table, 0, 0, "Metric", text_color=color.black, bgcolor=color.gray)
+    table.cell(info_table, 1, 0, "Value", text_color=color.black, bgcolor=color.gray)
+    table.cell(info_table, 2, 0, "Status", text_color=color.black, bgcolor=color.gray)
+    
+    table.cell(info_table, 0, 1, "Position", text_color=color.black)
+    table.cell(info_table, 1, 1, strategy.position_size > 0 ? "Long" : "Cash", text_color=color.black)
+    table.cell(info_table, 2, 1, strategy.position_size > 0 ? "✓" : "✗", 
+               text_color=strategy.position_size > 0 ? color.green : color.red)
+    
+    table.cell(info_table, 0, 2, "Above SMA200", text_color=color.black)
+    table.cell(info_table, 1, 2, str.tostring(math.round(close/sma200*100, 2)) + "%", text_color=color.black)
+    table.cell(info_table, 2, 2, isAboveSMA200 ? "✓" : "✗", 
+               text_color=isAboveSMA200 ? color.green : color.red)
+    
+    table.cell(info_table, 0, 3, "Recent Big Drop", text_color=color.black)
+    table.cell(info_table, 1, 3, recentBigDrop ? "Yes" : "No", text_color=color.black)
+    table.cell(info_table, 2, 3, recentBigDrop ? "✗" : "✓", 
+               text_color=recentBigDrop ? color.red : color.green)
+    
+    table.cell(info_table, 0, 4, "Portfolio Pullback", text_color=color.black)
+    table.cell(info_table, 1, 4, str.tostring(math.round(current_pullback, 2)) + "%", text_color=color.black)
+    table.cell(info_table, 2, 4, current_pullback > pullback_threshold ? "✓" : "✗", 
+               text_color=current_pullback > pullback_threshold ? color.green : color.red)
+    
+    table.cell(info_table, 0, 5, "Signal", text_color=color.black)
+    signal_text = signal == 1 ? "BUY" : signal == -1 ? "SELL" : "HOLD"
+    signal_color = signal == 1 ? color.green : signal == -1 ? color.red : color.gray
+    table.cell(info_table, 1, 5, signal_text, text_color=signal_color)
+    table.cell(info_table, 2, 5, signal != 0 ? "!" : "-", text_color=signal_color)
+
+// Alert conditions
+alertcondition(signal == 1, title="Buy Alert", message="MMR Strategy: BUY signal generated")
+alertcondition(signal == -1, title="Sell Alert", message="MMR Strategy: SELL signal generated")

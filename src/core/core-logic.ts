@@ -68,7 +68,7 @@ export const getTodaySignal = (
 
   const recentBigDrop = last120DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
   const isAboveSMA200 = qqqData.close >= qqqData.sma200! * 1.03;
-  const isBelowSMA200 = qqqData.close < qqqData.sma200! * 0.8;
+  const isBelowSMA200 = qqqData.close < qqqData.sma300! * 0.9;
   const newBigPullback =
     simulation.portfolioSnapshots.slice(-1)[0]?.pullback < -0.6 &&
     simulation.portfolioSnapshots.slice(-2)[0]?.pullback >= -0.6;
