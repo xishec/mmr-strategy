@@ -1,30 +1,3 @@
-#!/usr/bin/env python3
-"""
-Daily Stock Data Updater
-========================
-- Updates existing QQQ.json and TQQQ.json files with latest data
-- Can be run multiple times per day safely (detects existing data)
-- Uses Twelve Data API exclusively
-- Sends email notifications when new data is added
-
-Notifications:
-- Email: Detailed summary of updates sent to multiple recipients
-
-Required Environment Variables:
-- TWELVEDATA_API_KEY: Your Twelve Data API key
-- EMAIL_USER: Your email address (e.g., Gmail)
-- EMAIL_PASSWORD: Your email app password
-- RECIPIENT_EMAIL: Email(s) to receive notifications (single email or comma-separated list)
-
-Optional Environment Variables:
-- SMTP_SERVER: SMTP server (default: smtp.gmail.com)
-- SMTP_PORT: SMTP port (default: 587)
-
-Example RECIPIENT_EMAIL formats:
-- Single: user@example.com
-- Multiple: user1@example.com, user2@example.com, user3@example.com
-"""
-
 import json
 import requests
 import os
@@ -498,23 +471,22 @@ def create_email_content(qqq_data=None, tqqq_data=None, date_override=None):
     if qqq_data and tqqq_data:
         sma_threshold = qqq_data["sma200"] * 1.05
         # Use the date from QQQ data, or fall back to today's date
-        display_date = qqq_data.get('date', date_override or datetime.now().strftime('%Y-%m-%d'))
+        display_date = qqq_data.get(
+            "date", date_override or datetime.now().strftime("%Y-%m-%d")
+        )
         email_body += f"<p><strong>Update for :</strong> {display_date}</p>"
-        email_body += (
-            f"<p><strong>QQQ Change :</strong> {qqq_data['rate']:+.2f}%<br>"
-        )
-        email_body += (
-            f"<strong>TQQQ Change :</strong> {tqqq_data['rate']:+.2f}%</p>"
-        )
+        email_body += f"<p><strong>QQQ Change :</strong> {qqq_data['rate']:+.2f}%<br>"
+        email_body += f"<strong>TQQQ Change :</strong> {tqqq_data['rate']:+.2f}%</p>"
 
         email_body += f"<p><strong>QQQ Close :</strong> ${qqq_data['close']:.2f}<br>"
         email_body += f"<strong>Threshold :</strong> >${sma_threshold:.2f}</p>"
 
-        # Add a celebratory GIF if QQQ is above threshold, panic GIF if below
+        # Add a celebratory GIF if QQQ is above threshold, Warren Buffett panic image if below
         if qqq_data["close"] > sma_threshold:
-            email_body += "<img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExdWZ5bjczZGRlYzR5cmQxcmpvNnB0azFuaXc1NTRzN2F2aHRwM25mdyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/NEvPzZ8bd1V4Y/giphy.gif' alt='Nice' style='width:300px;'><br>"
+            email_body += "<img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExdWZ5bjczZGRlYzR5cmQxcmpvNnB0azFuaXc1NTRzN2F2aHRwM25mdyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/NEvPzZ8bd1V4Y/giphy.gif' alt='Nice' style='width:100%; max-width:600px;'><br>"
         else:
-            email_body += "<img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExMHI0MzA1djBzMTgxenZoYmduaHBzcjd5aHN6a3M0dW9tdnduMTUwcyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/nrXif9YExO9EI/giphy.gif' alt='Panic' style='width:300px;'><br>"
+            # You'll need to replace 'your-domain.com' with your actual deployed domain
+            email_body += "<img src='https://raw.githubusercontent.com/xishec/mmr-strategy/refs/heads/main/public/warren-buffett-panic.jpeg' alt='Warren Buffett Panic' style='width:100%; max-width:600px;'><br>"
 
     email_body += "</body></html>"
 

@@ -21,11 +21,11 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
       cashYearRate: 0.0,
       SMAUpMargin: 0.0,
       SMADownMargin: -0.0,
-      monthlyNewCash: 1500,
+      monthlyNewCash: 0,
       buyAtOpen: true,
     },
     multiSimulationVariables: {
-      simulationFrequencyDays: 3,
+      simulationFrequencyDays: 5,
       simulationDurationYears: 5,
       simulationAnalysisMinusYears: 5,
     },
