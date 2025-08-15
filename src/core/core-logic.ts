@@ -61,12 +61,12 @@ export const getTodaySignal = (
   const todayIndex = marketDates.indexOf(date);
   const yesterdayIndex = todayIndex > 0 ? todayIndex - 1 : 0;
 
-  const last30DaysFromCurrent = marketDates.slice(Math.max(0, todayIndex - 30), todayIndex);
+  const last120DaysFromCurrent = marketDates.slice(Math.max(0, todayIndex - 90), todayIndex);
 
   const dateToCheck = marketDates[todayIndex];
   const qqqData = marketData.QQQ[dateToCheck];
 
-  const bigDropLast30Days = last30DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
+  const recentBigDrop = last120DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
   const isAboveSMA200 = qqqData.close >= qqqData.sma200! * 1.05;
   const isBelowSMA200 = qqqData.close < qqqData.sma200! * 1.01;
 
@@ -96,11 +96,11 @@ export const getTodaySignal = (
 
   let signalType = SignalType.Hold;
   if (inMarket) {
-    if (isBelowSMA200 || bigDropLast30Days) {
+    if (recentBigDrop) {
       signalType = SignalType.Sell;
     }
   } else {
-    if (isAboveSMA200 && !bigDropLast30Days) {
+    if (isAboveSMA200 && !recentBigDrop) {
       signalType = SignalType.Buy;
     }
   }
@@ -110,7 +110,7 @@ export const getTodaySignal = (
 
   return {
     date,
-    bigDropLast30Days,
+    bigDropLast30Days: recentBigDrop,
     bigPullbackLast30Days,
     isAboveSMA200,
     isBelowSMA200,
