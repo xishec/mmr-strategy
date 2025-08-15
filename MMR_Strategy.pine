@@ -8,15 +8,15 @@ sma300_multiplier = input.float(0.9, "SMA300 Sell Multiplier", minval=0.8, maxva
 big_drop_threshold = input.float(-20.0, "Big Drop Threshold (%)", maxval=-10.0, step=0.5)
 pullback_threshold = input.float(-60.0, "Pullback Threshold (%)", maxval=-50.0, step=1.0)
 
-// Get QQQ data for signals (assuming we're trading QQQ, but you can change this to trade TQQQ)
-// Note: Pine Script doesn't have direct access to TQQQ data unless you're on that chart
-// This implementation assumes you're running it on QQQ chart for signals
+// Always get QQQ data for signals, regardless of which chart this is running on
+qqq_close = request.security("QQQ", timeframe.period, close)
+qqq_close_prev = request.security("QQQ", timeframe.period, close[1])
 
-// Calculate SMAs
-sma200 = ta.sma(close, 200)
-sma300 = ta.sma(close, 300)
+// Calculate SMAs using QQQ data
+sma200 = ta.sma(qqq_close, 200)
+sma300 = ta.sma(qqq_close, 300)
 
-// Calculate daily rate (percentage change)
+// Calculate daily rate (percentage change) for current chart (for big drop detection)
 daily_rate = (close - close[1]) / close[1] * 100
 
 // Check for recent big drops in the last 90 days (including today)
@@ -44,8 +44,8 @@ current_pullback := -(portfolio_peak - portfolio_value) / portfolio_peak * 100
 // Check for new big pullback (crossing below -60% threshold)
 newBigPullback = current_pullback < pullback_threshold and current_pullback[1] >= pullback_threshold
 
-// Entry conditions
-isAboveSMA200 = close >= sma200 * sma200_multiplier
+// Entry conditions - Always check QQQ's SMA200
+isAboveSMA200 = qqq_close >= sma200 * sma200_multiplier
 inMarket = strategy.position_size > 0
 
 // Signal logic
@@ -100,8 +100,8 @@ if barstate.islast
     table.cell(info_table, 2, 1, strategy.position_size > 0 ? "✓" : "✗", 
                text_color=strategy.position_size > 0 ? color.green : color.red)
     
-    table.cell(info_table, 0, 2, "Above SMA200", text_color=color.black)
-    table.cell(info_table, 1, 2, str.tostring(math.round(close/sma200*100, 2)) + "%", text_color=color.black)
+    table.cell(info_table, 0, 2, "QQQ Above SMA200", text_color=color.black)
+    table.cell(info_table, 1, 2, str.tostring(math.round(qqq_close/sma200*100, 2)) + "%", text_color=color.black)
     table.cell(info_table, 2, 2, isAboveSMA200 ? "✓" : "✗", 
                text_color=isAboveSMA200 ? color.green : color.red)
     

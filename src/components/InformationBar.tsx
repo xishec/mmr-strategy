@@ -4,7 +4,7 @@ import { Box, Typography, Chip, IconButton, Tooltip } from "@mui/material";
 import { Refresh as RefreshIcon, OpenInNew as OpenInNewIcon } from "@mui/icons-material";
 import { parseDate } from "../core/date-utils";
 import { DataService } from "../core/data-service";
-import { getTodaySignal } from "../core/core-logic";
+import { getYesterdaySignal } from "../core/core-logic";
 
 interface InformationBarProps {
   marketData: MarketData;
@@ -14,7 +14,7 @@ interface InformationBarProps {
 
 const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation, onRefreshData }) => {
   const lastDate = Object.keys(marketData.QQQ).slice(-1)[0];
-  const signal = getTodaySignal(lastDate, marketData, Object.keys(marketData.QQQ), simulation);
+  const signal = getYesterdaySignal(lastDate, marketData, Object.keys(marketData.QQQ), simulation);
 
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 

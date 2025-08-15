@@ -37,7 +37,7 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
           snapshot.signal.bigPullbackLast30Days &&
           (i === 0 || !simulation.portfolioSnapshots[i - 1]?.signal.bigPullbackLast30Days),
         hasGreenTriangle: snapshot.signal.signalType === SignalType.Buy,
-        hasBlackTriangle: snapshot.signal.signalType === SignalType.Sell,
+        hasBlackTriangle: snapshot.signal.isBelowSMA200,
       })),
       strategyTotal: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
