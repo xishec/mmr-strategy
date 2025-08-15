@@ -68,7 +68,7 @@ export const getTodaySignal = (
 
   const bigDropLast30Days = last30DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
   const isAboveSMA200 = qqqData.close >= qqqData.sma200! * 1.05;
-  const isBelowSMA200 = qqqData.close < qqqData.sma200! * 1.0;
+  const isBelowSMA200 = qqqData.close < qqqData.sma200! * 1.01;
 
   const bigPullbackLast30Days = (() => {
     if (simulation.portfolioSnapshots.length === 0) return false;
