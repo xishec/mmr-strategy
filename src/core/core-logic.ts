@@ -307,11 +307,11 @@ export const getYesterdaySignal = (
   const inMarket = lastPortfolioSnapshot?.investments.ratio > 0;
   let signalType = SignalType.Hold;
   if (inMarket) {
-    if (recentBigDrop || newBigPullback || highPullbackRisk) {
+    if (recentBigDrop || newBigPullback) {
       signalType = SignalType.Sell;
     }
   } else {
-    if (isAboveSMA200 && !recentBigDrop && !highPullbackRisk) {
+    if (isAboveSMA200 && !recentBigDrop) {
       signalType = SignalType.Buy;
     }
   }
