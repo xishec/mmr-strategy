@@ -67,8 +67,11 @@ export const getTodaySignal = (
   const qqqData = marketData.QQQ[dateToCheck];
 
   const recentBigDrop = last120DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
-  const isAboveSMA200 = qqqData.close >= qqqData.sma200! * 1.05;
-  const isBelowSMA200 = qqqData.close < qqqData.sma200! * 1.01;
+  const isAboveSMA200 = qqqData.close >= qqqData.sma200! * 1.03;
+  const isBelowSMA200 = qqqData.close < qqqData.sma200! * 0.8;
+  const newBigPullback =
+    simulation.portfolioSnapshots.slice(-1)[0]?.pullback < -0.6 &&
+    simulation.portfolioSnapshots.slice(-2)[0]?.pullback >= -0.6;
 
   const bigPullbackLast30Days = (() => {
     if (simulation.portfolioSnapshots.length === 0) return false;
@@ -83,7 +86,7 @@ export const getTodaySignal = (
       const prevPullback = last30Snapshots[i - 1].pullback;
       const currPullback = last30Snapshots[i].pullback;
 
-      if (prevPullback > -0.4 && currPullback < -0.4) {
+      if (prevPullback > -0.5 && currPullback < -0.5) {
         return true;
       }
     }
@@ -96,7 +99,7 @@ export const getTodaySignal = (
 
   let signalType = SignalType.Hold;
   if (inMarket) {
-    if (recentBigDrop) {
+    if (recentBigDrop || newBigPullback) {
       signalType = SignalType.Sell;
     }
   } else {
