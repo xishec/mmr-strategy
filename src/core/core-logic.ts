@@ -21,7 +21,7 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
   let lastCashAdditionDate = simulation.simulationVariables.startDate;
 
   for (const date of marketDates) {
-    const signal = getTodaySignal(date, marketData, marketDates, simulation);
+    const signal = getYesterdaySignal(date, marketData, marketDates, simulation);
 
     const lastSnapshot =
       simulation.portfolioSnapshots.length === 0
@@ -52,18 +52,17 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
   return simulation;
 };
 
-export const getTodaySignal = (
+export const getYesterdaySignal = (
   date: string,
   marketData: MarketData,
   marketDates: string[],
   simulation: Simulation
 ): Signal => {
   const todayIndex = marketDates.indexOf(date);
-  const yesterdayIndex = todayIndex > 0 ? todayIndex - 1 : 0;
+  const indexToCheck = todayIndex > 0 ? todayIndex - 1 : 0;
+  const last30DaysFromCurrent = marketDates.slice(Math.max(0, indexToCheck - 30), indexToCheck);
 
-  const last30DaysFromCurrent = marketDates.slice(Math.max(0, todayIndex - 30), todayIndex);
-
-  const dateToCheck = marketDates[todayIndex];
+  const dateToCheck = marketDates[indexToCheck];
   const qqqData = marketData.QQQ[dateToCheck];
 
   const bigDropLast30Days = last30DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
@@ -73,8 +72,8 @@ export const getTodaySignal = (
   const bigPullbackLast30Days = (() => {
     if (simulation.portfolioSnapshots.length === 0) return false;
 
-    const startIndex = Math.max(0, todayIndex - 30);
-    const endIndex = todayIndex;
+    const startIndex = Math.max(0, indexToCheck - 30);
+    const endIndex = indexToCheck;
     const last30Snapshots = simulation.portfolioSnapshots.slice(startIndex, endIndex);
 
     if (last30Snapshots.length < 30) return false;
@@ -91,16 +90,17 @@ export const getTodaySignal = (
     return false;
   })();
 
-  const lastPortfolioSnapshot = simulation.portfolioSnapshots[yesterdayIndex];
+  const lastPortfolioSnapshot = simulation.portfolioSnapshots[indexToCheck];
   const inMarket = lastPortfolioSnapshot?.investments.ratio > 0;
 
   let signalType = SignalType.Hold;
+
   if (inMarket) {
     if (isBelowSMA200 || bigDropLast30Days) {
       signalType = SignalType.Sell;
     }
   } else {
-    if (isAboveSMA200 && !bigDropLast30Days) {
+    if (isAboveSMA200 && !bigPullbackLast30Days) {
       signalType = SignalType.Buy;
     }
   }
@@ -125,8 +125,8 @@ const updateStrategyToSnapshot = (
   simulation: Simulation
 ) => {
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
-  // const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
-  // const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
+  const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
+  const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
 
   switch (signal.signalType) {
     case SignalType.Hold:
@@ -143,7 +143,7 @@ const updateStrategyToSnapshot = (
       break;
     case SignalType.Sell:
       // apply overnight rate first
-      newSnapshot.investments.TQQQ *= TQQQRate / 100 + 1;
+      newSnapshot.investments.TQQQ *= TQQQOvernightRate / 100 + 1;
       newSnapshot.investments.cash *= 1;
       newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
       newSnapshot.signal = signal;
@@ -169,11 +169,11 @@ const updateStrategyToSnapshot = (
         type: SignalType.Buy,
         deltaMoney: newSnapshot.investments.total,
       });
-      // // apply day rate after all-in
-      // newSnapshot.investments.TQQQ *= TQQQDayRate / 100 + 1;
-      // newSnapshot.investments.cash *= 1;
-      // newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
-      // newSnapshot.signal = signal;
+      // apply day rate after all-in
+      newSnapshot.investments.TQQQ *= TQQQDayRate / 100 + 1;
+      newSnapshot.investments.cash *= 1;
+      newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
+      newSnapshot.signal = signal;
       break;
     default:
       break;
