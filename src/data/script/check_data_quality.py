@@ -6,7 +6,7 @@ Checks for issues in the downloaded stock data:
 1. Transition discontinuities between data sources
 2. Rate calculation accuracy  
 3. SMA200 calculation accuracy
-4. SMA5 calculation accuracy
+4. SMA3 calculation accuracy
 5. Missing trading days
 6. Data source quality validation (Twelve Data + Yahoo Finance hybrid)
 7. Precision and accuracy verification
@@ -177,45 +177,45 @@ def check_sma200_calculations(data, ticker, sample_size=5):
     else:
         print(f"✅ All sampled SMA200 calculations are correct for {ticker}")
 
-def check_sma5_calculations(data, ticker, sample_size=10):
-    """Verify SMA5 calculations"""
-    print(f"\n🔍 Checking SMA5 calculations for {ticker}")
+def check_sma3_calculations(data, ticker, sample_size=10):
+    """Verify SMA3 calculations"""
+    print(f"\n🔍 Checking SMA3 calculations for {ticker}")
     print("-" * 40)
     
     sorted_dates = sorted(data.keys())
     errors = []
     
-    # Check a few SMA5 values around different parts of the dataset
-    check_indices = [5, 50, 200, 1000, 3000, len(sorted_dates) - 100]
+    # Check a few SMA3 values around different parts of the dataset
+    check_indices = [3, 50, 200, 1000, 3000, len(sorted_dates) - 100]
     check_indices = [i for i in check_indices if i < len(sorted_dates)]
     
     for idx in check_indices[:sample_size]:
-        if idx < 4:  # Need at least 5 days
+        if idx < 2:  # Need at least 3 days
             continue
             
         date = sorted_dates[idx]
-        recorded_sma5 = data[date]["sma5"]
+        recorded_sma3 = data[date]["sma3"]
         
-        # Calculate expected SMA5
+        # Calculate expected SMA3
         close_prices = []
-        for i in range(idx - 4, idx + 1):
+        for i in range(idx - 2, idx + 1):
             close_prices.append(data[sorted_dates[i]]["close"])
         
-        expected_sma5 = sum(close_prices) / 5
+        expected_sma3 = sum(close_prices) / 3
         
-        if recorded_sma5 is None:
-            errors.append(f"  ❌ {date}: SMA5 is null but should be {expected_sma5:.6f}")
-        elif abs(recorded_sma5 - expected_sma5) > 0.001:
-            errors.append(f"  ❌ {date}: recorded={recorded_sma5:.6f}, expected={expected_sma5:.6f}")
+        if recorded_sma3 is None:
+            errors.append(f"  ❌ {date}: SMA3 is null but should be {expected_sma3:.6f}")
+        elif abs(recorded_sma3 - expected_sma3) > 0.001:
+            errors.append(f"  ❌ {date}: recorded={recorded_sma3:.6f}, expected={expected_sma3:.6f}")
         else:
-            print(f"  ✅ {date}: SMA5={recorded_sma5:.6f} ✓")
+            print(f"  ✅ {date}: SMA3={recorded_sma3:.6f} ✓")
     
     if errors:
-        print("\n❌ SMA5 calculation errors:")
+        print("\n❌ SMA3 calculation errors:")
         for error in errors:
             print(error)
     else:
-        print(f"✅ All sampled SMA5 calculations are correct for {ticker}")
+        print(f"✅ All sampled SMA3 calculations are correct for {ticker}")
 
 def check_data_precision_and_sources(data, ticker):
     """Check data precision levels and estimate data source quality"""
@@ -340,7 +340,7 @@ def check_data_quality():
             check_rate_calculations(data, ticker)
             check_transitions(data, ticker)
             check_sma200_calculations(data, ticker)
-            check_sma5_calculations(data, ticker)
+            check_sma3_calculations(data, ticker)
             check_data_precision_and_sources(data, ticker)
             gaps = check_data_integrity(data, ticker)
             total_gaps += gaps

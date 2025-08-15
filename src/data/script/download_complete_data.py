@@ -5,7 +5,7 @@ Complete Stock Data Downloader - From 1998 to Today
 - Prioritizes Twelve Data for maximum date range possible
 - Uses Yahoo Finance only for older data not available on Twelve Data
 - Merges datasets seamlessly
-- Outputs: adjusted open, adjusted close, daily returns, SMA200, SMA5
+- Outputs: adjusted open, adjusted close, daily returns, SMA200, SMA3
 """
 
 import json
@@ -105,13 +105,13 @@ def download_yahoo_finance_data(ticker, start_date="1998-01-01", end_date="2010-
                     continue
                     
                 stock_data[date_str] = {
-                    "open": float(row['Open']),
-                    "close": float(row['Close']),
+                    "open": round(float(row['Open']), 6),
+                    "close": round(float(row['Close']), 6),
                     "overnight_rate": 0,  # Will calculate later
                     "day_rate": 0,  # Will calculate later
                     "rate": 0,  # Will calculate later (combined rate)
                     "sma200": None,  # Will calculate later
-                    "sma5": None  # Will calculate later
+                    "sma3": None  # Will calculate later
                 }
             
             if skipped_count > 5:
@@ -256,7 +256,7 @@ def download_twelvedata_data(ticker, start_date="1998-01-01", end_date=None):
                     "day_rate": 0,  # Will calculate later
                     "rate": 0,  # Will calculate later (combined rate)
                     "sma200": None,  # Will calculate later
-                    "sma5": None  # Will calculate later
+                    "sma3": None  # Will calculate later
                 }
             except (ValueError, KeyError) as e:
                 print(f"⚠️  Skipping {date_str} - data error: {e}")
@@ -328,7 +328,7 @@ def download_hybrid_data(ticker, target_start_date="1998-01-01"):
         return yahoo_data, target_start_date
 
 def merge_and_calculate(data_dict):
-    """Calculate rates, SMA200, and SMA5 for a dataset"""
+    """Calculate rates, SMA200, and SMA3 for a dataset"""
     print("🔄 Calculating metrics...")
     
     # Sort by date
@@ -364,18 +364,18 @@ def merge_and_calculate(data_dict):
         else:
             sma200 = sum(close_prices[i - 199 : i + 1]) / 200
 
-        # Calculate SMA5
-        if i < 4:  # Need 5 days for SMA5
-            sma5 = None
+        # Calculate SMA3
+        if i < 2:  # Need 3 days for SMA3
+            sma3 = None
         else:
-            sma5 = sum(close_prices[i - 4 : i + 1]) / 5
+            sma3 = sum(close_prices[i - 2 : i + 1]) / 3
         
         # Update data
         data_dict[date]["overnight_rate"] = round(overnight_rate, 6)
         data_dict[date]["day_rate"] = round(day_rate, 6)
         data_dict[date]["rate"] = round(combined_rate, 6)
         data_dict[date]["sma200"] = round(sma200, 6) if sma200 is not None else None
-        data_dict[date]["sma5"] = round(sma5, 6) if sma5 is not None else None
+        data_dict[date]["sma3"] = round(sma3, 6) if sma3 is not None else None
         
         prev_close = close_value
     
@@ -446,11 +446,11 @@ def simulate_tqqq_from_qqq(qqq_data):
         else:
             tqqq_sma200 = sum(tqqq_close_prices[i - 199 : i + 1]) / 200
 
-        # Calculate TQQQ SMA5
-        if i < 4:
-            tqqq_sma5 = None
+        # Calculate TQQQ SMA3
+        if i < 2:
+            tqqq_sma3 = None
         else:
-            tqqq_sma5 = sum(tqqq_close_prices[i - 4 : i + 1]) / 5
+            tqqq_sma3 = sum(tqqq_close_prices[i - 2 : i + 1]) / 3
         
         # Store TQQQ data
         tqqq_data[date] = {
@@ -460,7 +460,7 @@ def simulate_tqqq_from_qqq(qqq_data):
             "day_rate": round(tqqq_day_rate, 6),
             "rate": round(tqqq_combined_rate, 6),
             "sma200": round(tqqq_sma200, 6) if tqqq_sma200 is not None else None,
-            "sma5": round(tqqq_sma5, 6) if tqqq_sma5 is not None else None
+            "sma3": round(tqqq_sma3, 6) if tqqq_sma3 is not None else None
         }
     
     return tqqq_data
@@ -599,7 +599,7 @@ def adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data):
             "day_rate": data.get("day_rate", 0),  # Keep original rate (percentage change)
             "rate": data["rate"],  # Keep original rate (percentage change)
             "sma200": None,  # Will recalculate later
-            "sma5": None  # Will recalculate later
+            "sma3": None  # Will recalculate later
         }
     
     # Verify the transition
@@ -615,7 +615,7 @@ def download_complete_data():
     print("==================================")
     print("📅 Period: 1998 to Today")
     print("📊 Sources: Yahoo Finance + Twelve Data")
-    print("🎯 Output: Adjusted OHLC, Daily Returns, SMA200, SMA5")
+    print("🎯 Output: Adjusted OHLC, Daily Returns, SMA200, SMA3")
     print()
     print("⚠️  Note: This script includes delays to prevent rate limiting")
     print("    from data providers. Please be patient.")
@@ -763,7 +763,7 @@ def download_complete_data():
                 all_tqqq_data[date]["day_rate"] = round(day_rate, 6)
                 all_tqqq_data[date]["rate"] = round(combined_rate, 6)
             
-            # Recalculate SMA200 and SMA5
+            # Recalculate SMA200 and SMA3
             close_prices = [all_tqqq_data[date]["close"] for date in sorted_dates]
             for i, date in enumerate(sorted_dates):
                 if i < 199:
@@ -772,11 +772,11 @@ def download_complete_data():
                     sma200 = sum(close_prices[i - 199 : i + 1]) / 200
                     all_tqqq_data[date]["sma200"] = round(sma200, 6)
                 
-                if i < 4:
-                    all_tqqq_data[date]["sma5"] = None
+                if i < 2:
+                    all_tqqq_data[date]["sma3"] = None
                 else:
-                    sma5 = sum(close_prices[i - 4 : i + 1]) / 5
-                    all_tqqq_data[date]["sma5"] = round(sma5, 6)
+                    sma3 = sum(close_prices[i - 2 : i + 1]) / 3
+                    all_tqqq_data[date]["sma3"] = round(sma3, 6)
             
             # Sort by date
             tqqq_data = {date: all_tqqq_data[date] for date in sorted_dates}

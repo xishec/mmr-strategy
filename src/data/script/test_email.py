@@ -25,7 +25,7 @@ def create_mock_data(scenario="above"):
                 "day_rate": 0.32,
                 "rate": 0.64,
                 "sma200": 460.25,
-                "sma5": 460.25,
+                "sma3": 460.25,
             }
         }
 
@@ -37,7 +37,7 @@ def create_mock_data(scenario="above"):
                 "day_rate": 1.52,
                 "rate": 2.48,
                 "sma200": 65.80,
-                "sma5": 65.80,
+                "sma3": 65.80,
             }
         }
     else:
@@ -50,7 +50,7 @@ def create_mock_data(scenario="above"):
                 "day_rate": 0.33,
                 "rate": -0.19,
                 "sma200": 460.25,
-                "sma5": 460.25,
+                "sma3": 460.25,
             }
         }
 
@@ -62,7 +62,7 @@ def create_mock_data(scenario="above"):
                 "day_rate": 0.15,
                 "rate": -1.41,
                 "sma200": 65.80,
-                "sma5": 65.80,
+                "sma3": 65.80,
             }
         }
 
