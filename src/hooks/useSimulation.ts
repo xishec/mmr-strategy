@@ -17,7 +17,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     simulationVariables: {
       initialMoney: 200000,
       startDate: Object.keys(marketData!.QQQ)[0],
-      endDate: "2001-12-31",
+      endDate: Object.keys(marketData!.QQQ).slice(-1)[0],
       cashYearRate: 2000,
       SMAUpMargin: 0.0,
       SMADownMargin: -0.0,

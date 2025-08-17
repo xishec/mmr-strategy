@@ -39,6 +39,7 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
     updateStrategyToSnapshotYesterday(newSnapshot, marketData, signal, simulation);
     updateMockToSnapshot(newSnapshot, marketData);
 
+    newSnapshot.signal = signal;
     newSnapshot.peak = Math.max(lastSnapshot.peak, newSnapshot.investments.total);
     newSnapshot.pullback = -(newSnapshot.peak - newSnapshot.investments.total) / newSnapshot.peak;
     simulation.portfolioSnapshots.push(newSnapshot);
@@ -59,7 +60,11 @@ export const getYesterdaySignal = (
   simulation: Simulation
 ): Signal => {
   const todayIndex = marketDates.indexOf(date);
-  if (simulation.portfolioSnapshots.length === 0 || todayIndex === 0) {
+  const yesterdayIndex = todayIndex - 1;
+  const yesterdayDate = marketDates[yesterdayIndex];
+  const yesterdaySnapshot = simulation.portfolioSnapshots[yesterdayIndex];
+
+  if (!yesterdaySnapshot || !yesterdaySnapshot.signal) {
     return {
       date,
       bigDropLast30Days: false,
@@ -70,15 +75,11 @@ export const getYesterdaySignal = (
     };
   }
 
-  const yesterdayIndex = todayIndex - 1;
-  const yesterdayDate = marketDates[yesterdayIndex];
-  const yesterdaySnapshot = simulation.portfolioSnapshots[yesterdayIndex];
   const yesterdaySignal = yesterdaySnapshot.signal;
 
   const recentBigPullback =
-    simulation.portfolioSnapshots.length > 0 &&
-    simulation.portfolioSnapshots.slice(-90).some((snapshot) => snapshot.pullback > -0.5) &&
-    simulation.portfolioSnapshots.slice(-90).some((snapshot) => snapshot.pullback < -0.6);
+    simulation.portfolioSnapshots.slice(-90).every((snapshot) => snapshot.investments.ratio > 0) &&
+    yesterdaySnapshot.pullback < -0.6;
 
   // const last120DaysFromCurrent = marketDates.slice(Math.max(0, yesterdayIndex - 90), yesterdayIndex);
   // const recentlyBelowSMA200 = last120DaysFromCurrent.slice(-90).some((d) => {
@@ -91,9 +92,9 @@ export const getYesterdaySignal = (
 
   const isAboveSMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma200! * 1.05;
 
-  if (yesterdaySignal.signalType === SignalType.Sell) {
-    console.log(date);
-  }
+  // if (yesterdaySignal.signalType === SignalType.Sell) {
+  //   console.log(date);
+  // }
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
@@ -104,6 +105,8 @@ export const getYesterdaySignal = (
     case SignalType.Hold:
       if (recentBigPullback) {
         signalType = SignalType.Sell;
+      } else {
+        signalType = SignalType.Hold;
       }
       break;
 
@@ -114,12 +117,16 @@ export const getYesterdaySignal = (
     case SignalType.WaitingForDrop:
       if (recentlyBelowSMA200) {
         signalType = SignalType.WaitingForRecovery;
+      } else {
+        signalType = SignalType.WaitingForDrop;
       }
       break;
-      
+
     case SignalType.WaitingForRecovery:
       if (isAboveSMA200) {
         signalType = SignalType.Buy;
+      } else {
+        signalType = SignalType.WaitingForRecovery;
       }
       break;
 
