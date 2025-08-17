@@ -77,9 +77,11 @@ export const getYesterdaySignal = (
 
   const yesterdaySignal = yesterdaySnapshot.signal;
 
-  const recentBigPullback =
-    simulation.portfolioSnapshots.slice(-90).every((snapshot) => snapshot.investments.ratio > 0) &&
-    yesterdaySnapshot.pullback < -0.6;
+
+  const last120Snapshots = simulation.portfolioSnapshots.slice(-120);
+  const wasInMarket = last120Snapshots.every((s) => s.investments.ratio > 0);
+
+  const recentBigPullback = wasInMarket && yesterdaySnapshot.pullback < -0.6;
 
   // const last120DaysFromCurrent = marketDates.slice(Math.max(0, yesterdayIndex - 90), yesterdayIndex);
   // const recentlyBelowSMA200 = last120DaysFromCurrent.slice(-90).some((d) => {
