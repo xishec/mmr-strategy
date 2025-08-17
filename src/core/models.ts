@@ -125,9 +125,8 @@ export interface Investments {
 export interface DailyData {
   rate: number;
   close: number;
-  sma200: number | null;
-  sma300: number | null;
-  sma3: number | null;
+  sma: number | null;
+  maxClose: number | null;
   overnight_rate: number;
   day_rate: number;
 }

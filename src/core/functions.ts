@@ -4,6 +4,52 @@ import { addDays, yearsBetween, addYears, today } from "./date-utils";
 import { TIME_CONSTANTS } from "./constants";
 import { DataService } from "./data-service";
 
+const calculateSMAAndMaxClose = (marketData: MarketData) => {
+  // Process QQQ data
+  const qqqDates = Object.keys(marketData.QQQ);
+  const qqqClosePrices: number[] = [];
+  let qqqMaxClose = 0;
+
+  qqqDates.forEach((date, index) => {
+    const dailyData = marketData.QQQ[date];
+    qqqClosePrices.push(dailyData.close);
+    
+    // Update maxClose (maximum close price since beginning)
+    qqqMaxClose = Math.max(qqqMaxClose, dailyData.close);
+    dailyData.maxClose = qqqMaxClose;
+    
+    // Calculate SMA200 (need at least 200 days)
+    if (index >= 199) {
+      const sma200 = qqqClosePrices.slice(index - 199, index + 1).reduce((sum, price) => sum + price, 0) / 200;
+      dailyData.sma = sma200;
+    } else {
+      dailyData.sma = null;
+    }
+  });
+
+  // Process TQQQ data
+  const tqqqDates = Object.keys(marketData.TQQQ);
+  const tqqqClosePrices: number[] = [];
+  let tqqqMaxClose = 0;
+
+  tqqqDates.forEach((date, index) => {
+    const dailyData = marketData.TQQQ[date];
+    tqqqClosePrices.push(dailyData.close);
+    
+    // Update maxClose (maximum close price since beginning)
+    tqqqMaxClose = Math.max(tqqqMaxClose, dailyData.close);
+    dailyData.maxClose = tqqqMaxClose;
+    
+    // Calculate SMA200 (need at least 200 days)
+    if (index >= 199) {
+      const sma200 = tqqqClosePrices.slice(index - 199, index + 1).reduce((sum, price) => sum + price, 0) / 200;
+      dailyData.sma = sma200;
+    } else {
+      dailyData.sma = null;
+    }
+  });
+};
+
 export const loadData = async (
   setDataLoading: (loading: boolean) => void,
   setMarketData: (data: MarketData) => void
@@ -12,6 +58,10 @@ export const loadData = async (
     setDataLoading(true);
     const dataService = DataService.getInstance();
     const marketData = await dataService.loadMarketData();
+    
+    // Calculate SMA200 and maxClose for all market data
+    calculateSMAAndMaxClose(marketData);
+    
     setMarketData(marketData);
   } catch (error) {
     console.error("Error loading data:", error);
@@ -30,6 +80,10 @@ export const refreshData = async (
     setDataLoading(true);
     const dataService = DataService.getInstance();
     const marketData = await dataService.refreshData();
+    
+    // Calculate SMA200 and maxClose for all market data
+    calculateSMAAndMaxClose(marketData);
+    
     setMarketData(marketData);
   } catch (error) {
     console.error("Error refreshing data:", error);
@@ -179,7 +233,7 @@ export const runMultipleSimulations = async (
   const startDates: string[] = [];
 
   // Pre-compute and cache sorted available dates
-  const availableDates = Object.keys(marketData.TQQQ).sort();
+  const availableDates = Object.keys(marketData.TQQQ);
   const firstAvailableDate = availableDates[0];
   const lastAvailableDate = availableDates[availableDates.length - 1];
 

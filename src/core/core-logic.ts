@@ -89,10 +89,10 @@ export const getYesterdaySignal = (
   //   return dayData && dayData.sma200 && dayData.close < dayData.sma200 * 1.05;
   // });
   const recentlyBelowSMA200 =
-    marketData.QQQ[yesterdayDate].sma200 &&
-    marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma200! * 0.9;
+    marketData.QQQ[yesterdayDate].sma &&
+    marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.9;
 
-  const isAboveSMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma200! * 1.05;
+  const isAboveSMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
 
   // if (yesterdaySignal.signalType === SignalType.Sell) {
   //   console.log(date);

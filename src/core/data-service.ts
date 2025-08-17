@@ -187,9 +187,31 @@ export class DataService {
   private async loadFromLocalFiles(): Promise<MarketData> {
     try {
       console.log("Loading data from local files...");
+      const rawQQQData = (await import("../data/QQQ.json")).default;
+      const rawTQQQData = (await import("../data/TQQQ.json")).default;
+      
+      // Transform raw data to include sma and maxClose properties
+      const transformedQQQData: Record<string, any> = {};
+      for (const [date, data] of Object.entries(rawQQQData)) {
+        transformedQQQData[date] = {
+          ...(data as any),
+          sma: null,
+          maxClose: null,
+        };
+      }
+      
+      const transformedTQQQData: Record<string, any> = {};
+      for (const [date, data] of Object.entries(rawTQQQData)) {
+        transformedTQQQData[date] = {
+          ...(data as any),
+          sma: null,
+          maxClose: null,
+        };
+      }
+      
       const marketData = {
-        QQQ: (await import("../data/QQQ.json")).default,
-        TQQQ: (await import("../data/TQQQ.json")).default,
+        QQQ: transformedQQQData,
+        TQQQ: transformedTQQQData,
       };
       console.log("Successfully loaded data from local files");
       return marketData;
@@ -246,14 +268,33 @@ export class DataService {
     const tqqqUrl = DATA_CONFIG.TQQQ_DATA_URL;
     
     // Fetch both datasets in parallel
-    const [qqqData, tqqqData] = await Promise.all([
+    const [rawQQQData, rawTQQQData] = await Promise.all([
       this.fetchFromUrl(qqqUrl),
       this.fetchFromUrl(tqqqUrl),
     ]);
 
+    // Transform raw data to include sma and maxClose properties
+    const transformedQQQData: Record<string, any> = {};
+    for (const [date, data] of Object.entries(rawQQQData)) {
+      transformedQQQData[date] = {
+        ...(data as any),
+        sma: null,
+        maxClose: null,
+      };
+    }
+    
+    const transformedTQQQData: Record<string, any> = {};
+    for (const [date, data] of Object.entries(rawTQQQData)) {
+      transformedTQQQData[date] = {
+        ...(data as any),
+        sma: null,
+        maxClose: null,
+      };
+    }
+
     const marketData: MarketData = {
-      QQQ: qqqData,
-      TQQQ: tqqqData,
+      QQQ: transformedQQQData,
+      TQQQ: transformedTQQQData,
     };
 
     // Cache the successful result
