@@ -118,142 +118,6 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
 //   };
 // };
 
-// Helper functions for predicting pullbacks
-const detectVolatilityExpansion = (marketData: MarketData, date: string, marketDates: string[]): boolean => {
-  const dateIndex = marketDates.indexOf(date);
-  const lookbackDays = 20;
-  const recentDates = marketDates.slice(Math.max(0, dateIndex - lookbackDays), dateIndex);
-
-  if (recentDates.length < lookbackDays) return false;
-
-  const recentVolatility = calculateRollingVolatility(marketData, recentDates);
-  const longerTermDates = marketDates.slice(Math.max(0, dateIndex - 60), dateIndex - 20);
-  const longerTermVolatility = calculateRollingVolatility(marketData, longerTermDates);
-
-  return recentVolatility > longerTermVolatility * 2;
-};
-
-const calculateRollingVolatility = (marketData: MarketData, dates: string[]): number => {
-  if (dates.length < 2) return 0;
-  const returns = dates.map((d) => marketData.TQQQ[d]?.rate || 0);
-  const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
-  const variance = returns.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / returns.length;
-  return Math.sqrt(variance);
-};
-
-const detectMomentumDivergence = (marketData: MarketData, date: string, marketDates: string[]): boolean => {
-  const dateIndex = marketDates.indexOf(date);
-  const lookback = 20;
-
-  if (dateIndex < lookback) return false;
-
-  const currentPrice = marketData.QQQ[date].close;
-  const recentDates = marketDates.slice(dateIndex - lookback, dateIndex);
-  const recentHighs = recentDates.map((d) => marketData.QQQ[d].close);
-  const recentHigh = Math.max(...recentHighs);
-
-  const isPriceAtHigh = currentPrice >= recentHigh * 0.99;
-
-  // Simple momentum check: compare recent 5-day average rate vs previous 5-day average
-  const recent5Days = marketDates.slice(dateIndex - 4, dateIndex + 1);
-  const previous5Days = marketDates.slice(dateIndex - 9, dateIndex - 4);
-
-  const recentMomentum = recent5Days.reduce((sum, d) => sum + (marketData.QQQ[d]?.rate || 0), 0) / 5;
-  const previousMomentum = previous5Days.reduce((sum, d) => sum + (marketData.QQQ[d]?.rate || 0), 0) / 5;
-
-  const momentumDeclining = recentMomentum < previousMomentum - 0.5;
-
-  return isPriceAtHigh && momentumDeclining;
-};
-
-const detectDistributionPattern = (marketData: MarketData, date: string, marketDates: string[]): boolean => {
-  const dateIndex = marketDates.indexOf(date);
-  const lookback = 10;
-
-  if (dateIndex < lookback) return false;
-
-  let distributionDays = 0;
-
-  for (let i = dateIndex - lookback; i < dateIndex; i++) {
-    const dayData = marketData.TQQQ[marketDates[i]];
-    const priceChange = dayData.rate;
-
-    // Look for days with small gains but high volume (potential distribution)
-    // Since we might not have volume data, use rate volatility as proxy
-    if (priceChange > 0 && priceChange < 2) {
-      distributionDays++;
-    }
-  }
-
-  return distributionDays >= 4;
-};
-
-const detectDangerousGapPattern = (marketData: MarketData, date: string, marketDates: string[]): boolean => {
-  const dateIndex = marketDates.indexOf(date);
-  if (dateIndex < 5) return false;
-
-  let largeMoveDays = 0;
-
-  // Since we don't have open prices, look for large daily moves as proxy for gaps
-  for (let i = Math.max(1, dateIndex - 4); i <= dateIndex; i++) {
-    const dayData = marketData.TQQQ[marketDates[i]];
-    const dailyMove = Math.abs(dayData.rate);
-
-    // Consider moves > 3% as potentially gappy/volatile days
-    if (dailyMove > 3) {
-      largeMoveDays++;
-    }
-  }
-
-  return largeMoveDays >= 2; // 2+ large move days in last 5 days
-};
-
-const detectConsecutiveSellingPressure = (marketData: MarketData, date: string, marketDates: string[]): boolean => {
-  const dateIndex = marketDates.indexOf(date);
-  const lookback = 7;
-
-  if (dateIndex < lookback) return false;
-
-  let consecutiveSellingDays = 0;
-  let maxConsecutive = 0;
-
-  for (let i = dateIndex - lookback; i <= dateIndex; i++) {
-    const dayData = marketData.TQQQ[marketDates[i]];
-    const isSellingDay = dayData.rate < -1;
-
-    if (isSellingDay) {
-      consecutiveSellingDays++;
-      maxConsecutive = Math.max(maxConsecutive, consecutiveSellingDays);
-    } else {
-      consecutiveSellingDays = 0;
-    }
-  }
-
-  return maxConsecutive >= 3;
-};
-
-const detectExtendedRally = (marketData: MarketData, date: string, marketDates: string[]): boolean => {
-  const dateIndex = marketDates.indexOf(date);
-  const qqqData = marketData.QQQ[date];
-
-  if (!qqqData.sma200) return false;
-
-  const distanceFromSMA200 = (qqqData.close - qqqData.sma200) / qqqData.sma200;
-  const farAboveSMA200 = distanceFromSMA200 > 0.25;
-
-  // Check consecutive up days
-  let consecutiveUpDays = 0;
-  for (let i = dateIndex; i >= Math.max(0, dateIndex - 10); i--) {
-    if (marketData.QQQ[marketDates[i]].rate > 0) {
-      consecutiveUpDays++;
-    } else {
-      break;
-    }
-  }
-
-  return farAboveSMA200 || consecutiveUpDays >= 7;
-};
-
 export const getYesterdaySignal = (
   date: string,
   marketData: MarketData,
@@ -276,30 +140,41 @@ export const getYesterdaySignal = (
   //     : null;
 
   const recentBigDrop = last120DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
+
+  const recentBigPullback =
+    simulation.portfolioSnapshots.length > 0 &&
+    simulation.portfolioSnapshots.slice(-90).some((snapshot) => snapshot.pullback > -0.5) &&
+    simulation.portfolioSnapshots.slice(-90).some((snapshot) => snapshot.pullback < -0.6);
+
+  const recentlyBelowSMA200 = last120DaysFromCurrent.slice(-90).some((d) => {
+    const dayData = marketData.QQQ[d];
+    return dayData && dayData.sma200 && dayData.close < dayData.sma200 * 1.05;
+  });
+
   const isAboveSMA200 = qqqData.close >= qqqData.sma200! * 1.05;
   // const isBelowLastYear =
   //   lastPortfolioSnapshot && lastYearPortfolioSnapshot
   //     ? lastPortfolioSnapshot.investments.mockTotalQQQ < lastYearPortfolioSnapshot.investments.mockTotalQQQ
   //     : false;
-  const newBigPullback =
-    simulation.portfolioSnapshots.slice(-1)[0]?.pullback < -0.6 &&
-    simulation.portfolioSnapshots.slice(-2)[0]?.pullback >= -0.6;
+  // const newBigPullback =
+  //   simulation.portfolioSnapshots.slice(-1)[0]?.pullback < -0.61 &&
+  //   simulation.portfolioSnapshots.slice(-2)[0]?.pullback >= -0.6;
 
-  if (newBigPullback) {
-    console.log(
-      simulation.portfolioSnapshots.slice(-1)[0]?.pullback,
-      simulation.portfolioSnapshots.slice(-2)[0]?.pullback
-    );
-  }
+  // if (newBigPullback) {
+  //   console.log(
+  //     simulation.portfolioSnapshots.slice(-2)[0]?.pullback,
+  //     simulation.portfolioSnapshots.slice(-1)[0]?.pullback
+  //   );
+  // }
 
   const inMarket = lastPortfolioSnapshot?.investments.ratio > 0;
   let signalType = SignalType.Hold;
   if (inMarket) {
-    if (newBigPullback) {
+    if (recentBigPullback) {
       signalType = SignalType.Sell;
     }
   } else {
-    if (isAboveSMA200) {
+    if (isAboveSMA200 && (!recentBigPullback || recentlyBelowSMA200)) {
       signalType = SignalType.Buy;
     }
   }
@@ -307,9 +182,9 @@ export const getYesterdaySignal = (
   return {
     date,
     bigDropLast30Days: recentBigDrop,
-    bigPullbackLast30Days: newBigPullback,
+    bigPullbackLast30Days: recentBigPullback,
     isAboveSMA200,
-    isBelowSMA200: !isAboveSMA200,
+    isBelowSMA200: recentBigPullback,
     signalType,
   };
 };
