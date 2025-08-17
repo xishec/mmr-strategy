@@ -285,33 +285,21 @@ export const getYesterdaySignal = (
     simulation.portfolioSnapshots.slice(-1)[0]?.pullback < -0.6 &&
     simulation.portfolioSnapshots.slice(-2)[0]?.pullback >= -0.6;
 
-  // Predictive pullback indicators
-  const volatilityExpanding = detectVolatilityExpansion(marketData, dateToCheck, marketDates);
-  const momentumDivergence = detectMomentumDivergence(marketData, dateToCheck, marketDates);
-  const distributionPattern = detectDistributionPattern(marketData, dateToCheck, marketDates);
-  const dangerousGaps = detectDangerousGapPattern(marketData, dateToCheck, marketDates);
-  const sellingPressure = detectConsecutiveSellingPressure(marketData, dateToCheck, marketDates);
-  const extendedRally = detectExtendedRally(marketData, dateToCheck, marketDates);
-
-  // Calculate composite pullback risk score
-  let pullbackRiskScore = 0;
-  if (volatilityExpanding) pullbackRiskScore += 25;
-  if (momentumDivergence) pullbackRiskScore += 20;
-  if (distributionPattern) pullbackRiskScore += 15;
-  if (dangerousGaps) pullbackRiskScore += 15;
-  if (sellingPressure) pullbackRiskScore += 20;
-  if (extendedRally) pullbackRiskScore += 10;
-
-  const highPullbackRisk = pullbackRiskScore > 60;
+  if (newBigPullback) {
+    console.log(
+      simulation.portfolioSnapshots.slice(-1)[0]?.pullback,
+      simulation.portfolioSnapshots.slice(-2)[0]?.pullback
+    );
+  }
 
   const inMarket = lastPortfolioSnapshot?.investments.ratio > 0;
   let signalType = SignalType.Hold;
   if (inMarket) {
-    if (recentBigDrop || newBigPullback) {
+    if (newBigPullback) {
       signalType = SignalType.Sell;
     }
   } else {
-    if (isAboveSMA200 && !recentBigDrop) {
+    if (isAboveSMA200) {
       signalType = SignalType.Buy;
     }
   }
@@ -321,7 +309,7 @@ export const getYesterdaySignal = (
     bigDropLast30Days: recentBigDrop,
     bigPullbackLast30Days: newBigPullback,
     isAboveSMA200,
-    isBelowSMA200: highPullbackRisk,
+    isBelowSMA200: !isAboveSMA200,
     signalType,
   };
 };
