@@ -5,7 +5,7 @@ Complete Stock Data Downloader - From 1998 to Today
 - Prioritizes Twelve Data for maximum date range possible
 - Uses Yahoo Finance only for older data not available on Twelve Data
 - Merges datasets seamlessly
-- Outputs: adjusted open, adjusted close, daily returns, SMA200, SMA300, SMA3
+- Outputs: adjusted open, adjusted close, daily returns
 """
 
 import json
@@ -109,10 +109,7 @@ def download_yahoo_finance_data(ticker, start_date="1998-01-01", end_date="2010-
                     "close": round(float(row['Close']), 6),
                     "overnight_rate": 0,  # Will calculate later
                     "day_rate": 0,  # Will calculate later
-                    "rate": 0,  # Will calculate later (combined rate)
-                    "sma200": None,  # Will calculate later
-                    "sma300": None,  # Will calculate later
-                    "sma3": None  # Will calculate later
+                    "rate": 0  # Will calculate later (combined rate)
                 }
             
             if skipped_count > 5:
@@ -255,10 +252,7 @@ def download_twelvedata_data(ticker, start_date="1998-01-01", end_date=None):
                     "close": close_price,
                     "overnight_rate": 0,  # Will calculate later
                     "day_rate": 0,  # Will calculate later
-                    "rate": 0,  # Will calculate later (combined rate)
-                    "sma200": None,  # Will calculate later
-                    "sma300": None,  # Will calculate later
-                    "sma3": None  # Will calculate later
+                    "rate": 0  # Will calculate later (combined rate)
                 }
             except (ValueError, KeyError) as e:
                 print(f"⚠️  Skipping {date_str} - data error: {e}")
@@ -330,20 +324,18 @@ def download_hybrid_data(ticker, target_start_date="1998-01-01"):
         return yahoo_data, target_start_date
 
 def merge_and_calculate(data_dict):
-    """Calculate rates, SMA200, SMA300, and SMA3 for a dataset"""
+    """Calculate rates for a dataset"""
     print("🔄 Calculating metrics...")
     
     # Sort by date
     sorted_dates = sorted(data_dict.keys())
     
-    # Calculate daily returns and SMA200
+    # Calculate daily returns
     prev_close = None
-    close_prices = []
     
     for i, date in enumerate(sorted_dates):
         close_value = data_dict[date]["close"]
         open_value = data_dict[date]["open"]
-        close_prices.append(close_value)
         
         # Calculate rates
         if prev_close is None:
@@ -360,31 +352,10 @@ def merge_and_calculate(data_dict):
         # Day rate: current open to current close
         day_rate = (close_value - open_value) / open_value * 100
         
-        # Calculate SMA200
-        if i < 199:  # Need 200 days for SMA200
-            sma200 = None
-        else:
-            sma200 = sum(close_prices[i - 199 : i + 1]) / 200
-
-        # Calculate SMA300
-        if i < 299:  # Need 300 days for SMA300
-            sma300 = None
-        else:
-            sma300 = sum(close_prices[i - 299 : i + 1]) / 300
-
-        # Calculate SMA3
-        if i < 2:  # Need 3 days for SMA3
-            sma3 = None
-        else:
-            sma3 = sum(close_prices[i - 2 : i + 1]) / 3
-        
         # Update data
         data_dict[date]["overnight_rate"] = round(overnight_rate, 6)
         data_dict[date]["day_rate"] = round(day_rate, 6)
         data_dict[date]["rate"] = round(combined_rate, 6)
-        data_dict[date]["sma200"] = round(sma200, 6) if sma200 is not None else None
-        data_dict[date]["sma300"] = round(sma300, 6) if sma300 is not None else None
-        data_dict[date]["sma3"] = round(sma3, 6) if sma3 is not None else None
         
         prev_close = close_value
     
@@ -417,8 +388,6 @@ def simulate_tqqq_from_qqq(qqq_data):
     else:
         tqqq_close = 300  # Default starting price
     
-    tqqq_close_prices = []
-    
     for i, date in enumerate(sorted_dates):
         qqq_data_point = qqq_data_copy[date]
         
@@ -447,25 +416,6 @@ def simulate_tqqq_from_qqq(qqq_data):
         
         # Update for next iteration
         tqqq_close = new_tqqq_close
-        tqqq_close_prices.append(tqqq_close)
-        
-        # Calculate TQQQ SMA200
-        if i < 199:
-            tqqq_sma200 = None
-        else:
-            tqqq_sma200 = sum(tqqq_close_prices[i - 199 : i + 1]) / 200
-
-        # Calculate TQQQ SMA300
-        if i < 299:
-            tqqq_sma300 = None
-        else:
-            tqqq_sma300 = sum(tqqq_close_prices[i - 299 : i + 1]) / 300
-
-        # Calculate TQQQ SMA3
-        if i < 2:
-            tqqq_sma3 = None
-        else:
-            tqqq_sma3 = sum(tqqq_close_prices[i - 2 : i + 1]) / 3
         
         # Store TQQQ data
         tqqq_data[date] = {
@@ -473,10 +423,7 @@ def simulate_tqqq_from_qqq(qqq_data):
             "close": round(tqqq_close, 6),
             "overnight_rate": round(tqqq_overnight_rate, 6),
             "day_rate": round(tqqq_day_rate, 6),
-            "rate": round(tqqq_combined_rate, 6),
-            "sma200": round(tqqq_sma200, 6) if tqqq_sma200 is not None else None,
-            "sma300": round(tqqq_sma300, 6) if tqqq_sma300 is not None else None,
-            "sma3": round(tqqq_sma3, 6) if tqqq_sma3 is not None else None
+            "rate": round(tqqq_combined_rate, 6)
         }
     
     return tqqq_data
@@ -551,15 +498,15 @@ def save_data(ticker, data, output_dir):
         
         print(f"✅ Data quality check passed for {ticker}: {valid_entries}/{new_count} valid entries ({valid_percentage:.1f}%)")
     
-    # Create backup of existing data before overwriting
-    if existing_count > 0:
-        backup_path = output_path + f".backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        try:
-            with open(backup_path, 'w') as f:
-                json.dump(existing_data, f, indent=2)
-            print(f"💾 Created backup: {backup_path}")
-        except Exception as e:
-            print(f"⚠️  Could not create backup: {e}")
+    # # Create backup of existing data before overwriting
+    # if existing_count > 0:
+    #     backup_path = output_path + f".backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    #     try:
+    #         with open(backup_path, 'w') as f:
+    #             json.dump(existing_data, f, indent=2)
+    #         print(f"💾 Created backup: {backup_path}")
+    #     except Exception as e:
+    #         print(f"⚠️  Could not create backup: {e}")
     
     # Save new data
     try:
@@ -613,10 +560,7 @@ def adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data):
             "close": data["close"] * scaling_factor,
             "overnight_rate": data.get("overnight_rate", 0),  # Keep original rate (percentage change)
             "day_rate": data.get("day_rate", 0),  # Keep original rate (percentage change)
-            "rate": data["rate"],  # Keep original rate (percentage change)
-            "sma200": None,  # Will recalculate later
-            "sma300": None,  # Will recalculate later
-            "sma3": None  # Will recalculate later
+            "rate": data["rate"]  # Keep original rate (percentage change)
         }
     
     # Verify the transition
@@ -632,7 +576,7 @@ def download_complete_data():
     print("==================================")
     print("📅 Period: 1998 to Today")
     print("📊 Sources: Yahoo Finance + Twelve Data")
-    print("🎯 Output: Adjusted OHLC, Daily Returns, SMA200, SMA300, SMA3")
+    print("🎯 Output: Adjusted OHLC, Daily Returns")
     print()
     print("⚠️  Note: This script includes delays to prevent rate limiting")
     print("    from data providers. Please be patient.")
@@ -749,8 +693,8 @@ def download_complete_data():
             all_tqqq_data.update(simulated_tqqq)
             all_tqqq_data.update(adjusted_real_tqqq)
             
-            # Step 5: Recalculate rates and SMA200 for the complete dataset
-            print("🔄 Recalculating rates and SMA200 for complete TQQQ dataset...")
+            # Step 5: Recalculate rates for the complete dataset
+            print("🔄 Recalculating rates for complete TQQQ dataset...")
             sorted_dates = sorted(all_tqqq_data.keys())
             
             # Recalculate all rates
@@ -779,27 +723,6 @@ def download_complete_data():
                 all_tqqq_data[date]["overnight_rate"] = round(overnight_rate, 6)
                 all_tqqq_data[date]["day_rate"] = round(day_rate, 6)
                 all_tqqq_data[date]["rate"] = round(combined_rate, 6)
-            
-            # Recalculate SMA200, SMA300, and SMA3
-            close_prices = [all_tqqq_data[date]["close"] for date in sorted_dates]
-            for i, date in enumerate(sorted_dates):
-                if i < 199:
-                    all_tqqq_data[date]["sma200"] = None
-                else:
-                    sma200 = sum(close_prices[i - 199 : i + 1]) / 200
-                    all_tqqq_data[date]["sma200"] = round(sma200, 6)
-                
-                if i < 299:
-                    all_tqqq_data[date]["sma300"] = None
-                else:
-                    sma300 = sum(close_prices[i - 299 : i + 1]) / 300
-                    all_tqqq_data[date]["sma300"] = round(sma300, 6)
-                
-                if i < 2:
-                    all_tqqq_data[date]["sma3"] = None
-                else:
-                    sma3 = sum(close_prices[i - 2 : i + 1]) / 3
-                    all_tqqq_data[date]["sma3"] = round(sma3, 6)
             
             # Sort by date
             tqqq_data = {date: all_tqqq_data[date] for date in sorted_dates}

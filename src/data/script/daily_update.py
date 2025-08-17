@@ -212,10 +212,7 @@ def get_latest_data_twelvedata(ticker, start_date):
                     "close": float(bar["close"]),
                     "overnight_rate": 0,  # Will calculate later
                     "day_rate": 0,  # Will calculate later
-                    "rate": 0,  # Will calculate later (combined rate)
-                    "sma200": None,  # Will calculate later
-                    "sma300": None,  # Will calculate later
-                    "sma3": None,  # Will calculate later
+                    "rate": 0  # Will calculate later (combined rate)
                 }
 
         if new_data:
@@ -232,8 +229,8 @@ def get_latest_data_twelvedata(ticker, start_date):
 
 
 def calculate_metrics(existing_data, new_data, ticker=""):
-    """Calculate rates, SMA200, SMA300, and SMA3 for the combined dataset"""
-    print("🔄 Calculating daily returns, SMA200, SMA300, and SMA3...")
+    """Calculate rates for the combined dataset"""
+    print("🔄 Calculating daily returns...")
 
     # Combine all data
     all_data = existing_data.copy()
@@ -246,7 +243,7 @@ def calculate_metrics(existing_data, new_data, ticker=""):
     # This ensures we get the correct overnight rates even with stock splits
     new_dates = set(new_data.keys())
 
-    # Collect close prices for SMA calculation
+    # Collect close prices for rate calculation
     close_prices = [all_data[date]["close"] for date in sorted_dates]
 
     for i, date in enumerate(sorted_dates):
@@ -305,33 +302,12 @@ def calculate_metrics(existing_data, new_data, ticker=""):
         # Day rate: current open to current close
         day_rate = (close_value - open_value) / open_value * 100
 
-        # Calculate SMA200
-        if i < 199:
-            sma200 = None
-        else:
-            sma200 = sum(close_prices[i - 199 : i + 1]) / 200
-
-        # Calculate SMA300
-        if i < 299:
-            sma300 = None
-        else:
-            sma300 = sum(close_prices[i - 299 : i + 1]) / 300
-
-        # Calculate SMA3
-        if i < 2:
-            sma3 = None
-        else:
-            sma3 = sum(close_prices[i - 2 : i + 1]) / 3
-
-        # Update data - ensure all fields exist for backward compatibility
+        # Update data
         all_data[date].update(
             {
                 "overnight_rate": overnight_rate,
                 "day_rate": day_rate,
-                "rate": combined_rate,
-                "sma200": sma200 if sma200 is not None else close_value,
-                "sma300": sma300 if sma300 is not None else close_value,
-                "sma3": sma3 if sma3 is not None else close_value,
+                "rate": combined_rate
             }
         )
 
