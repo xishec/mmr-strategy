@@ -46,77 +46,11 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
 
   calculateAnnualizedRates(simulation);
   calculateTradeStatistics(simulation);
-  console.log("=== SIMULATION REPORT ===");
-  console.log("Orders:", simulation.report.orders);
-  console.log("Trade Statistics:", simulation.report.tradeStatistics);
+  // console.log("=== SIMULATION REPORT ===");
+  // console.log("Orders:", simulation.report.orders);
+  // console.log("Trade Statistics:", simulation.report.tradeStatistics);
   return simulation;
 };
-
-// export const getYesterdaySignal = (
-//   date: string,
-//   marketData: MarketData,
-//   marketDates: string[],
-//   simulation: Simulation
-// ): Signal => {
-//   const todayIndex = marketDates.indexOf(date);
-//   const yesterdayIndex = todayIndex > 0 ? todayIndex - 1 : 0;
-
-//   const last120DaysFromCurrent = marketDates.slice(Math.max(0, todayIndex - 90), todayIndex);
-
-//   const dateToCheck = marketDates[todayIndex];
-//   const qqqData = marketData.QQQ[dateToCheck];
-
-//   const recentBigDrop = last120DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
-//   const isAboveSMA200 = qqqData.close >= qqqData.sma200! * 1.03;
-//   const isBelowSMA200 = qqqData.close < qqqData.sma300! * 0.9;
-//   const newBigPullback =
-//     simulation.portfolioSnapshots.slice(-1)[0]?.pullback < -0.6 &&
-//     simulation.portfolioSnapshots.slice(-2)[0]?.pullback >= -0.6;
-
-//   const bigPullbackLast30Days = (() => {
-//     if (simulation.portfolioSnapshots.length === 0) return false;
-
-//     const startIndex = Math.max(0, todayIndex - 30);
-//     const endIndex = todayIndex;
-//     const last30Snapshots = simulation.portfolioSnapshots.slice(startIndex, endIndex);
-
-//     if (last30Snapshots.length < 30) return false;
-
-//     for (let i = 1; i < last30Snapshots.length; i++) {
-//       const prevPullback = last30Snapshots[i - 1].pullback;
-//       const currPullback = last30Snapshots[i].pullback;
-
-//       if (prevPullback > -0.5 && currPullback < -0.5) {
-//         return true;
-//       }
-//     }
-
-//     return false;
-//   })();
-
-//   const lastPortfolioSnapshot = simulation.portfolioSnapshots[yesterdayIndex];
-//   const inMarket = lastPortfolioSnapshot?.investments.ratio > 0;
-
-//   let signalType = SignalType.Hold;
-//   if (inMarket) {
-//     if (recentBigDrop || newBigPullback) {
-//       signalType = SignalType.Sell;
-//     }
-//   } else {
-//     if (isAboveSMA200 && !recentBigDrop) {
-//       signalType = SignalType.Buy;
-//     }
-//   }
-
-//   return {
-//     date,
-//     bigDropLast30Days: recentBigDrop,
-//     bigPullbackLast30Days,
-//     isAboveSMA200,
-//     isBelowSMA200,
-//     signalType,
-//   };
-// };
 
 export const getYesterdaySignal = (
   date: string,
@@ -125,131 +59,87 @@ export const getYesterdaySignal = (
   simulation: Simulation
 ): Signal => {
   const todayIndex = marketDates.indexOf(date);
-  const yesterdayIndex = todayIndex > 0 ? todayIndex - 1 : 0;
+  if (simulation.portfolioSnapshots.length === 0 || todayIndex === 0) {
+    return {
+      date,
+      bigDropLast30Days: false,
+      bigPullbackLast30Days: false,
+      isAboveSMA200: false,
+      isBelowSMA200: false,
+      signalType: SignalType.WaitingForRecovery,
+    };
+  }
 
-  const last120DaysFromCurrent = marketDates.slice(Math.max(0, yesterdayIndex - 90), yesterdayIndex);
-  // const lastShortDaysFromCurrent = marketDates.slice(Math.max(0, yesterdayIndex - 2), yesterdayIndex);
-
-  const dateToCheck = marketDates[yesterdayIndex];
-  const qqqData = marketData.QQQ[dateToCheck];
-
-  const lastPortfolioSnapshot = simulation.portfolioSnapshots[yesterdayIndex];
-  // const lastYearPortfolioSnapshot =
-  //   simulation.portfolioSnapshots.length >= 150
-  //     ? simulation.portfolioSnapshots[simulation.portfolioSnapshots.length - 250]
-  //     : null;
-
-  const recentBigDrop = last120DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
+  const yesterdayIndex = todayIndex - 1;
+  const yesterdayDate = marketDates[yesterdayIndex];
+  const yesterdaySnapshot = simulation.portfolioSnapshots[yesterdayIndex];
+  const yesterdaySignal = yesterdaySnapshot.signal;
 
   const recentBigPullback =
     simulation.portfolioSnapshots.length > 0 &&
     simulation.portfolioSnapshots.slice(-90).some((snapshot) => snapshot.pullback > -0.5) &&
     simulation.portfolioSnapshots.slice(-90).some((snapshot) => snapshot.pullback < -0.6);
 
-  const recentlyBelowSMA200 = last120DaysFromCurrent.slice(-90).some((d) => {
-    const dayData = marketData.QQQ[d];
-    return dayData && dayData.sma200 && dayData.close < dayData.sma200 * 1.05;
-  });
+  // const last120DaysFromCurrent = marketDates.slice(Math.max(0, yesterdayIndex - 90), yesterdayIndex);
+  // const recentlyBelowSMA200 = last120DaysFromCurrent.slice(-90).some((d) => {
+  //   const dayData = marketData.QQQ[d];
+  //   return dayData && dayData.sma200 && dayData.close < dayData.sma200 * 1.05;
+  // });
+  const recentlyBelowSMA200 =
+    marketData.QQQ[yesterdayDate].sma200 &&
+    marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma200! * 0.9;
 
-  const isAboveSMA200 = qqqData.close >= qqqData.sma200! * 1.05;
-  // const isBelowLastYear =
-  //   lastPortfolioSnapshot && lastYearPortfolioSnapshot
-  //     ? lastPortfolioSnapshot.investments.mockTotalQQQ < lastYearPortfolioSnapshot.investments.mockTotalQQQ
-  //     : false;
-  // const newBigPullback =
-  //   simulation.portfolioSnapshots.slice(-1)[0]?.pullback < -0.61 &&
-  //   simulation.portfolioSnapshots.slice(-2)[0]?.pullback >= -0.6;
+  const isAboveSMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma200! * 1.05;
 
-  // if (newBigPullback) {
-  //   console.log(
-  //     simulation.portfolioSnapshots.slice(-2)[0]?.pullback,
-  //     simulation.portfolioSnapshots.slice(-1)[0]?.pullback
-  //   );
-  // }
-
-  const inMarket = lastPortfolioSnapshot?.investments.ratio > 0;
-  let signalType = SignalType.Hold;
-  if (inMarket) {
-    if (recentBigPullback) {
-      signalType = SignalType.Sell;
-    }
-  } else {
-    if (isAboveSMA200 && (!recentBigPullback || recentlyBelowSMA200)) {
-      signalType = SignalType.Buy;
-    }
+  if (yesterdaySignal.signalType === SignalType.Sell) {
+    console.log(date);
   }
+
+  let signalType = SignalType.Hold;
+  switch (yesterdaySignal.signalType) {
+    case SignalType.Buy:
+      signalType = SignalType.Hold;
+      break;
+
+    case SignalType.Hold:
+      if (recentBigPullback) {
+        signalType = SignalType.Sell;
+      }
+      break;
+
+    case SignalType.Sell:
+      signalType = SignalType.WaitingForDrop;
+      break;
+
+    case SignalType.WaitingForDrop:
+      if (recentlyBelowSMA200) {
+        signalType = SignalType.WaitingForRecovery;
+      }
+      break;
+      
+    case SignalType.WaitingForRecovery:
+      if (isAboveSMA200) {
+        signalType = SignalType.Buy;
+      }
+      break;
+
+    default:
+      break;
+  }
+
+  // console.log(date, signalType);
+
+  // const recentBigDrop = last120DaysFromCurrent.some((d) => marketData.TQQQ[d]?.rate < -20);
 
   return {
     date,
-    bigDropLast30Days: recentBigDrop,
+    bigDropLast30Days: false,
     bigPullbackLast30Days: recentBigPullback,
     isAboveSMA200,
     isBelowSMA200: recentBigPullback,
     signalType,
   };
 };
-
-// const updateStrategyToSnapshot = (
-//   newSnapshot: PortfolioSnapshot,
-//   marketData: MarketData,
-//   signal: Signal,
-//   simulation: Simulation
-// ) => {
-//   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
-//   // const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
-//   // const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
-
-//   switch (signal.signalType) {
-//     case SignalType.Hold:
-//       if (newSnapshot.investments.ratio > 0) {
-//         // if have position, add new cash
-//         newSnapshot.investments.TQQQ = newSnapshot.investments.total;
-//         newSnapshot.investments.cash = 0;
-//         newSnapshot.investments.ratio = 1;
-//       }
-//       newSnapshot.investments.TQQQ *= TQQQRate / 100 + 1;
-//       newSnapshot.investments.cash *= 1;
-//       newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
-//       newSnapshot.signal = signal;
-//       break;
-//     case SignalType.Sell:
-//       // apply overnight rate first
-//       newSnapshot.investments.TQQQ *= TQQQRate / 100 + 1;
-//       newSnapshot.investments.cash *= 1;
-//       newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
-//       newSnapshot.signal = signal;
-//       // sell
-//       newSnapshot.investments.TQQQ = 0;
-//       newSnapshot.investments.cash = newSnapshot.investments.total;
-//       newSnapshot.investments.ratio = 0;
-//       // report
-//       simulation.report.orders.push({
-//         date: newSnapshot.date,
-//         type: SignalType.Sell,
-//         deltaMoney: newSnapshot.investments.total,
-//       });
-//       break;
-//     case SignalType.Buy:
-//       // buy
-//       newSnapshot.investments.TQQQ = newSnapshot.investments.total;
-//       newSnapshot.investments.cash = 0;
-//       newSnapshot.investments.ratio = 1;
-//       // report
-//       simulation.report.orders.push({
-//         date: newSnapshot.date,
-//         type: SignalType.Buy,
-//         deltaMoney: newSnapshot.investments.total,
-//       });
-//       // // apply day rate after all-in
-//       // newSnapshot.investments.TQQQ *= TQQQDayRate / 100 + 1;
-//       // newSnapshot.investments.cash *= 1;
-//       // newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
-//       // newSnapshot.signal = signal;
-//       break;
-//     default:
-//       break;
-//   }
-// };
 
 const updateStrategyToSnapshotYesterday = (
   newSnapshot: PortfolioSnapshot,
