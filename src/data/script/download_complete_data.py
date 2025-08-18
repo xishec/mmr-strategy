@@ -563,17 +563,7 @@ def save_data(ticker, data, output_dir):
                 print(f"⚠️  No existing data to preserve, but data quality is poor")
         
         print(f"✅ Data quality check passed for {ticker}: {valid_entries}/{new_count} valid entries ({valid_percentage:.1f}%)")
-    
-    # # Create backup of existing data before overwriting
-    # if existing_count > 0:
-    #     backup_path = output_path + f".backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    #     try:
-    #         with open(backup_path, 'w') as f:
-    #             json.dump(existing_data, f, indent=2)
-    #         print(f"💾 Created backup: {backup_path}")
-    #     except Exception as e:
-    #         print(f"⚠️  Could not create backup: {e}")
-    
+
     # Save new data
     try:
         with open(output_path, 'w') as f:

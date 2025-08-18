@@ -212,7 +212,7 @@ def get_latest_data_twelvedata(ticker, start_date):
                     "close": float(bar["close"]),
                     "overnight_rate": 0,  # Will calculate later
                     "day_rate": 0,  # Will calculate later
-                    "rate": 0  # Will calculate later (combined rate)
+                    "rate": 0,  # Will calculate later (combined rate)
                 }
 
         if new_data:
@@ -307,11 +307,77 @@ def calculate_metrics(existing_data, new_data, ticker=""):
             {
                 "overnight_rate": overnight_rate,
                 "day_rate": day_rate,
-                "rate": combined_rate
+                "rate": combined_rate,
             }
         )
 
     return all_data
+
+
+def compute_sma(data: dict, end_date: str, window: int = 200, field: str = "close"):
+    """Compute simple moving average for a given window ending at end_date.
+
+    Args:
+        data: Dict[date_str]->price dicts containing at least the field.
+        end_date: Date string (YYYY-MM-DD) included as last element of window.
+        window: Number of trading days to include (max). Defaults 200.
+        field: The key inside each date dict to average. Defaults 'close'.
+
+    Returns:
+        float: SMA value (or the end_date field value if unavailable).
+    """
+    try:
+        sorted_dates = sorted(data.keys())
+        if end_date not in sorted_dates:
+            return None
+        idx = sorted_dates.index(end_date)
+        window_dates = sorted_dates[max(0, idx - (window - 1)) : idx + 1]
+        values = [data[d][field] for d in window_dates if field in data[d]]
+        if not values:
+            return data[end_date].get(field)
+        return sum(values) / len(values)
+    except Exception:
+        return data.get(end_date, {}).get(field)
+
+
+def compute_recent_big_pullback(
+    data: dict,
+    end_date: str,
+    window: int = 200,
+    threshold: float = 0.75,
+    field: str = "close",
+):
+    """Compute pullback ratio and boolean flag for a large pullback.
+
+    Pullback ratio = current close / max close in window. Flag true if ratio < threshold.
+
+    Args:
+        data: Dict of date->metrics containing 'close'.
+        end_date: Date string (YYYY-MM-DD) for current day.
+        window: Lookback window size (trading days). Default 200.
+        threshold: Ratio threshold to define 'big pullback'. Default 0.75 (25%+ drawdown).
+        field: Field to evaluate (default 'close').
+
+    Returns:
+        tuple: (pullback_ratio (float), recent_big_pullback (bool))
+    """
+    try:
+        sorted_dates = sorted(data.keys())
+        if end_date not in sorted_dates:
+            return 1.0, False
+        idx = sorted_dates.index(end_date)
+        window_dates = sorted_dates[max(0, idx - (window - 1)) : idx + 1]
+        window_values = [data[d][field] for d in window_dates if field in data[d]]
+        if not window_values:
+            return 1.0, False
+        current_value = data[end_date].get(field, window_values[-1])
+        max_value = max(window_values)
+        if not max_value:
+            return 1.0, False
+        ratio = current_value / max_value
+        return ratio, ratio < threshold
+    except Exception:
+        return 1.0, False
 
 
 def save_updated_data(ticker, data, file_path):
@@ -440,9 +506,7 @@ def create_email_content(qqq_data=None, tqqq_data=None, date_override=None):
     """
     # Create simple subject focused on QQQ vs SMA200*1.05
     if qqq_data:
-        sma_threshold = qqq_data["sma200"] * 1.05
-        is_above_threshold = qqq_data["close"] > sma_threshold
-        if is_above_threshold:
+        if "recentBigPullback" in qqq_data:
             subject = "🧀🧀🧀 QQQ Above Threshold"
         else:
             subject = "❌❌❌ PLEASE PANIC NOW !!! QQQ Below Threshold"
@@ -465,6 +529,15 @@ def create_email_content(qqq_data=None, tqqq_data=None, date_override=None):
         email_body += f"<p><strong>QQQ Close :</strong> ${qqq_data['close']:.2f}<br>"
         email_body += f"<strong>Threshold :</strong> >${sma_threshold:.2f}</p>"
 
+        # Optional pullback info
+        if "recentBigPullback" in qqq_data:
+            pullback_ratio_pct = qqq_data.get("pullbackRatio", 1) * 100
+            email_body += (
+                f"<p><strong>Recent Big Pullback (>=25% off peak):</strong> "
+                f"{'YES' if qqq_data['recentBigPullback'] else 'No'}"
+                f" (Current/Peak: {pullback_ratio_pct:.2f}%)</p>"
+            )
+
         # Add a celebratory GIF if QQQ is above threshold, Warren Buffett panic image if below
         if qqq_data["close"] > sma_threshold:
             email_body += "<img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExdWZ5bjczZGRlYzR5cmQxcmpvNnB0azFuaXc1NTRzN2F2aHRwM25mdyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/NEvPzZ8bd1V4Y/giphy.gif' alt='Nice' style='width:100%; max-width:600px;'><br>"
@@ -486,40 +559,49 @@ def send_update_notifications(updates_summary):
     qqq_data = None
     tqqq_data = None
 
-    for update in updates_summary:
-        ticker = update["ticker"]
-        latest_date = update["dates"][-1]  # Most recent date
+    update = updates_summary[-1]
+    ticker = update["ticker"]
+    latest_date = update["dates"][-1]  # Most recent date
 
-        # Load the updated data
-        data_dir = os.path.join(root_dir, "src", "data")
-        file_path = os.path.join(data_dir, f"{ticker}.json")
+    # Load the updated data
+    data_dir = os.path.join(root_dir, "src", "data")
+    file_path = os.path.join(data_dir, f"{ticker}.json")
 
-        try:
-            with open(file_path, "r") as f:
-                data = json.load(f)
+    try:
+        with open(file_path, "r") as f:
+            data = json.load(f)
 
-            latest_data = data[latest_date]
-            close_price = latest_data["close"]
-            sma200 = latest_data.get("sma200", close_price)
-            rate = latest_data["rate"]
+        latest_data = data[latest_date]
+        close_price = latest_data["close"]
 
-            if ticker == "QQQ":
-                qqq_data = {
-                    "close": close_price,
-                    "sma200": sma200,
-                    "rate": rate,
-                    "date": latest_date,
-                }
-            elif ticker == "TQQQ":
-                tqqq_data = {
-                    "close": close_price,
-                    "sma200": sma200,
-                    "rate": rate,
-                    "date": latest_date,
-                }
-        except Exception as e:
-            print(f"⚠️  Could not analyze {ticker}: {e}")
-            continue
+        # Compute SMA200 via helper
+        sma200 = compute_sma(data, latest_date, 200, "close")
+        latest_data["sma200"] = sma200
+        rate = latest_data["rate"]
+
+        if ticker == "QQQ":
+            # Pullback metrics via helper
+            pullback_ratio, recent_big_pullback = compute_recent_big_pullback(
+                data, latest_date, 200, 0.75, "close"
+            )
+
+            qqq_data = {
+                "close": close_price,
+                "sma200": sma200,
+                "rate": rate,
+                "date": latest_date,
+                "pullbackRatio": pullback_ratio,
+                "recentBigPullback": recent_big_pullback,
+            }
+        elif ticker == "TQQQ":
+            tqqq_data = {
+                "close": close_price,
+                "sma200": sma200,
+                "rate": rate,
+                "date": latest_date,
+            }
+    except Exception as e:
+        print(f"⚠️  Could not analyze {ticker}: {e}")
 
     # Use the shared email creation function
     subject, email_body = create_email_content(qqq_data, tqqq_data)
