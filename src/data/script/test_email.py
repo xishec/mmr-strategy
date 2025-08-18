@@ -6,7 +6,7 @@ Tests the email notification system with mock data to verify it's working correc
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -14,94 +14,81 @@ load_dotenv()
 
 
 def create_mock_data(scenario="above"):
-    """Create mock stock data for testing"""
+    """Create richer mock stock data including a short window so SMA & pullback logic behave realistically.
+
+    Scenarios:
+        above: QQQ close above 1.05 * SMA200 equivalent (simulated with 20 lower closes then pop higher). No big pullback.
+        below: QQQ close below threshold and large pullback (ratio < 0.75).
+    """
+    base_date = datetime(2025, 8, 14)
+
+    mock_qqq_data = {}
+    mock_tqqq_data = {}
+
     if scenario == "above":
-        # QQQ above SMA200+5% scenario
-        mock_qqq_data = {
-            "2025-08-14": {
-                "open": 485.20,
-                "close": 486.75,  # Above 483.26 (460.25 * 1.05)
-                "overnight_rate": 0.32,
-                "day_rate": 0.32,
-                "rate": 0.64,
-                "sma200": 460.25,
-                "sma300": 455.50,
-                "sma3": 460.25,
-            }
-        }
-
-        mock_tqqq_data = {
-            "2025-08-14": {
-                "open": 72.15,
-                "close": 73.25,  # Positive performance
-                "overnight_rate": 0.96,
-                "day_rate": 1.52,
-                "rate": 2.48,
-                "sma200": 65.80,
-                "sma300": 63.20,
-                "sma3": 65.80,
-            }
-        }
+        # 20 prior days around 460, last day jump to 486.75 ( > 460 * 1.05 )
+        for i in range(20, 0, -1):
+            d = (base_date - timedelta(days=i)).strftime("%Y-%m-%d")
+            close_val = 460.0 + (i % 3) * 0.2  # small variation
+            mock_qqq_data[d] = {"open": close_val, "close": close_val, "rate": 0}
+            mock_tqqq_data[d] = {"open": 70.0, "close": 70.0, "rate": 0}
+        latest = base_date.strftime("%Y-%m-%d")
+        mock_qqq_data[latest] = {"open": 484.5, "close": 486.75, "rate": 0.64}
+        mock_tqqq_data[latest] = {"open": 72.15, "close": 73.25, "rate": 2.48}
     else:
-        # QQQ below SMA200+5% scenario
-        mock_qqq_data = {
-            "2025-08-14": {
-                "open": 475.20,
-                "close": 476.75,  # Below 483.26 (460.25 * 1.05)
-                "overnight_rate": -0.52,
-                "day_rate": 0.33,
-                "rate": -0.19,
-                "sma200": 460.25,
-                "sma300": 455.50,
-                "sma3": 460.25,
-            }
-        }
-
-        mock_tqqq_data = {
-            "2025-08-14": {
-                "open": 68.15,
-                "close": 68.25,  # Negative performance
-                "overnight_rate": -1.56,
-                "day_rate": 0.15,
-                "rate": -1.41,
-                "sma200": 65.80,
-                "sma300": 63.20,
-                "sma3": 65.80,
-            }
-        }
+        # Create a prior peak at 640 then drift down to 476.75 (pullback ~ -25%+)
+        for i in range(25, 5, -1):
+            d = (base_date - timedelta(days=i)).strftime("%Y-%m-%d")
+            # Simulate earlier high values (declining)
+            close_val = 640.0 - (25 - i) * 5  # 640, 635, ...
+            mock_qqq_data[d] = {"open": close_val, "close": close_val, "rate": 0}
+            mock_tqqq_data[d] = {"open": 90.0, "close": 90.0, "rate": 0}
+        # Some mid-range values closer to current
+        for i in range(5, 0, -1):
+            d = (base_date - timedelta(days=i)).strftime("%Y-%m-%d")
+            close_val = 500.0 - i * 4
+            mock_qqq_data[d] = {"open": close_val, "close": close_val, "rate": 0}
+            mock_tqqq_data[d] = {"open": 75.0, "close": 75.0, "rate": 0}
+        latest = base_date.strftime("%Y-%m-%d")
+        mock_qqq_data[latest] = {"open": 475.20, "close": 476.75, "rate": -0.19}
+        mock_tqqq_data[latest] = {"open": 68.15, "close": 68.25, "rate": -1.41}
 
     return mock_qqq_data, mock_tqqq_data
 
 
 def preview_email_content(scenario):
-    """Preview the email content that would be sent - using daily_update.py's exact function"""
+    """Preview email content using production create_email_content with new SMA & pullback fields.
+
+    We compute SMA200 and pullback on the mock dataset to mimic send_update_notifications output.
+    """
+    from daily_update import create_email_content, compute_sma, compute_recent_big_pullback
+
     mock_qqq_data, mock_tqqq_data = create_mock_data(scenario)
+    latest_date = sorted(mock_qqq_data.keys())[-1]
 
-    # Get the latest date's data (should be "2025-08-14")
-    latest_date = "2025-08-14"
-    qqq_latest = mock_qqq_data[latest_date]
-    tqqq_latest = mock_tqqq_data[latest_date]
+    sma200 = compute_sma(mock_qqq_data, latest_date, 200, "close") or mock_qqq_data[latest_date]["close"]
+    pullback_ratio, recent_big_pullback = compute_recent_big_pullback(
+        mock_qqq_data, latest_date, 200, 0.75, "close"
+    )
 
-    # Prepare data in the format expected by daily_update.py
     qqq_data = {
-        "close": qqq_latest["close"],
-        "sma200": qqq_latest["sma200"],
-        "day_rate": qqq_latest["day_rate"],
-        "rate": qqq_latest["rate"],  # Added missing rate field
+        "close": mock_qqq_data[latest_date]["close"],
+        "sma200": sma200,
+        "rate": mock_qqq_data[latest_date]["rate"],
+        "date": latest_date,
+        "pullbackRatio": pullback_ratio,
+        "recentBigPullback": recent_big_pullback,
     }
 
     tqqq_data = {
-        "close": tqqq_latest["close"], 
-        "day_rate": tqqq_latest["day_rate"],
-        "rate": tqqq_latest["rate"],  # Added missing rate field
+        "close": mock_tqqq_data[latest_date]["close"],
+        "sma200": compute_sma(mock_tqqq_data, latest_date, 200, "close")
+        or mock_tqqq_data[latest_date]["close"],
+        "rate": mock_tqqq_data[latest_date]["rate"],
+        "date": latest_date,
     }
 
-    # Import and use the exact email creation function from daily_update.py
-    from daily_update import create_email_content
-
-    # Generate email using the same function as production
     subject, email_body = create_email_content(qqq_data, tqqq_data, latest_date)
-
     return subject, email_body
 
 
@@ -139,10 +126,13 @@ def test_email_notification(scenario="above"):
     print("=" * 40)
     print()
 
-    # Create mock updates summary
+    # Determine latest date from mocks
+    latest_date = sorted(mock_qqq_data.keys())[-1]
+
+    # Create mock updates summary (ensure QQQ is processed by putting it last because production code only uses last element)
     mock_updates = [
-        {"ticker": "QQQ", "dates": ["2025-08-14"], "count": 1},
-        {"ticker": "TQQQ", "dates": ["2025-08-14"], "count": 1},
+        {"ticker": "TQQQ", "dates": [latest_date], "count": 1},
+        {"ticker": "QQQ", "dates": [latest_date], "count": 1},
     ]
 
     try:
