@@ -362,71 +362,137 @@ def merge_and_calculate(data_dict):
     # Return sorted data
     return {date: data_dict[date] for date in sorted_dates}
 
-def simulate_tqqq_from_qqq(qqq_data):
-    """Simulate TQQQ (3x leveraged) from QQQ data"""
-    print("🔄 Simulating TQQQ from QQQ data...")
-    
-    sorted_dates = sorted(qqq_data.keys())
-    
-    # Remove first date for proper return calculation
-    if len(sorted_dates) > 1:
-        first_date = sorted_dates[0]
-        qqq_data_copy = qqq_data.copy()
-        del qqq_data_copy[first_date]
-        sorted_dates = sorted_dates[1:]
+def simulate_tqqq_from_qqq(
+    qqq_data: dict,
+    leverage: float = 3.0,
+    annual_expense_ratio: float = 0.0095,
+    trading_days_per_year: int = 252,
+    starting_price: float | None = None,
+    tracking_error_daily: float | None = None,
+    calibrate_with_real: dict | None = None,
+    calibration_method: str = "trimmed",  # mean | median | trimmed | none
+    trim_fraction: float = 0.05,  # fraction each tail removed if trimmed
+    max_abs_tracking_error: float = 0.0002,  # 0.02% cap per day
+    additional_annual_borrow_cost: float = 0.01,  # approximate financing/borrow cost
+    extra_daily_drift: float = 0.0,  # manual additional daily negative drift (decimal), e.g. -0.00005
+) -> dict:
+    """Simulate leveraged ETF (TQQQ) from QQQ data with minimal bias.
+
+    Changes (v2):
+      • Removed explicit volatility drag adjustment (naturally emerges via compounding).
+      • Apply leverage to overnight and intraday components separately but apply fee once per day (at close).
+      • Optionally calibrate average daily tracking error from real overlapping data.
+      • Scale starting price to underlying*leverage unless overridden.
+    """
+    print("🔄 Simulating TQQQ from QQQ data (v2)...")
+    if not qqq_data:
+        return {}
+    dates = sorted(qqq_data.keys())
+    first = dates[0]
+    first_close_under = qqq_data[first]["close"]
+    if starting_price is None:
+        start_close = first_close_under * leverage
     else:
-        qqq_data_copy = qqq_data.copy()
-    
-    # Initialize TQQQ simulation
-    tqqq_data = {}
-    
-    # Starting values
-    if sorted_dates:
-        first_date = sorted_dates[0]
-        starting_close = qqq_data_copy[first_date]["close"]
-        tqqq_close = starting_close * 3  # 3x initial price
-    else:
-        tqqq_close = 300  # Default starting price
-    
-    for i, date in enumerate(sorted_dates):
-        qqq_data_point = qqq_data_copy[date]
-        
-        # Apply 3x leverage to daily returns
-        qqq_combined_rate = qqq_data_point["rate"]
-        qqq_overnight_rate = qqq_data_point.get("overnight_rate", 0)
-        qqq_day_rate = qqq_data_point.get("day_rate", 0)
-        
-        tqqq_combined_rate = qqq_combined_rate * 3
-        tqqq_overnight_rate = qqq_overnight_rate * 3
-        tqqq_day_rate = qqq_day_rate * 3
-        
-        # Calculate new TQQQ close price
-        new_tqqq_close = tqqq_close * (1 + tqqq_combined_rate / 100)
-        
-        # Estimate TQQQ open price based on QQQ intraday movement
-        qqq_open = qqq_data_point["open"]
-        qqq_close = qqq_data_point["close"]
-        
-        if qqq_open != 0:
-            qqq_intraday_return = (qqq_close - qqq_open) / qqq_open * 100
-            tqqq_intraday_return = qqq_intraday_return * 3
-            tqqq_open = new_tqqq_close / (1 + tqqq_intraday_return / 100)
-        else:
-            tqqq_open = tqqq_close
-        
-        # Update for next iteration
-        tqqq_close = new_tqqq_close
-        
-        # Store TQQQ data
-        tqqq_data[date] = {
-            "open": round(tqqq_open, 6),
-            "close": round(tqqq_close, 6),
-            "overnight_rate": round(tqqq_overnight_rate, 6),
-            "day_rate": round(tqqq_day_rate, 6),
-            "rate": round(tqqq_combined_rate, 6)
+        start_close = starting_price
+
+    # Fee (daily simple approximation)
+    fee_daily = annual_expense_ratio / trading_days_per_year
+    borrow_fee_daily = additional_annual_borrow_cost / trading_days_per_year if additional_annual_borrow_cost > 0 else 0.0
+
+    # Calibrate tracking error if real data provided
+    if tracking_error_daily is None and calibrate_with_real and calibration_method != "none":
+        overlaps = [d for d in dates if d in calibrate_with_real][1:]
+        if overlaps:
+            diffs = []
+            prev_u = qqq_data[first]["close"]
+            prev_real_close = calibrate_with_real[overlaps[0]]["close"] if overlaps[0] in calibrate_with_real else None
+            # Build mapping of close series for real
+            # Iterate in date order
+            prev_real = calibrate_with_real[first]["close"] if first in calibrate_with_real else None
+            for d in overlaps:
+                u_prev = prev_u
+                u_now = qqq_data[d]["close"]
+                r_u = u_now / u_prev - 1
+                if prev_real is not None and d in calibrate_with_real:
+                    real_prev = prev_real
+                    real_now = calibrate_with_real[d]["close"]
+                    r_real = real_now / real_prev - 1
+                    expected_no_te = leverage * r_u - fee_daily
+                    diffs.append(r_real - expected_no_te)
+                    prev_real = real_now
+                prev_u = u_now
+            if diffs:
+                sorted_diffs = sorted(diffs)
+                if calibration_method == "median":
+                    mid = len(sorted_diffs)//2
+                    tracking_error_daily = sorted_diffs[mid] if len(sorted_diffs)%2==1 else (sorted_diffs[mid-1]+sorted_diffs[mid])/2
+                elif calibration_method == "trimmed":
+                    k = int(len(sorted_diffs)*trim_fraction)
+                    core = sorted_diffs[k:len(sorted_diffs)-k] if k>0 else sorted_diffs
+                    tracking_error_daily = sum(core)/len(core) if core else 0.0
+                elif calibration_method == "mean":
+                    tracking_error_daily = sum(sorted_diffs)/len(sorted_diffs)
+                else:
+                    tracking_error_daily = 0.0
+                # Cap magnitude
+                if tracking_error_daily > max_abs_tracking_error:
+                    tracking_error_daily = max_abs_tracking_error
+                elif tracking_error_daily < -max_abs_tracking_error:
+                    tracking_error_daily = -max_abs_tracking_error
+                print(f"📐 Calibrated tracking error ({calibration_method} capped): {tracking_error_daily*100:.4f}% per day (n={len(diffs)})")
+            else:
+                tracking_error_daily = 0.0
+    elif tracking_error_daily is None:
+        tracking_error_daily = 0.0
+
+    out = {
+        first: {
+            "open": round(start_close, 6),
+            "close": round(start_close, 6),
+            "overnight_rate": 0.0,
+            "day_rate": 0.0,
+            "rate": 0.0,
         }
-    
-    return tqqq_data
+    }
+    prev_close_t = start_close
+    prev_close_u = first_close_under
+
+    for d in dates[1:]:
+        u = qqq_data[d]
+        o_u = u["open"]
+        c_u = u["close"]
+        if prev_close_u <= 0 or o_u <= 0 or c_u <= 0:
+            out[d] = {"open": round(prev_close_t,6), "close": round(prev_close_t,6), "overnight_rate":0.0, "day_rate":0.0, "rate":0.0}
+            continue
+        r_o = o_u / prev_close_u - 1
+        r_d = c_u / o_u - 1
+        # Overnight leveraged move (no fee yet)
+        t_open = prev_close_t * (1 + leverage * r_o + tracking_error_daily/2)
+        # Intraday leveraged move
+        t_close_raw = t_open * (1 + leverage * r_d + tracking_error_daily/2)
+        # Apply daily fee at close
+        # Apply fees & optional extra drift (drift is additive on return, approximate)
+        total_fee_factor = 1 - fee_daily - borrow_fee_daily
+        # Ensure not negative
+        if total_fee_factor <= 0:
+            total_fee_factor = 0.000001
+        t_close = t_close_raw * total_fee_factor * (1 + extra_daily_drift)
+
+        overnight_rate = (t_open / prev_close_t - 1) * 100
+        day_rate = (t_close / t_open - 1) * 100
+        combined = (t_close / prev_close_t - 1) * 100
+
+        out[d] = {
+            "open": round(t_open, 6),
+            "close": round(t_close, 6),
+            "overnight_rate": round(overnight_rate, 6),
+            "day_rate": round(day_rate, 6),
+            "rate": round(combined, 6),
+        }
+        prev_close_t = t_close
+        prev_close_u = c_u
+
+    return out
 
 def save_data(ticker, data, output_dir):
     """Save data to JSON file with protection against overwriting good data with bad data"""
