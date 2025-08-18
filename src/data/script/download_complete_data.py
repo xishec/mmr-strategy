@@ -24,6 +24,14 @@ root_dir = os.path.dirname(os.path.dirname(os.path.dirname(DIR)))
 # API Keys
 TWELVEDATA_API_KEY = os.getenv("TWELVEDATA_API_KEY")
 
+# Simulation configuration for TQQQ (v2 logic)
+TQQQ_ANNUAL_EXPENSE_RATIO = 0.0095  # 0.95%
+TQQQ_BORROW_COST = 0.004  # 0.4% additional financing cost
+TQQQ_MAX_DAILY_TRACKING_ERROR = 0.0002  # 0.02%
+TQQQ_CALIBRATION_METHOD = "trimmed"  # trimmed | mean | median | none
+TQQQ_TRIM_FRACTION = 0.05
+TQQQ_EXTRA_DAILY_DRIFT = 0.0  # keep zero unless intentionally biasing
+
 def smart_delay(attempt=0, base_delay=1):
     """
     Add intelligent delays to prevent rate limiting
@@ -703,7 +711,15 @@ def download_complete_data():
         # Step 1: Simulate TQQQ for early years (1998-2010) from QQQ data
         print("🔄 Simulating TQQQ for early years (1998-2010)...")
         early_qqq = {date: data for date, data in qqq_data.items() if date < "2010-02-11"}
-        simulated_tqqq = simulate_tqqq_from_qqq(early_qqq)
+        simulated_tqqq = simulate_tqqq_from_qqq(
+            early_qqq,
+            annual_expense_ratio=TQQQ_ANNUAL_EXPENSE_RATIO,
+            additional_annual_borrow_cost=TQQQ_BORROW_COST,
+            calibration_method="none",  # calibrate after real data fetched
+            max_abs_tracking_error=TQQQ_MAX_DAILY_TRACKING_ERROR,
+            trim_fraction=TQQQ_TRIM_FRACTION,
+            extra_daily_drift=TQQQ_EXTRA_DAILY_DRIFT,
+        )
         
         # Step 2: Get real TQQQ data from launch date onwards using hybrid approach
         print("🔄 Downloading real TQQQ data from launch date...")
@@ -740,6 +756,22 @@ def download_complete_data():
             tqqq_data = simulated_tqqq
         else:
             raw_real_tqqq_data = merge_and_calculate(tqqq_real_data)
+
+            # Re-simulate early period WITH calibration now that real data is available
+            print("🔄 Re-simulating pre-launch TQQQ with calibration against real data...")
+            if early_qqq:
+                simulated_tqqq = simulate_tqqq_from_qqq(
+                    early_qqq,
+                    annual_expense_ratio=TQQQ_ANNUAL_EXPENSE_RATIO,
+                    additional_annual_borrow_cost=TQQQ_BORROW_COST,
+                    calibration_method=TQQQ_CALIBRATION_METHOD,
+                    max_abs_tracking_error=TQQQ_MAX_DAILY_TRACKING_ERROR,
+                    trim_fraction=TQQQ_TRIM_FRACTION,
+                    extra_daily_drift=TQQQ_EXTRA_DAILY_DRIFT,
+                    calibrate_with_real=raw_real_tqqq_data,
+                )
+            else:
+                print("ℹ️  No pre-launch QQQ data available for re-simulation calibration.")
             
             # Step 3: Adjust real TQQQ data to continue seamlessly from simulated data
             adjusted_real_tqqq = adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data)
