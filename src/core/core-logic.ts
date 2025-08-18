@@ -1,4 +1,4 @@
-import { daysBetween } from "./date-utils";
+import { daysBetween, addDays } from "./date-utils";
 import { calculateAnnualizedRates, calculateTradeStatistics, deepCopyPortfolioSnapshot } from "./functions";
 import { Investments, MarketData, PortfolioSnapshot, Signal, SignalType, Simulation } from "./models";
 
@@ -77,26 +77,25 @@ export const getYesterdaySignal = (
 
   const yesterdaySignal = yesterdaySnapshot.signal;
 
+  // Calculate the maximum close price from yesterdayDate to yesterdayDate - 180 days
+  // More optimized approach using sorted market dates
+  const startDate = addDays(yesterdayDate, -180);
+  const yesterdayIdx = marketDates.indexOf(yesterdayDate);
+  const relevantDates = marketDates
+    .slice(Math.max(0, yesterdayIdx - 180), yesterdayIdx + 1)
+    .filter((date) => date >= startDate);
 
-  const last120Snapshots = simulation.portfolioSnapshots.slice(-120);
-  const wasInMarket = last120Snapshots.every((s) => s.investments.ratio > 0);
+  const lastPeriodMaxClose = relevantDates
+    .map((date) => marketData.QQQ[date]?.close || 0)
+    .reduce((max, closePrice) => Math.max(max, closePrice), 0);
 
-  const recentBigPullback = wasInMarket && yesterdaySnapshot.pullback < -0.6;
+  const QQQPullBack = marketData.QQQ[yesterdayDate].close / lastPeriodMaxClose;
+  const recentBigPullback = QQQPullBack < 0.75;
 
-  // const last120DaysFromCurrent = marketDates.slice(Math.max(0, yesterdayIndex - 90), yesterdayIndex);
-  // const recentlyBelowSMA200 = last120DaysFromCurrent.slice(-90).some((d) => {
-  //   const dayData = marketData.QQQ[d];
-  //   return dayData && dayData.sma200 && dayData.close < dayData.sma200 * 1.05;
-  // });
   const recentlyBelowSMA200 =
-    marketData.QQQ[yesterdayDate].sma &&
-    marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.9;
+    marketData.QQQ[yesterdayDate].sma && marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.9;
 
   const isAboveSMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
-
-  // if (yesterdaySignal.signalType === SignalType.Sell) {
-  //   console.log(date);
-  // }
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
