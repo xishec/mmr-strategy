@@ -77,8 +77,6 @@ export const getYesterdaySignal = (
 
   const yesterdaySignal = yesterdaySnapshot.signal;
 
-  // Calculate the maximum close price from yesterdayDate to yesterdayDate - 180 days
-  // More optimized approach using sorted market dates
   const startDate = addDays(yesterdayDate, -180);
   const yesterdayIdx = marketDates.indexOf(yesterdayDate);
   const relevantDates = marketDates
