@@ -88,12 +88,23 @@ export const getYesterdaySignal = (
     .reduce((max, closePrice) => Math.max(max, closePrice), 0);
 
   const QQQPullBack = marketData.QQQ[yesterdayDate].close / lastPeriodMaxClose;
-  const recentBigPullback = QQQPullBack < 0.75;
+  const fastBigPullback = QQQPullBack < 0.75;
 
   const recentlyBelowSMA200 =
     marketData.QQQ[yesterdayDate].sma && marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.9;
 
   const isAboveSMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
+  const belowSMAForAWhile = marketDates
+    .slice(Math.max(0, yesterdayIdx - 30), yesterdayIdx + 1)
+    .filter((date) => date >= startDate)
+    .every((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 1);
+
+  const hadABigDrop = marketDates
+    .slice(Math.max(0, yesterdayIdx - 30), yesterdayIdx + 1)
+    .filter((date) => date >= startDate)
+    .some((date) => marketData.QQQ[date].rate < -4);
+
+  const slowBigPullBack = belowSMAForAWhile && hadABigDrop;
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
@@ -102,7 +113,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.Hold:
-      if (recentBigPullback) {
+      if (fastBigPullback || slowBigPullBack) {
         signalType = SignalType.Sell;
       } else {
         signalType = SignalType.Hold;
@@ -110,7 +121,11 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.Sell:
-      signalType = SignalType.WaitingForDrop;
+      if (belowSMAForAWhile && hadABigDrop) {
+        signalType = SignalType.WaitingForRecovery;
+      } else {
+        signalType = SignalType.WaitingForDrop;
+      }
       break;
 
     case SignalType.WaitingForDrop:
@@ -140,7 +155,7 @@ export const getYesterdaySignal = (
   return {
     date,
     bigDropLast30Days: false,
-    bigPullbackLast30Days: marketData.TQQQ[yesterdayDate].rate < -12.5,
+    bigPullbackLast30Days: belowSMAForAWhile && hadABigDrop,
     isAboveSMA200,
     isBelowSMA200: false,
     signalType,
