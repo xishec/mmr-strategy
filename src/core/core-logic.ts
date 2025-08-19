@@ -76,35 +76,33 @@ export const getYesterdaySignal = (
   }
 
   const yesterdaySignal = yesterdaySnapshot.signal;
-
   const startDate = addDays(yesterdayDate, -180);
   const yesterdayIdx = marketDates.indexOf(yesterdayDate);
-  const relevantDates = marketDates
-    .slice(Math.max(0, yesterdayIdx - 180), yesterdayIdx + 1)
-    .filter((date) => date >= startDate);
 
-  const lastPeriodMaxClose = relevantDates
+  const fastDrop = marketData.TQQQ[yesterdayDate].rate < -20;
+
+  const lastPeriodMaxClose = marketDates
+    .slice(Math.max(0, yesterdayIdx - 180), yesterdayIdx + 1)
+    .filter((date) => date >= startDate)
     .map((date) => marketData.QQQ[date]?.close || 0)
     .reduce((max, closePrice) => Math.max(max, closePrice), 0);
-
   const QQQPullBack = marketData.QQQ[yesterdayDate].close / lastPeriodMaxClose;
-  const fastBigPullback = QQQPullBack < 0.75 || marketData.TQQQ[yesterdayDate].rate < -20;
+  const mediumDrop = QQQPullBack < 0.75;
+
+  const belowSMAForAWhile = marketDates
+    .slice(Math.max(0, yesterdayIdx - 30), yesterdayIdx + 1)
+    .filter((date) => date >= startDate)
+    .every((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 1);
+  const hadABigDrop = marketDates
+    .slice(Math.max(0, yesterdayIdx - 5), yesterdayIdx + 1)
+    .filter((date) => date >= startDate)
+    .every((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 0.9);
+  const slowDrop = belowSMAForAWhile && hadABigDrop;
 
   const recentlyBelowSMA200 =
     marketData.QQQ[yesterdayDate].sma && marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.9;
 
   const isAboveSMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
-  const belowSMAForAWhile = marketDates
-    .slice(Math.max(0, yesterdayIdx - 30), yesterdayIdx + 1)
-    .filter((date) => date >= startDate)
-    .every((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 1);
-
-  const hadABigDrop = marketDates
-    .slice(Math.max(0, yesterdayIdx - 5), yesterdayIdx + 1)
-    .filter((date) => date >= startDate)
-    .every((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 0.9);
-
-  const slowBigPullBack = belowSMAForAWhile && hadABigDrop;
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
@@ -113,7 +111,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.Hold:
-      if (fastBigPullback || slowBigPullBack) {
+      if (fastDrop || mediumDrop || slowDrop) {
         signalType = SignalType.Sell;
       } else {
         signalType = SignalType.Hold;
@@ -121,7 +119,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.Sell:
-      if (belowSMAForAWhile && hadABigDrop) {
+      if (fastDrop || mediumDrop) {
         signalType = SignalType.WaitingForRecovery;
       } else {
         signalType = SignalType.WaitingForDrop;
@@ -154,10 +152,10 @@ export const getYesterdaySignal = (
 
   return {
     date,
-    bigDropLast30Days: fastBigPullback,
-    bigPullbackLast30Days: slowBigPullBack,
+    bigDropLast30Days: fastDrop,
+    bigPullbackLast30Days: mediumDrop,
     isAboveSMA200,
-    isBelowSMA200: false,
+    isBelowSMA200: slowDrop,
     signalType,
   };
 };
