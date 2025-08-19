@@ -25,8 +25,8 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
       buyAtOpen: true,
     },
     multiSimulationVariables: {
-      simulationFrequencyDays: 5,
-      simulationDurationYears: 5,
+      simulationFrequencyDays: 10,
+      simulationDurationYears: 50,
       simulationAnalysisMinusYears: 5,
     },
     uiVariables: {

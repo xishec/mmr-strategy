@@ -140,9 +140,9 @@ export const getYesterdaySignal = (
   return {
     date,
     bigDropLast30Days: false,
-    bigPullbackLast30Days: recentBigPullback,
+    bigPullbackLast30Days: marketData.TQQQ[yesterdayDate].rate < -12.5,
     isAboveSMA200,
-    isBelowSMA200: recentBigPullback,
+    isBelowSMA200: false,
     signalType,
   };
 };
