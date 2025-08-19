@@ -88,7 +88,7 @@ export const getYesterdaySignal = (
     .reduce((max, closePrice) => Math.max(max, closePrice), 0);
 
   const QQQPullBack = marketData.QQQ[yesterdayDate].close / lastPeriodMaxClose;
-  const fastBigPullback = QQQPullBack < 0.75;
+  const fastBigPullback = QQQPullBack < 0.75 || marketData.TQQQ[yesterdayDate].rate < -20;
 
   const recentlyBelowSMA200 =
     marketData.QQQ[yesterdayDate].sma && marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.9;
