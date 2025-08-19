@@ -100,9 +100,9 @@ export const getYesterdaySignal = (
     .every((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 1);
 
   const hadABigDrop = marketDates
-    .slice(Math.max(0, yesterdayIdx - 30), yesterdayIdx + 1)
+    .slice(Math.max(0, yesterdayIdx - 5), yesterdayIdx + 1)
     .filter((date) => date >= startDate)
-    .some((date) => marketData.QQQ[date].rate < -4);
+    .every((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 0.9);
 
   const slowBigPullBack = belowSMAForAWhile && hadABigDrop;
 
@@ -154,8 +154,8 @@ export const getYesterdaySignal = (
 
   return {
     date,
-    bigDropLast30Days: false,
-    bigPullbackLast30Days: belowSMAForAWhile && hadABigDrop,
+    bigDropLast30Days: fastBigPullback,
+    bigPullbackLast30Days: slowBigPullBack,
     isAboveSMA200,
     isBelowSMA200: false,
     signalType,
