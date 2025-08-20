@@ -121,7 +121,7 @@ export const getYesterdaySignal = (
     marketData.QQQ[yesterdayDate].sma &&
     marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.95;
   const isAbove105SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
-  const isAbove100SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.0;
+  // const isAbove100SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.0;
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
