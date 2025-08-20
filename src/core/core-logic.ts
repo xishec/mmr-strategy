@@ -111,7 +111,7 @@ export const getYesterdaySignal = (
     return aboveCount / windowDates.length >= 0.9;
   })();
   const wasRecovering = simulation.portfolioSnapshots
-    .slice(-200)
+    .slice(-250)
     .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery);
   const growTooFast = aboveSMAForAWhile && !wasRecovering;
 
@@ -139,7 +139,7 @@ export const getYesterdaySignal = (
 
     case SignalType.Sell:
       if (growTooFast) {
-        signalType = SignalType.WaitingForSmallDrop;
+        signalType = SignalType.WaitingForDrop;
       } else if (fastDrop || mediumDrop) {
         signalType = SignalType.WaitingForRecovery;
       } else {
@@ -148,8 +148,11 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.WaitingForSmallDrop:
-      if (isBelow95SMA200) {
-        signalType = SignalType.Buy;
+      const waitingForTooLong = simulation.portfolioSnapshots
+        .slice(-900)
+        .every((snapshot) => snapshot.signal.signalType === SignalType.WaitingForSmallDrop);
+      if (isBelow90SMA200 || waitingForTooLong) {
+        signalType = SignalType.WaitingForRecovery;
       } else {
         signalType = SignalType.WaitingForSmallDrop;
       }
@@ -185,10 +188,10 @@ export const getYesterdaySignal = (
 
   return {
     date,
-    bigDropLast30Days: fastDrop,
-    bigPullbackLast30Days: mediumDrop,
+    bigDropLast30Days: false,
+    bigPullbackLast30Days: false,
     isAboveSMA200: signalType === SignalType.Buy,
-    isBelowSMA200: slowDrop,
+    isBelowSMA200: fastDrop || mediumDrop || slowDrop || growTooFast,
     signalType,
   };
 };
