@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Simulation, PortfolioSnapshot, D3ChartData, SignalType } from "../core/models";
+import { Simulation, PortfolioSnapshot, D3ChartData } from "../core/models";
 
 export const useChartData = (simulation: Simulation, selectedDate: string | null): D3ChartData => {
   // Memoize expensive chart data calculations
