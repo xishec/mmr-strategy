@@ -108,11 +108,11 @@ export const getYesterdaySignal = (
     const aboveCount = windowDates.filter(
       (d) => marketData.QQQ[d].sma && marketData.QQQ[d].close >= marketData.QQQ[d].sma! * 1.1
     ).length;
-    return aboveCount / windowDates.length >= 0.95;
+    return aboveCount / windowDates.length >= 0.9;
   })();
   const wasRecovering = simulation.portfolioSnapshots
-    .slice(-300)
-    .some((snapshot) => snapshot.signal.signalType === SignalType.Buy);
+    .slice(-350)
+    .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery);
 
   const growTooFast = aboveSMAForAWhile && !wasRecovering;
 
