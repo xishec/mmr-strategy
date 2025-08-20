@@ -123,6 +123,10 @@ export const getYesterdaySignal = (
   const isAbove105SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
   // const isAbove100SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.0;
 
+  const soldDaysAgo =
+    simulation.portfolioSnapshots.slice(-150).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
+    yesterdaySignal.signalType === SignalType.WaitingForSmallDrop;
+
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
     case SignalType.Buy:
@@ -139,7 +143,7 @@ export const getYesterdaySignal = (
 
     case SignalType.Sell:
       if (growTooFast) {
-        signalType = SignalType.WaitingForDrop;
+        signalType = SignalType.WaitingForSmallDrop;
       } else if (fastDrop || mediumDrop) {
         signalType = SignalType.WaitingForRecovery;
       } else {
@@ -148,7 +152,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.WaitingForSmallDrop:
-      if (isBelow90SMA200) {
+      if (isBelow90SMA200 || soldDaysAgo) {
         signalType = SignalType.WaitingForRecovery;
       } else {
         signalType = SignalType.WaitingForSmallDrop;
