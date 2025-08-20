@@ -108,6 +108,8 @@ export const enum SignalType {
   Buy = "buy",
   Hold = "hold",
   Sell = "sell",
+  WaitingForSmallDrop = "waiting_for_small_drop",
+  WaitingForSmallRecovery = "waiting_for_small_recovery",
   WaitingForDrop = "waiting_for_drop",
   WaitingForRecovery = "waiting_for_recovery",
 }

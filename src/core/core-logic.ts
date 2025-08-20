@@ -111,15 +111,17 @@ export const getYesterdaySignal = (
     return aboveCount / windowDates.length >= 0.9;
   })();
   const wasRecovering = simulation.portfolioSnapshots
-    .slice(-350)
+    .slice(-200)
     .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery);
-
   const growTooFast = aboveSMAForAWhile && !wasRecovering;
 
-  const recentlyBelowSMA200 =
+  const isBelow90SMA200 =
     marketData.QQQ[yesterdayDate].sma && marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.9;
-
-  const isAboveSMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
+  const isBelow95SMA200 =
+    marketData.QQQ[yesterdayDate].sma &&
+    marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.95;
+  const isAbove105SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
+  const isAbove100SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.0;
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
@@ -136,15 +138,33 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.Sell:
-      if (fastDrop || mediumDrop) {
+      if (growTooFast) {
+        signalType = SignalType.WaitingForSmallDrop;
+      } else if (fastDrop || mediumDrop) {
         signalType = SignalType.WaitingForRecovery;
       } else {
         signalType = SignalType.WaitingForDrop;
       }
       break;
 
+    case SignalType.WaitingForSmallDrop:
+      if (isBelow95SMA200) {
+        signalType = SignalType.Buy;
+      } else {
+        signalType = SignalType.WaitingForSmallDrop;
+      }
+      break;
+
+    // case SignalType.WaitingForSmallRecovery:
+    //   if (isAbove100SMA200) {
+    //     signalType = SignalType.Buy;
+    //   } else {
+    //     signalType = SignalType.WaitingForSmallRecovery;
+    //   }
+    //   break;
+
     case SignalType.WaitingForDrop:
-      if (recentlyBelowSMA200) {
+      if (isBelow90SMA200) {
         signalType = SignalType.WaitingForRecovery;
       } else {
         signalType = SignalType.WaitingForDrop;
@@ -152,7 +172,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.WaitingForRecovery:
-      if (isAboveSMA200) {
+      if (isAbove105SMA200) {
         signalType = SignalType.Buy;
       } else {
         signalType = SignalType.WaitingForRecovery;
@@ -167,7 +187,7 @@ export const getYesterdaySignal = (
     date,
     bigDropLast30Days: fastDrop,
     bigPullbackLast30Days: mediumDrop,
-    isAboveSMA200,
+    isAboveSMA200: isAbove105SMA200,
     isBelowSMA200: growTooFast,
     signalType,
   };
