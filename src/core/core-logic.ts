@@ -187,8 +187,8 @@ export const getYesterdaySignal = (
     date,
     bigDropLast30Days: fastDrop,
     bigPullbackLast30Days: mediumDrop,
-    isAboveSMA200: isAbove105SMA200,
-    isBelowSMA200: growTooFast,
+    isAboveSMA200: signalType === SignalType.Buy,
+    isBelowSMA200: slowDrop,
     signalType,
   };
 };
