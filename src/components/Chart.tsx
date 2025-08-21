@@ -61,24 +61,24 @@ const Chart: React.FC<ChartProps> = ({
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const chartInstanceRef = useRef<any>(null);
-  
+
   // Store stable dimensions to prevent layout jumping during data changes
   const stableDimensionsRef = useRef<{ width: number; height: number; margin: any } | null>(null);
-  
+
   // Use refs to capture start/end dates without triggering chart recreation
   const startDateRef = useRef(startDate);
   const endDateRef = useRef(endDate);
-  
+
   // Update refs when props change, but don't trigger chart recreation
   useEffect(() => {
     startDateRef.current = startDate;
     endDateRef.current = endDate;
   }, [startDate, endDate]);
-  
+
   // Use ref to avoid recreating createD3Chart when onDateChange changes
   const onDateChangeRef = useRef(onDateChange);
   onDateChangeRef.current = onDateChange;
-  
+
   // Use ref for selectedDate to avoid recreating createD3Chart
   const selectedDateRef = useRef(selectedDate);
   selectedDateRef.current = selectedDate;
@@ -108,9 +108,9 @@ const Chart: React.FC<ChartProps> = ({
 
     // Setup dimensions and data with stability during data changes
     const margin = { top: 5, left: 35, right: 40, bottom: 60 }; // Increased bottom margin for x-axis
-    
+
     let width: number, totalChartHeight: number;
-    
+
     // Use stable dimensions if available to prevent layout jumping during data updates
     if (stableDimensionsRef.current) {
       width = stableDimensionsRef.current.width;
@@ -119,7 +119,7 @@ const Chart: React.FC<ChartProps> = ({
       // Calculate fresh dimensions and store them
       width = container.clientWidth - margin.left - margin.right;
       totalChartHeight = container.clientHeight - margin.top - margin.bottom;
-      
+
       // Store dimensions for stability
       if (width > 0 && totalChartHeight > 0) {
         stableDimensionsRef.current = { width, height: totalChartHeight, margin };
@@ -184,23 +184,21 @@ const Chart: React.FC<ChartProps> = ({
 
     // Create time scale using FIXED date range to prevent zoom issues
     let xScaleDomain: [Date, Date];
-    
+
     if (startDateRef.current && endDateRef.current) {
       // Always use the FULL original date range to prevent zoom when data changes
       const startDateObj = parseTime(startDateRef.current);
       const endDateObj = parseTime(endDateRef.current);
-      xScaleDomain = (startDateObj && endDateObj) 
-        ? [startDateObj, endDateObj]
-        : d3.extent(parsedData, (d) => d.parsedTime) as [Date, Date];
+      xScaleDomain =
+        startDateObj && endDateObj
+          ? [startDateObj, endDateObj]
+          : (d3.extent(parsedData, (d) => d.parsedTime) as [Date, Date]);
     } else {
       // Fallback to data extent if no fixed dates provided
       xScaleDomain = d3.extent(parsedData, (d) => d.parsedTime) as [Date, Date];
     }
 
-    const xScale = d3
-      .scaleTime()
-      .domain(xScaleDomain)
-      .range([0, width]);
+    const xScale = d3.scaleTime().domain(xScaleDomain).range([0, width]);
 
     // Create Y scales
     const priceData = Object.values(priceSeriesData).flat();
@@ -396,25 +394,27 @@ const Chart: React.FC<ChartProps> = ({
         })
         .attr("fill", COLORS.red);
 
-      // Render arrow markers for hasArrowMarker
-      const arrowMarkerData = processedData.filter((d: any) => d.hasArrowMarker);
-      g.selectAll(`.arrow-marker-${seriesName}`)
-        .data(arrowMarkerData)
-        .enter()
-        .append("g")
-        .attr("class", `arrow-marker-${seriesName}`)
-        .attr("transform", (d: any) => `translate(${xScale(d.parsedTime)}, ${yScale(d.value) + 15})`) // 15 pixels below the line
-        .append("polygon")
-        .attr("points", (d: any) => {
-          const size = 5;
-          // Upward pointing arrow
-          return `0,${-size} ${-size},${size} ${-size / 2},${size} ${-size / 2},${size * 2} ${size / 2},${size * 2} ${
-            size / 2
-          },${size} ${size},${size}`;
-        })
-        .attr("fill", COLORS.blue)
-        .attr("stroke", COLORS.black)
-        .attr("stroke-width", 1);
+      // Generic helper to draw circular markers with color & vertical offset
+      const drawColoredMarkers = (flagName: string, classPrefix: string, color: string, dy: number, radius = 4) => {
+        const data = processedData.filter((d: any) => d[flagName]);
+        if (!data.length) return;
+        g.selectAll(`.${classPrefix}-${seriesName}`)
+          .data(data)
+          .enter()
+          .append("circle")
+          .attr("class", `${classPrefix}-${seriesName}`)
+          .attr("cx", (d: any) => xScale(d.parsedTime))
+          .attr("cy", (d: any) => yScale(d.value) + dy)
+          .attr("r", radius)
+          .attr("fill", color)
+          .attr("opacity", 1);
+      };
+
+      // Render new colored markers (stacked vertically below the line)
+      drawColoredMarkers("hasYellowMarker", "yellow-marker", "#fff700ff", 5, 4);
+      drawColoredMarkers("hasOrangeMarker", "orange-marker", "#ffa600ff", 10, 4);
+      drawColoredMarkers("hasRedMarker", "red-marker", COLORS.red, 15, 4);
+      drawColoredMarkers("hasBlueMarker", "blue-marker", COLORS.blue, 20, 4);
     }
 
     // Helper function to create crosshair elements
@@ -802,9 +802,9 @@ const Chart: React.FC<ChartProps> = ({
             }
           }
         }
-      })
-      // Note: Keyboard navigation is handled by the global useDateNavigation hook
-      // so we don't need to handle keydown events here to avoid conflicts
+      });
+    // Note: Keyboard navigation is handled by the global useDateNavigation hook
+    // so we don't need to handle keydown events here to avoid conflicts
 
     // Helper function to add axes and grid
     const addAxesAndGrid = () => {
@@ -898,7 +898,7 @@ const Chart: React.FC<ChartProps> = ({
     const handleResize = () => {
       // Reset stable dimensions on resize to allow adaptation
       stableDimensionsRef.current = null;
-      
+
       // Cleanup existing chart before creating new one
       if (chartInstanceRef.current && svgRef.current) {
         const svg = d3.select(svgRef.current);
@@ -914,10 +914,7 @@ const Chart: React.FC<ChartProps> = ({
     // Cleanup function with more thorough removal
     const cleanup = () => {
       // Remove global event listeners
-      d3.select("body")
-        .on("mouseup.chart", null)
-        .on("mousemove.chart", null)
-        .on("keydown.chart", null);
+      d3.select("body").on("mouseup.chart", null).on("mousemove.chart", null).on("keydown.chart", null);
 
       if (currentSvgRef) {
         const svg = d3.select(currentSvgRef);

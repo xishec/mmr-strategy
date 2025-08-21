@@ -97,10 +97,13 @@ export interface PortfolioSnapshot {
 
 export interface Signal {
   date: string;
-  bigDropLast30Days: boolean;
-  bigPullbackLast30Days: boolean;
-  isAboveSMA200: boolean;
-  isBelowSMA200: boolean;
+  hasXMarker: boolean;
+  hasYellowMarker: boolean;
+  hasOrangeMarker: boolean;
+  hasRedMarker: boolean;
+  hasBlueMarker: boolean;
+  hasGreenTriangle: boolean;
+  hasBlackTriangle: boolean;
   signalType: SignalType;
 }
 

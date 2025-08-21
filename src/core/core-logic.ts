@@ -67,10 +67,13 @@ export const getYesterdaySignal = (
   if (!yesterdaySnapshot || !yesterdaySnapshot.signal) {
     return {
       date,
-      bigDropLast30Days: false,
-      bigPullbackLast30Days: false,
-      isAboveSMA200: false,
-      isBelowSMA200: false,
+      hasRedMarker: false,
+      hasOrangeMarker: false,
+      hasYellowMarker: false,
+      hasBlueMarker: false,
+      hasGreenTriangle: false,
+      hasBlackTriangle: false,
+      hasXMarker: false,
       signalType: SignalType.WaitingForRecovery,
     };
   }
@@ -82,7 +85,7 @@ export const getYesterdaySignal = (
   const fastDrop = marketData.TQQQ[yesterdayDate].rate < -20;
 
   const lastPeriodMaxClose = marketDates
-    .slice(Math.max(0, yesterdayIdx - 180), yesterdayIdx + 1)
+    .slice(Math.max(0, yesterdayIdx - 33000), yesterdayIdx + 1)
     .filter((date) => date >= startDate)
     .map((date) => marketData.QQQ[date]?.close || 0)
     .reduce((max, closePrice) => Math.max(max, closePrice), 0);
@@ -189,10 +192,13 @@ export const getYesterdaySignal = (
 
   return {
     date,
-    bigDropLast30Days: false,
-    bigPullbackLast30Days: growTooFast,
-    isAboveSMA200: signalType === SignalType.Buy,
-    isBelowSMA200: fastDrop || mediumDrop || slowDrop,
+    hasRedMarker: fastDrop,
+    hasOrangeMarker: mediumDrop,
+    hasYellowMarker: slowDrop,
+    hasBlueMarker: growTooFast,
+    hasGreenTriangle: signalType === SignalType.Buy,
+    hasBlackTriangle: signalType === SignalType.Sell,
+    hasXMarker: false,
     signalType,
   };
 };
