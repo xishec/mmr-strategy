@@ -113,24 +113,12 @@ export const getYesterdaySignal = (
 
   const isBelow90SMA200 =
     marketData.QQQ[yesterdayDate].sma && marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.9;
-  // const isBelow95SMA200 =
-  //   marketData.QQQ[yesterdayDate].sma &&
-  //   marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.95;
   const isAbove105SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
   // const isAbove100SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.0;
 
   const soldDaysAgo =
     simulation.portfolioSnapshots.slice(-60).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
     yesterdaySignal.signalType === SignalType.WaitingForSmallDrop;
-  // const noWarningSinceSoldDaysAgo = simulation.portfolioSnapshots
-  //   .slice(-150)
-  //   .every(
-  //     (snapshot) =>
-  //       !snapshot.signal.hasRedMarker &&
-  //       !snapshot.signal.hasOrangeMarker &&
-  //       !snapshot.signal.hasYellowMarker &&
-  //       !snapshot.signal.hasBlueMarker
-  //   );
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {

@@ -2,8 +2,7 @@ import React from "react";
 import { Box, Chip, Typography } from "@mui/material";
 import { formatValue } from "../core/functions";
 import { blue, red, yellow, green } from "./Chart";
-import { D3ChartData, MarketData, SignalType, Simulation } from "../core/models";
-import { getYesterdaySignal } from "../core/core-logic";
+import { D3ChartData, MarketData, Simulation } from "../core/models";
 
 interface LegendItem {
   label: string;
@@ -101,7 +100,7 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate, marketData, 
       {/* Signal */}
       {selectedDate &&
         (() => {
-          const signal = getYesterdaySignal(selectedDate, marketData, Object.keys(marketData.QQQ), simulation);
+          const selectedSnapshot = simulation.portfolioSnapshots.find((snapshot) => snapshot.date === selectedDate);
           return (
             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
               <Typography
@@ -120,10 +119,10 @@ const Legend: React.FC<LegendProps> = ({ d3ChartData, selectedDate, marketData, 
                     border: "2px solid",
                     pt: 0.1,
                     pr: 0.05,
-                    width: "75px",
+                    width: "175px",
                   }}
-                  label={signal.signalType}
-                  color={signal.signalType === SignalType.Sell ? "error" : "success"}
+                  label={selectedSnapshot?.signal?.signalType}
+                  color={(selectedSnapshot?.investments.ratio ?? 0) > 0 ? "success" : "error"}
                   variant="outlined"
                   size="small"
                 />

@@ -1,10 +1,9 @@
 import React from "react";
-import { MarketData, SignalType, Simulation } from "../core/models";
+import { MarketData, Simulation } from "../core/models";
 import { Box, Typography, Chip, IconButton, Tooltip } from "@mui/material";
 import { Refresh as RefreshIcon, OpenInNew as OpenInNewIcon } from "@mui/icons-material";
 import { parseDate } from "../core/date-utils";
 import { DataService } from "../core/data-service";
-import { getYesterdaySignal } from "../core/core-logic";
 
 interface InformationBarProps {
   marketData: MarketData;
@@ -14,7 +13,7 @@ interface InformationBarProps {
 
 const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation, onRefreshData }) => {
   const lastDate = Object.keys(marketData.QQQ).slice(-1)[0];
-  const signal = getYesterdaySignal(lastDate, marketData, Object.keys(marketData.QQQ), simulation);
+  const lastSnapshot = simulation.portfolioSnapshots.find((snapshot) => snapshot.date === lastDate);
 
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
@@ -128,9 +127,9 @@ const InformationBar: React.FC<InformationBarProps> = ({ marketData, simulation,
         <Typography variant="body1">Current Combined Signal :</Typography>
         {lastDate && (
           <Chip
-            sx={{ fontSize: "0.9rem", fontWeight: "bold", border: "2px solid", pt: 0.1, pr: 0.05, width: "75px" }}
-            label={signal.signalType}
-            color={signal.signalType === SignalType.Sell ? "error" : "success"}
+            sx={{ fontSize: "0.9rem", fontWeight: "bold", border: "2px solid", pt: 0.1, pr: 0.05, width: "175px" }}
+            label={lastSnapshot?.signal?.signalType}
+            color={(lastSnapshot?.investments.ratio ?? 0) > 0 ? "success" : "error"}
             variant="outlined"
             size="small"
           />
