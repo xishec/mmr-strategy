@@ -148,7 +148,9 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.WaitingForSmallDrop:
-      if (isBelow90SMA200 || soldDaysAgo) {
+      if (soldDaysAgo) {
+        signalType = SignalType.Buy;
+      } else if (isBelow90SMA200) {
         signalType = SignalType.WaitingForRecovery;
       } else {
         signalType = SignalType.WaitingForSmallDrop;
@@ -191,7 +193,7 @@ export const getYesterdaySignal = (
     hasBlueMarker: growTooFast,
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
-    hasXMarker: false,
+    hasXMarker: soldDaysAgo,
     signalType,
   };
 };
