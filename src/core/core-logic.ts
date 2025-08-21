@@ -104,7 +104,7 @@ export const getYesterdaySignal = (
     const aboveCount = windowDates.filter(
       (d) => marketData.QQQ[d].sma && marketData.QQQ[d].close >= marketData.QQQ[d].sma! * 1.1
     ).length;
-    return aboveCount / windowDates.length >= 0.9;
+    return aboveCount / windowDates.length >= 0.8;
   })();
   const wasRecovering = simulation.portfolioSnapshots
     .slice(-250)
