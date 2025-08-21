@@ -1,4 +1,4 @@
-import { daysBetween, addDays } from "./date-utils";
+import { daysBetween } from "./date-utils";
 import { calculateAnnualizedRates, calculateTradeStatistics, deepCopyPortfolioSnapshot } from "./functions";
 import { Investments, MarketData, PortfolioSnapshot, Signal, SignalType, Simulation } from "./models";
 
@@ -79,34 +79,27 @@ export const getYesterdaySignal = (
   }
 
   const yesterdaySignal = yesterdaySnapshot.signal;
-  const startDate = addDays(yesterdayDate, -180);
-  const yesterdayIdx = marketDates.indexOf(yesterdayDate);
 
   const fastDrop = marketData.TQQQ[yesterdayDate].rate < -20;
 
   const lastPeriodMaxClose = marketDates
-    .slice(Math.max(0, yesterdayIdx - 33000), yesterdayIdx + 1)
-    .filter((date) => date >= startDate)
+    .slice(Math.max(0, yesterdayIndex - 150), yesterdayIndex + 1)
     .map((date) => marketData.QQQ[date]?.close || 0)
     .reduce((max, closePrice) => Math.max(max, closePrice), 0);
   const QQQPullBack = marketData.QQQ[yesterdayDate].close / lastPeriodMaxClose;
   const mediumDrop = QQQPullBack < 0.75;
 
   const belowSMAForAWhile = marketDates
-    .slice(Math.max(0, yesterdayIdx - 30), yesterdayIdx + 1)
-    .filter((date) => date >= startDate)
+    .slice(Math.max(0, yesterdayIndex - 30), yesterdayIndex + 1)
     .every((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 1);
   const hadABigDrop = marketDates
-    .slice(Math.max(0, yesterdayIdx - 5), yesterdayIdx + 1)
-    .filter((date) => date >= startDate)
+    .slice(Math.max(0, yesterdayIndex - 2), yesterdayIndex + 1)
     .every((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 0.9);
   const slowDrop = belowSMAForAWhile && hadABigDrop;
 
   const aboveSMAForAWhile = (() => {
-    // Use a 90% threshold rather than requiring every single day to be above SMA * 1.1
     const windowDates = marketDates
-      .slice(Math.max(0, yesterdayIdx - 30), yesterdayIdx + 1)
-      .filter((d) => d >= startDate);
+      .slice(Math.max(0, yesterdayIndex - 30), yesterdayIndex + 1)
     if (windowDates.length === 0) return false;
     const aboveCount = windowDates.filter(
       (d) => marketData.QQQ[d].sma && marketData.QQQ[d].close >= marketData.QQQ[d].sma! * 1.1
