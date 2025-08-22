@@ -26,8 +26,8 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
     },
     multiSimulationVariables: {
       simulationFrequencyDays: 10,
-      simulationDurationYears: 50,
-      simulationAnalysisMinusYears: 5,
+      simulationDurationYears: 10,
+      simulationAnalysisMinusYears: 10,
     },
     uiVariables: {
       isLogScale: true,

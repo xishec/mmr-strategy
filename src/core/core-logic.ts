@@ -56,10 +56,10 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
 const getInitialSignal = (date: string, marketData: MarketData, startDate: string): Signal => {
   // Get all available market dates before and including the start date for historical analysis
   const allMarketDates = Object.keys(marketData.TQQQ)
-    .filter(d => marketData.QQQ[d] !== undefined)
+    .filter((d) => marketData.QQQ[d] !== undefined)
     .sort();
-    
-  const startDateIndex = allMarketDates.findIndex(d => d >= startDate);
+
+  const startDateIndex = allMarketDates.findIndex((d) => d >= startDate);
   if (startDateIndex <= 0) {
     // Not enough historical data, default to WaitingForRecovery
     return {
@@ -99,7 +99,7 @@ const getInitialSignal = (date: string, marketData: MarketData, startDate: strin
     .every((d) => marketData.QQQ[d].close < marketData.QQQ[d].sma! * 0.9);
   const slowDrop = belowSMAForAWhile && hadABigDrop;
 
-  const aboveSMAForAWhile = (() => {
+  const isAboveSMAForAWhile = (() => {
     const windowDates = allMarketDates.slice(Math.max(0, previousIndex - 30), previousIndex + 1);
     if (windowDates.length === 0) return false;
     const aboveCount = windowDates.filter(
@@ -107,18 +107,17 @@ const getInitialSignal = (date: string, marketData: MarketData, startDate: strin
     ).length;
     return aboveCount / windowDates.length >= 0.8;
   })();
-  const growTooFast = aboveSMAForAWhile;
+  const growTooFast = isAboveSMAForAWhile;
 
-  const isBelow90SMA200 = 
+  const isBelow90SMA200 =
     marketData.QQQ[previousDate].sma && marketData.QQQ[previousDate].close < marketData.QQQ[previousDate].sma! * 0.9;
-  const isBelow95SMA200 = 
+  const isBelow95SMA200 =
     marketData.QQQ[previousDate].sma && marketData.QQQ[previousDate].close < marketData.QQQ[previousDate].sma! * 0.95;
-  const isAbove105SMA200 = 
-    marketData.QQQ[previousDate].close >= marketData.QQQ[previousDate].sma! * 1.05;
+  const isAbove105SMA200 = marketData.QQQ[previousDate].close >= marketData.QQQ[previousDate].sma! * 1.05;
 
   // Determine initial signal type based on market conditions
   let signalType = SignalType.Hold;
-  
+
   if (isAbove105SMA200) {
     signalType = SignalType.Buy;
   } else if (isBelow90SMA200) {
@@ -186,7 +185,7 @@ export const getYesterdaySignal = (
   const slowDrop = belowSMAForAWhile && hadABigDrop;
 
   // Use a 90% threshold rather than requiring every single day to be above SMA * 1.1
-  const aboveSMAForAWhile = (() => {
+  const isAboveSMAForAWhile = (() => {
     const windowDates = marketDates.slice(Math.max(0, yesterdayIndex - 30), yesterdayIndex + 1);
     if (windowDates.length === 0) return false;
     const aboveCount = windowDates.filter(
@@ -197,7 +196,7 @@ export const getYesterdaySignal = (
   const wasRecovering = simulation.portfolioSnapshots
     .slice(-250)
     .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery);
-  const growTooFast = aboveSMAForAWhile && !wasRecovering;
+  const growTooFast = isAboveSMAForAWhile && !wasRecovering;
 
   const isBelow90SMA200 =
     marketData.QQQ[yesterdayDate].sma && marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.9;
@@ -247,7 +246,7 @@ export const getYesterdaySignal = (
         signalType = SignalType.WaitingForDrop;
       } else if (isBelow95SMA200) {
         signalType = SignalType.WaitingForRecovery;
-      } else if (waitingForSmallDropForTooLong && !aboveSMAForAWhile) {
+      } else if (waitingForSmallDropForTooLong && !isAboveSMAForAWhile) {
         signalType = SignalType.Buy;
       } else {
         signalType = SignalType.WaitingForSmallDrop;
