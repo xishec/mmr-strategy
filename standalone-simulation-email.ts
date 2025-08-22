@@ -60,14 +60,14 @@ function loadEmailConfig(): EmailConfig {
 
   // Parse RECIPIENT_EMAIL as comma-separated list of emails
   const recipientEmails = process.env.RECIPIENT_EMAIL!;
-  const recipients = recipientEmails.includes(',') 
-    ? recipientEmails.split(',').map(email => email.trim())
+  const recipients = recipientEmails.includes(",")
+    ? recipientEmails.split(",").map((email) => email.trim())
     : recipientEmails;
 
   return {
     from: process.env.EMAIL_USER!, // Use EMAIL_USER as sender
     to: recipients,
-    host: 'smtp.gmail.com', // Hardcoded Gmail SMTP
+    host: "smtp.gmail.com", // Hardcoded Gmail SMTP
     port: 587, // Hardcoded Gmail port
     user: process.env.EMAIL_USER!,
     pass: process.env.EMAIL_PASSWORD!,
@@ -165,13 +165,6 @@ async function loadMarketData(): Promise<MarketData> {
 }
 
 /**
- * Format number as percentage
- */
-function formatPercentage(num: number): string {
-  return (num * 100).toFixed(2) + "%";
-}
-
-/**
  * Format number as currency
  */
 function formatCurrency(num: number): string {
@@ -191,19 +184,19 @@ function getCurrentDate(): string {
 function getSignalDescription(signalType: SignalType): string {
   const descriptions = {
     [SignalType.Buy]:
-      "🟢 Buy - Time to enter the market<br><img src='https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXJwejRjOXYxYWttc2J5ZTV2eTNyZDY3MmR1OXRrMzZqdTEyOXM5ZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/h1QI7dgjZUJO60nu2X/giphy.gif' width='400' alt='Buy signal'>",
+      "<img src='https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXJwejRjOXYxYWttc2J5ZTV2eTNyZDY3MmR1OXRrMzZqdTEyOXM5ZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/h1QI7dgjZUJO60nu2X/giphy.gif' width='600' alt='Buy signal'>",
     [SignalType.Hold]:
-      "🔵 Hold - Maintain current position<br><img src='https://raw.githubusercontent.com/xishec/mmr-strategy/refs/heads/main/public/pepe-meditation.gif' width='400' alt='Hold signal'>",
+      "<img src='https://raw.githubusercontent.com/xishec/mmr-strategy/refs/heads/main/public/pepe-meditation.gif' width='600' alt='Hold signal'>",
     [SignalType.Sell]:
-      "🔴 Sell - Exit positions immediately<br><img src='https://raw.githubusercontent.com/xishec/mmr-strategy/refs/heads/main/public/warren-buffett-panic.jpeg' width='400' alt='Sell signal'>",
+      "<img src='https://raw.githubusercontent.com/xishec/mmr-strategy/refs/heads/main/public/warren-buffett-panic.jpeg' width='600' alt='Sell signal'>",
     [SignalType.WaitingForSmallDrop]:
-      "🟡 Waiting for small drop - Looking for entry opportunity<br><img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='400' alt='Waiting for small drop'>",
+      "<img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='600' alt='Waiting for small drop'>",
     [SignalType.WaitingForSmallRecovery]:
-      "🟡 Waiting for small recovery - Monitoring for entry<br><img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='400' alt='Waiting for recovery'>",
+      "<img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='600' alt='Waiting for recovery'>",
     [SignalType.WaitingForDrop]:
-      "🟠 Waiting for drop - Staying in cash<br><img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='400' alt='Waiting for drop'>",
+      "<img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='600' alt='Waiting for drop'>",
     [SignalType.WaitingForRecovery]:
-      "🟠 Waiting for recovery - Staying in cash until recovery<br><img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='400' alt='Waiting for recovery'>",
+      "<img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='600' alt='Waiting for recovery'>",
   };
 
   return (
@@ -219,6 +212,17 @@ function createEmailContent(result: Simulation, currentDate: string): { subject:
   const latestSnapshot = result.portfolioSnapshots[result.portfolioSnapshots.length - 1];
   const signal = latestSnapshot?.signal;
   const signalDescription = signal ? getSignalDescription(signal.signalType) : "No signal available";
+
+  // Signal emoji mapping
+  const signalEmoji = {
+    [SignalType.Buy]: "🟢 Buy - Time to enter the market",
+    [SignalType.Hold]: "🔵 Hold - Maintain current position",
+    [SignalType.Sell]: "🔴 Sell - Exit positions immediately",
+    [SignalType.WaitingForSmallDrop]: "🟡 Waiting for small drop - Looking for entry opportunity",
+    [SignalType.WaitingForSmallRecovery]: "🟡 Waiting for small recovery - Monitoring for entry",
+    [SignalType.WaitingForDrop]: "🟠 Waiting for drop - Staying in cash",
+    [SignalType.WaitingForRecovery]: "🟠 Waiting for recovery - Staying in cash until recovery",
+  };
 
   // Get recent orders (last 10)
   const recentOrders = result.report.orders.slice(-10).reverse();
@@ -238,22 +242,13 @@ function createEmailContent(result: Simulation, currentDate: string): { subject:
     recentSnapshots.length > 0
       ? recentSnapshots
           .map((snapshot) => {
-            const signalEmoji = {
-              [SignalType.Buy]: "🟢",
-              [SignalType.Hold]: "🔵",
-              [SignalType.Sell]: "🔴",
-              [SignalType.WaitingForSmallDrop]: "🟡",
-              [SignalType.WaitingForSmallRecovery]: "🟡",
-              [SignalType.WaitingForDrop]: "🟠",
-              [SignalType.WaitingForRecovery]: "🟠",
-            };
             const emoji = signalEmoji[snapshot.signal.signalType] || "❓";
             return `<tr><td>${snapshot.date}</td><td>${emoji} ${snapshot.signal.signalType}</td></tr>`;
           })
           .join("")
       : '<tr><td colspan="2">No recent signals</td></tr>';
 
-  const subject = `MMR Strategy Daily Report - ${currentDate} - ${signal?.signalType || "N/A"}`;
+  const subject = `${signalEmoji[latestSnapshot.signal.signalType]} MMR Strategy Daily Report`;
 
   const html = `
     <!DOCTYPE html>
@@ -262,20 +257,22 @@ function createEmailContent(result: Simulation, currentDate: string): { subject:
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.4; padding: 20px; }
         table { border-collapse: collapse; width: 100%; margin: 10px 0; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; white-space: nowrap; }
         th { background-color: #f0f0f0; }
         h1 { text-align: center; }
         h3 { margin-top: 25px; }
-        .signal { text-align: center; font-weight: bold; margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
-        .signal img { margin-top: 10px; border-radius: 5px; display: block; margin-left: auto; margin-right: auto; }
+        .signal { text-align: center; font-weight: bold; padding: 20px; width: 100%; max-width: 800px; }
+        .signal-title { font-size: 20px; margin-bottom: 15px; text-align: center;}
+        .signal img { border-radius: 5px; display: block; margin-left: auto; margin-right: auto; }
       </style>
     </head>
     <body>
       <h1>MMR Strategy Daily Report</h1>
       <p style="text-align: center;">${currentDate}</p>
       
+      <div class="signal-title">${signal ? signalEmoji[signal.signalType] || "❓" : "❓"}</div>
+
       <div class="signal">
-        Current Signal<br>
         ${signalDescription}
       </div>
 
@@ -305,7 +302,6 @@ function createEmailContent(result: Simulation, currentDate: string): { subject:
         </tbody>
       </table>
 
-      <hr>
       <p style="text-align: center; font-size: 12px; color: #666;">
         This report was automatically generated by the MMR Strategy system.<br>
         Report generated at: ${new Date().toLocaleString()}
@@ -365,8 +361,12 @@ async function runDailyEmailSimulation() {
     console.log("Loading email configuration...");
     const emailConfig = loadEmailConfig();
     const recipients = Array.isArray(emailConfig.to) ? emailConfig.to : [emailConfig.to];
-    console.log(`Email will be sent from ${emailConfig.from} to ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}:`);
-    recipients.forEach(email => console.log(`  - ${email}`));
+    console.log(
+      `Email will be sent from ${emailConfig.from} to ${recipients.length} recipient${
+        recipients.length > 1 ? "s" : ""
+      }:`
+    );
+    recipients.forEach((email) => console.log(`  - ${email}`));
     console.log();
 
     // Load market data
@@ -420,7 +420,7 @@ async function runDailyEmailSimulation() {
       console.log(`Current Signal: ${latestSnapshot.signal.signalType}`);
       console.log(`Portfolio Value: ${formatCurrency(latestSnapshot.investments.total)}`);
       console.log(`Recent Orders: ${result.report.orders.slice(-5).length} in last 5 trades`);
-      console.log(`Recipients: ${recipients.length} (${recipients.join(', ')})`);
+      console.log(`Recipients: ${recipients.length} (${recipients.join(", ")})`);
     }
 
     console.log("\n=== Daily email report complete ===");
