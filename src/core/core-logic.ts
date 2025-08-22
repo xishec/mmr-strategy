@@ -113,6 +113,9 @@ export const getYesterdaySignal = (
 
   const isBelow90SMA200 =
     marketData.QQQ[yesterdayDate].sma && marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.9;
+  const isBelow95SMA200 =
+    marketData.QQQ[yesterdayDate].sma &&
+    marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.95;
   const isAbove105SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
   // const isAbove100SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.0;
 
@@ -151,7 +154,7 @@ export const getYesterdaySignal = (
         } else {
           signalType = SignalType.WaitingForDrop;
         }
-      } else if (isBelow90SMA200) {
+      } else if (isBelow95SMA200) {
         signalType = SignalType.WaitingForRecovery;
       } else if (soldDaysAgo && !aboveSMAForAWhile) {
         signalType = SignalType.Buy;
