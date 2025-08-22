@@ -119,9 +119,13 @@ export const getYesterdaySignal = (
   const isAbove105SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
   // const isAbove100SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.0;
 
-  const soldDaysAgo =
+  const waitingForSmallDropForTooLong =
     simulation.portfolioSnapshots.slice(-60).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
     yesterdaySignal.signalType === SignalType.WaitingForSmallDrop;
+
+  // const lastSoldSnapshot = [...simulation.portfolioSnapshots]
+  //   .reverse()
+  //   .find((snapshot) => snapshot.signal.signalType === SignalType.Sell);
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
@@ -148,28 +152,18 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.WaitingForSmallDrop:
-      if (fastDrop || mediumDrop || slowDrop) {
-        if (fastDrop || mediumDrop) {
-          signalType = SignalType.WaitingForRecovery;
-        } else {
-          signalType = SignalType.WaitingForDrop;
-        }
+      if (fastDrop || mediumDrop) {
+        signalType = SignalType.WaitingForRecovery;
+      } else if (slowDrop) {
+        signalType = SignalType.WaitingForDrop;
       } else if (isBelow95SMA200) {
         signalType = SignalType.WaitingForRecovery;
-      } else if (soldDaysAgo && !aboveSMAForAWhile) {
+      } else if (waitingForSmallDropForTooLong && !aboveSMAForAWhile) {
         signalType = SignalType.Buy;
       } else {
         signalType = SignalType.WaitingForSmallDrop;
       }
       break;
-
-    // case SignalType.WaitingForSmallRecovery:
-    //   if (isAbove100SMA200) {
-    //     signalType = SignalType.Buy;
-    //   } else {
-    //     signalType = SignalType.WaitingForSmallRecovery;
-    //   }
-    //   break;
 
     case SignalType.WaitingForDrop:
       if (isBelow90SMA200) {
@@ -199,7 +193,7 @@ export const getYesterdaySignal = (
     hasBlueMarker: growTooFast,
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
-    hasXMarker: soldDaysAgo,
+    hasXMarker: false,
     signalType,
   };
 };
