@@ -74,6 +74,18 @@ function parseArgs(argv: string[]) {
     extraDrift: args.extraDrift !== undefined ? Number(args.extraDrift) : 0.0, // daily decimal
     block: args.block !== undefined ? Number(args.block) : 1, // block length for simple block bootstrap
     dryRun: Boolean(args['dry-run'] ?? false),
+  // Regime options
+  regimeMode: (args.regimeMode as string) || 'off', // 'off' | 'basic'
+  trendLookback: args.trendLookback ? Number(args.trendLookback) : 60,
+  bullThresh: args.bullThresh ? Number(args.bullThresh) : 0.10, // 10% over lookback
+  bearThresh: args.bearThresh ? Number(args.bearThresh) : -0.10, // -10% over lookback
+  sideVol: args.sideVol ? Number(args.sideVol) : 1.2, // daily stdev % threshold
+  meanBull: args.meanBull ? Number(args.meanBull) : 180,
+  meanBear: args.meanBear ? Number(args.meanBear) : 120,
+  meanSide: args.meanSide ? Number(args.meanSide) : 150,
+  startProbBull: args.startProbBull ? Number(args.startProbBull) : undefined,
+  startProbBear: args.startProbBear ? Number(args.startProbBear) : undefined,
+  startProbSide: args.startProbSide ? Number(args.startProbSide) : undefined,
   };
 }
 
@@ -190,6 +202,144 @@ function* bootstrapGenerator(
   }
 }
 
+type Regime = 'bull' | 'bear' | 'sideways';
+
+function rollingStats(
+  qqq: Series,
+  lookback: number
+): Record<string, { trend: number; volDailyPct: number }> {
+  const dates = Object.keys(qqq).sort();
+  const out: Record<string, { trend: number; volDailyPct: number }> = {};
+  if (dates.length <= lookback) return out;
+  // Precompute daily combined returns in decimal
+  const dailyR: number[] = [];
+  for (let i = 1; i < dates.length; i++) {
+    const d = dates[i];
+    const r = (qqq[d].rate ?? 0) / 100;
+    dailyR.push(isFinite(r) ? r : 0);
+  }
+  // Sliding window
+  for (let i = lookback; i < dates.length; i++) {
+    const now = dates[i];
+    const past = dates[i - lookback];
+    const cNow = qqq[now].close;
+    const cPast = qqq[past].close;
+    const trend = cPast > 0 ? cNow / cPast - 1 : 0; // compounded over window
+    // daily vol over last lookback days corresponds to dailyR indices [i-lookback, i-1)
+    const startR = i - lookback; // in dailyR index space (shifted by 1)
+    const windowR = dailyR.slice(startR, i);
+    const mean = windowR.reduce((a, b) => a + b, 0) / windowR.length;
+    const varr =
+      windowR.reduce((a, b) => a + (b - mean) * (b - mean), 0) /
+      Math.max(1, windowR.length - 1);
+    const volDailyPct = Math.sqrt(Math.max(0, varr)) * 100; // convert to %
+    out[now] = { trend, volDailyPct };
+  }
+  return out;
+}
+
+function labelRegime(
+  stats: Record<string, { trend: number; volDailyPct: number }>,
+  bullThresh: number,
+  bearThresh: number,
+  sideVol: number
+): Record<string, Regime> {
+  const out: Record<string, Regime> = {};
+  for (const [d, s] of Object.entries(stats)) {
+    if (s.trend >= bullThresh) out[d] = 'bull';
+    else if (s.trend <= bearThresh) out[d] = 'bear';
+    else if (Math.abs(s.trend) < (bullThresh - bearThresh) / 4 && s.volDailyPct <= sideVol)
+      out[d] = 'sideways';
+    else out[d] = 'sideways';
+  }
+  return out;
+}
+
+function splitPairsByRegime(
+  qqq: Series,
+  pairs: Array<{ o: number; d: number }>,
+  sampleSince: string | undefined,
+  lookback: number,
+  bullThresh: number,
+  bearThresh: number,
+  sideVol: number
+): Record<Regime, Array<{ o: number; d: number }>> {
+  const dates = Object.keys(qqq).sort();
+  const stats = rollingStats(qqq, lookback);
+  const labels = labelRegime(stats, bullThresh, bearThresh, sideVol);
+  const pools: Record<Regime, Array<{ o: number; d: number }>> = {
+    bull: [],
+    bear: [],
+    sideways: [],
+  };
+  const startIdx = sampleSince ? Math.max(1, dates.findIndex((x) => x >= sampleSince)) : 1;
+  for (let i = startIdx; i < dates.length; i++) {
+    const d = dates[i];
+    const e = qqq[d];
+    if (
+      e &&
+      typeof e.overnight_rate === 'number' &&
+      typeof e.day_rate === 'number' &&
+      isFinite(e.overnight_rate) &&
+      isFinite(e.day_rate) &&
+      labels[d]
+    ) {
+      pools[labels[d]].push({ o: e.overnight_rate, d: e.day_rate });
+    }
+  }
+  return pools;
+}
+
+function normalizeWeights(ws: Record<Regime, number>): Record<Regime, number> {
+  const sum = Object.values(ws).reduce((a, b) => a + b, 0) || 1;
+  return {
+    bull: ws.bull / sum,
+    bear: ws.bear / sum,
+    sideways: ws.sideways / sum,
+  };
+}
+
+function pickByWeight(rng: () => number, ws: Record<Regime, number>): Regime {
+  const u = rng();
+  let acc = 0;
+  for (const k of ['bull', 'bear', 'sideways'] as Regime[]) {
+    acc += ws[k];
+    if (u <= acc) return k;
+  }
+  return 'sideways';
+}
+
+function sampleGeomMean(rng: () => number, mean: number): number {
+  const p = mean > 0 ? 1 / mean : 1;
+  let len = 1;
+  while (rng() > p) len++;
+  return len;
+}
+
+function buildRegimeSequence(
+  rng: () => number,
+  n: number,
+  startWeights: Record<Regime, number>,
+  meanLens: Record<Regime, number>
+): Regime[] {
+  const seq: Regime[] = [];
+  let current = pickByWeight(rng, startWeights);
+  while (seq.length < n) {
+    const len = sampleGeomMean(rng, meanLens[current]);
+    for (let i = 0; i < len && seq.length < n; i++) seq.push(current);
+      // choose next regime different from current
+      const all: Regime[] = ['bull', 'bear', 'sideways'];
+      const others: Regime[] = [];
+      for (const r of all) {
+        if (r !== current) others.push(r);
+      }
+      // Simple transition: pick between the other two equally
+      const nextIdx = Math.floor(rng() * others.length);
+      current = others[nextIdx];
+  }
+  return seq;
+}
+
 function main() {
   const args = parseArgs(process.argv);
   const qqq = loadJson(QQQ_PATH);
@@ -232,6 +382,45 @@ function main() {
   const pairs = getSamplePairs(qqq, sampleSince, args.block);
   const gen = bootstrapGenerator(rng, pairs, args.block);
 
+  // Optional regime-based simulation
+  const useRegimes = (args as any).regimeMode === 'basic';
+  const pools = useRegimes
+    ? splitPairsByRegime(
+        qqq,
+        pairs,
+        sampleSince,
+        (args as any).trendLookback,
+        (args as any).bullThresh,
+        (args as any).bearThresh,
+        (args as any).sideVol
+      )
+    : null;
+  const gensByRegime: Partial<Record<Regime, Generator<{ o: number; d: number }>>> = {};
+  if (useRegimes && pools) {
+    for (const r of ['bull', 'bear', 'sideways'] as Regime[]) {
+      const pool = pools[r];
+      if (pool && pool.length > 0) gensByRegime[r] = bootstrapGenerator(rng, pool, (args as any).block);
+    }
+  }
+  const startWeights = useRegimes
+    ? normalizeWeights({
+        bull:
+          (args as any).startProbBull ?? (pools!.bull?.length || 0),
+        bear:
+          (args as any).startProbBear ?? (pools!.bear?.length || 0),
+        sideways:
+          (args as any).startProbSide ?? (pools!.sideways?.length || 0),
+      })
+    : { bull: 1 / 3, bear: 1 / 3, sideways: 1 / 3 };
+  const meanLens = {
+    bull: (args as any).meanBull,
+    bear: (args as any).meanBear,
+    sideways: (args as any).meanSide,
+  } as Record<Regime, number>;
+  const regimeSeq = useRegimes
+    ? buildRegimeSequence(rng, futureDates.length, startWeights, meanLens)
+    : Array(futureDates.length).fill('sideways');
+
   // Simulate
   let prevCloseQQQ = lastQQQClose;
   let prevCloseTQQQ = lastTQQQClose;
@@ -246,8 +435,16 @@ function main() {
   const newQQQ: Series = {};
   const newTQQQ: Series = {};
 
-  for (const d of futureDates) {
-    const { o, d: day } = gen.next().value;
+  for (let idx = 0; idx < futureDates.length; idx++) {
+    const d = futureDates[idx];
+  let pair: { o: number; d: number } | undefined = undefined;
+    if (useRegimes) {
+      const regime = regimeSeq[idx] as Regime;
+      const g = gensByRegime[regime];
+      if (g) pair = g.next().value;
+    }
+  if (!pair) pair = gen.next().value as { o: number; d: number };
+  const { o, d: day } = pair as { o: number; d: number };
     const rO = o / 100; // decimal
     const rD = day / 100; // decimal
 

@@ -16,7 +16,7 @@ export const useSimulation = (marketData: MarketData | null): UseSimulationRetur
   const [dashboardVariables, setDashboardVariables] = useState<DashboardVariables>({
     simulationVariables: {
       initialMoney: 200000,
-      startDate: Object.keys(marketData!.QQQ)[0],
+      startDate: "2025-08-22",
       endDate: Object.keys(marketData!.QQQ).slice(-1)[0],
       cashYearRate: 2000,
       SMAUpMargin: 0.0,
