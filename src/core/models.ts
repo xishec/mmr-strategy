@@ -114,6 +114,7 @@ export const enum SignalType {
   WaitingForSmallDrop = "Waiting for small drop",
   WaitingForDrop = "Waiting for drop",
   WaitingForRecovery = "Waiting for recovery",
+  Pause = "Pause",
 }
 
 export interface Investments {
