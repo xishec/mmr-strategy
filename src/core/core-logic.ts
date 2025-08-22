@@ -53,6 +53,99 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
   return simulation;
 };
 
+const getInitialSignal = (date: string, marketData: MarketData, startDate: string): Signal => {
+  // Get all available market dates before and including the start date for historical analysis
+  const allMarketDates = Object.keys(marketData.TQQQ)
+    .filter(d => marketData.QQQ[d] !== undefined)
+    .sort();
+    
+  const startDateIndex = allMarketDates.findIndex(d => d >= startDate);
+  if (startDateIndex <= 0) {
+    // Not enough historical data, default to WaitingForRecovery
+    return {
+      date,
+      hasRedMarker: false,
+      hasOrangeMarker: false,
+      hasYellowMarker: false,
+      hasBlueMarker: false,
+      hasGreenTriangle: false,
+      hasBlackTriangle: false,
+      hasXMarker: false,
+      signalType: SignalType.WaitingForRecovery,
+    };
+  }
+
+  // Use the day before start date to determine initial signal
+  const previousDate = allMarketDates[startDateIndex - 1];
+  const previousIndex = startDateIndex - 1;
+
+  // Calculate the same conditions as in the main signal logic
+  const fastDrop = allMarketDates
+    .slice(Math.max(0, previousIndex - 1), previousIndex + 1)
+    .some((d) => marketData.TQQQ[d].rate < -20);
+
+  const lastPeriodMaxClose = allMarketDates
+    .slice(Math.max(0, previousIndex - 180), previousIndex + 1)
+    .map((d) => marketData.QQQ[d]?.close || 0)
+    .reduce((max, closePrice) => Math.max(max, closePrice), 0);
+  const QQQPullBack = marketData.QQQ[previousDate].close / lastPeriodMaxClose;
+  const mediumDrop = QQQPullBack < 0.75;
+
+  const belowSMAForAWhile = allMarketDates
+    .slice(Math.max(0, previousIndex - 30), previousIndex + 1)
+    .every((d) => marketData.QQQ[d].close < marketData.QQQ[d].sma! * 1);
+  const hadABigDrop = allMarketDates
+    .slice(Math.max(0, previousIndex - 5), previousIndex + 1)
+    .every((d) => marketData.QQQ[d].close < marketData.QQQ[d].sma! * 0.9);
+  const slowDrop = belowSMAForAWhile && hadABigDrop;
+
+  const aboveSMAForAWhile = (() => {
+    const windowDates = allMarketDates.slice(Math.max(0, previousIndex - 30), previousIndex + 1);
+    if (windowDates.length === 0) return false;
+    const aboveCount = windowDates.filter(
+      (d) => marketData.QQQ[d].sma && marketData.QQQ[d].close >= marketData.QQQ[d].sma! * 1.1
+    ).length;
+    return aboveCount / windowDates.length >= 0.8;
+  })();
+  const growTooFast = aboveSMAForAWhile;
+
+  const isBelow90SMA200 = 
+    marketData.QQQ[previousDate].sma && marketData.QQQ[previousDate].close < marketData.QQQ[previousDate].sma! * 0.9;
+  const isBelow95SMA200 = 
+    marketData.QQQ[previousDate].sma && marketData.QQQ[previousDate].close < marketData.QQQ[previousDate].sma! * 0.95;
+  const isAbove105SMA200 = 
+    marketData.QQQ[previousDate].close >= marketData.QQQ[previousDate].sma! * 1.05;
+
+  // Determine initial signal type based on market conditions
+  let signalType = SignalType.Hold;
+  
+  if (isAbove105SMA200) {
+    signalType = SignalType.Buy;
+  } else if (isBelow90SMA200) {
+    signalType = SignalType.WaitingForRecovery;
+  } else if (isBelow95SMA200) {
+    signalType = SignalType.WaitingForRecovery;
+  } else if (fastDrop || mediumDrop || slowDrop) {
+    signalType = SignalType.WaitingForDrop;
+  } else if (growTooFast) {
+    signalType = SignalType.WaitingForSmallDrop;
+  } else {
+    signalType = SignalType.Hold;
+  }
+
+  return {
+    date,
+    hasRedMarker: fastDrop,
+    hasOrangeMarker: mediumDrop,
+    hasYellowMarker: slowDrop,
+    hasBlueMarker: growTooFast,
+    hasGreenTriangle: signalType === SignalType.Buy,
+    hasBlackTriangle: false, // Initial signal won't be a sell
+    hasXMarker: false,
+    signalType,
+  };
+};
+
 export const getYesterdaySignal = (
   date: string,
   marketData: MarketData,
@@ -65,17 +158,7 @@ export const getYesterdaySignal = (
   const yesterdaySnapshot = simulation.portfolioSnapshots[yesterdayIndex];
 
   if (!yesterdaySnapshot || !yesterdaySnapshot.signal) {
-    return {
-      date,
-      hasRedMarker: false,
-      hasOrangeMarker: false,
-      hasYellowMarker: false,
-      hasBlueMarker: false,
-      hasGreenTriangle: false,
-      hasBlackTriangle: false,
-      hasXMarker: false,
-      signalType: SignalType.WaitingForRecovery,
-    };
+    return getInitialSignal(date, marketData, simulation.simulationVariables.startDate);
   }
 
   const yesterdaySignal = yesterdaySnapshot.signal;
