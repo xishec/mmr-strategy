@@ -108,13 +108,13 @@ export interface Signal {
 }
 
 export const enum SignalType {
-  Buy = "buy",
-  Hold = "hold",
-  Sell = "sell",
-  WaitingForSmallDrop = "waiting_for_small_drop",
-  WaitingForSmallRecovery = "waiting_for_small_recovery",
-  WaitingForDrop = "waiting_for_drop",
-  WaitingForRecovery = "waiting_for_recovery",
+  Buy = "Buy",
+  Hold = "Hold",
+  Sell = "Sell",
+  WaitingForSmallDrop = "Waiting for small drop",
+  WaitingForSmallRecovery = "Waiting for small recovery",
+  WaitingForDrop = "Waiting for drop",
+  WaitingForRecovery = "Waiting for recovery",
 }
 
 export interface Investments {
