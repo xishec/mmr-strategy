@@ -34,6 +34,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "simulate:future": "tsx src/data/script/simulate_future.ts",
     "predeploy": "yarn build",
     "deploy": "gh-pages -d build -u \"GitHub Actions <xiiicheen@gmail.com>\" -r https://x-access-token:$PERSONAL_ACCESS_TOKEN@github.com/xishec/mmr-strategy.git"
   },
@@ -67,6 +68,7 @@
     ]
   },
   "devDependencies": {
-    "gh-pages": "^6.3.0"
+    "gh-pages": "^6.3.0",
+    "tsx": "^4.19.1"
   }
 }
