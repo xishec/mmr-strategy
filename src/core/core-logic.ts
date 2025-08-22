@@ -145,7 +145,13 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.WaitingForSmallDrop:
-      if (isBelow90SMA200) {
+      if (fastDrop || mediumDrop || slowDrop) {
+        if (fastDrop || mediumDrop) {
+          signalType = SignalType.WaitingForRecovery;
+        } else {
+          signalType = SignalType.WaitingForDrop;
+        }
+      } else if (isBelow90SMA200) {
         signalType = SignalType.WaitingForRecovery;
       } else if (soldDaysAgo && !aboveSMAForAWhile) {
         signalType = SignalType.Buy;
