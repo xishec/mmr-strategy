@@ -196,6 +196,16 @@ export const getYesterdaySignal = (
   const wasRecovering = simulation.portfolioSnapshots
     .slice(-250)
     .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery);
+  // const lastSoldSnapshot =
+  //   [...simulation.portfolioSnapshots].reverse()
+  //   .find((snapshot) => snapshot.signal.signalType === SignalType.Sell) ??
+  //   yesterdaySnapshot;
+  // const lastBoughtSnapshot =
+  //   [...simulation.portfolioSnapshots].reverse().find((snapshot) => snapshot.signal.signalType === SignalType.Buy) ??
+  //   yesterdaySnapshot;
+  // const soldPrice = marketData.TQQQ[lastSoldSnapshot?.date].close;
+  // const boughtPrice = marketData.TQQQ[lastBoughtSnapshot?.date].close;
+  // const currentPrice = marketData.TQQQ[yesterdayDate].close;
   const growTooFast = isAboveSMAForAWhile && !wasRecovering;
 
   const isBelow90SMA200 =
@@ -210,14 +220,11 @@ export const getYesterdaySignal = (
     simulation.portfolioSnapshots.slice(-60).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
     yesterdaySignal.signalType === SignalType.WaitingForSmallDrop;
 
-  // const lastSoldSnapshot = [...simulation.portfolioSnapshots]
-  //   .reverse()
-  //   .find((snapshot) => snapshot.signal.signalType === SignalType.Sell);
   // const shouldResume = simulation.portfolioSnapshots
   //   .slice(-5)
   //   .every((snapshot) => snapshot.signal.signalType === SignalType.Pause);
-  // // const shouldResume =
-  // //   lastSoldSnapshot && marketData.TQQQ[yesterdayDate].close >= marketData.TQQQ[lastSoldSnapshot?.date].close;
+  // const shouldResume =
+  //   lastSoldSnapshot && marketData.TQQQ[yesterdayDate].close >= marketData.TQQQ[lastSoldSnapshot?.date].close;
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
