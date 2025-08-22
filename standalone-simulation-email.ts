@@ -15,12 +15,13 @@ dotenv.config();
  * Can be executed from command line with: npx tsx standalone-simulation-email.ts
  *
  * Environment variables required:
- * - EMAIL_FROM: Sender email address
- * - EMAIL_TO: Recipient email address
- * - EMAIL_HOST: SMTP host (e.g., smtp.gmail.com)
- * - EMAIL_PORT: SMTP port (e.g., 587)
- * - EMAIL_USER: SMTP username
- * - EMAIL_PASS: SMTP password or app password
+ * - EMAIL_USER: SMTP username (sender email)
+ * - EMAIL_PASSWORD: SMTP password or app password
+ * - RECIPIENT_EMAIL: Recipient email address (single email or comma-separated list)
+ *
+ * Examples for RECIPIENT_EMAIL:
+ * RECIPIENT_EMAIL=user@example.com                           (single recipient)
+ * RECIPIENT_EMAIL=user1@example.com,user2@example.com       (multiple recipients)
  */
 
 // Default variables from useSimulation hook
@@ -36,7 +37,7 @@ const DEFAULT_SIMULATION_VARIABLES = {
 // Email configuration interface
 interface EmailConfig {
   from: string;
-  to: string;
+  to: string | string[];
   host: string;
   port: number;
   user: string;
@@ -47,7 +48,7 @@ interface EmailConfig {
  * Load email configuration from environment variables
  */
 function loadEmailConfig(): EmailConfig {
-  const requiredEnvVars = ["EMAIL_FROM", "EMAIL_TO", "EMAIL_HOST", "EMAIL_PORT", "EMAIL_USER", "EMAIL_PASS"];
+  const requiredEnvVars = ["EMAIL_USER", "EMAIL_PASSWORD", "RECIPIENT_EMAIL"];
   const missing = requiredEnvVars.filter((varName) => !process.env[varName]);
 
   if (missing.length > 0) {
@@ -57,13 +58,19 @@ function loadEmailConfig(): EmailConfig {
     );
   }
 
+  // Parse RECIPIENT_EMAIL as comma-separated list of emails
+  const recipientEmails = process.env.RECIPIENT_EMAIL!;
+  const recipients = recipientEmails.includes(',') 
+    ? recipientEmails.split(',').map(email => email.trim())
+    : recipientEmails;
+
   return {
-    from: process.env.EMAIL_FROM!,
-    to: process.env.EMAIL_TO!,
-    host: process.env.EMAIL_HOST!,
-    port: parseInt(process.env.EMAIL_PORT!),
+    from: process.env.EMAIL_USER!, // Use EMAIL_USER as sender
+    to: recipients,
+    host: 'smtp.gmail.com', // Hardcoded Gmail SMTP
+    port: 587, // Hardcoded Gmail port
     user: process.env.EMAIL_USER!,
-    pass: process.env.EMAIL_PASS!,
+    pass: process.env.EMAIL_PASSWORD!,
   };
 }
 
@@ -190,13 +197,13 @@ function getSignalDescription(signalType: SignalType): string {
     [SignalType.Sell]:
       "🔴 Sell - Exit positions immediately<br><img src='https://raw.githubusercontent.com/xishec/mmr-strategy/refs/heads/main/public/warren-buffett-panic.jpeg' width='400' alt='Sell signal'>",
     [SignalType.WaitingForSmallDrop]:
-      "🟡 Waiting for small drop - Looking for entry opportunity<br><img src='https://media.giphy.com/media/QBd2kLB5qDmysEXre9/giphy.gif' width='400' alt='Waiting for small drop'>",
+      "🟡 Waiting for small drop - Looking for entry opportunity<br><img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='400' alt='Waiting for small drop'>",
     [SignalType.WaitingForSmallRecovery]:
-      "🟡 Waiting for small recovery - Monitoring for entry<br><img src='https://media.giphy.com/media/QBd2kLB5qDmysEXre9/giphy.gif' width='400' alt='Waiting for recovery'>",
+      "🟡 Waiting for small recovery - Monitoring for entry<br><img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='400' alt='Waiting for recovery'>",
     [SignalType.WaitingForDrop]:
-      "🟠 Waiting for drop - Staying in cash<br><img src='https://media.giphy.com/media/QBd2kLB5qDmysEXre9/giphy.gif' width='400' alt='Waiting for drop'>",
+      "🟠 Waiting for drop - Staying in cash<br><img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='400' alt='Waiting for drop'>",
     [SignalType.WaitingForRecovery]:
-      "🟠 Waiting for recovery - Staying in cash until recovery<br><img src='https://media.giphy.com/media/QBd2kLB5qDmysEXre9/giphy.gif' width='400' alt='Waiting for recovery'>",
+      "🟠 Waiting for recovery - Staying in cash until recovery<br><img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='400' alt='Waiting for recovery'>",
   };
 
   return (
@@ -225,6 +232,27 @@ function createEmailContent(result: Simulation, currentDate: string): { subject:
           .join("")
       : '<tr><td colspan="2">No recent orders</td></tr>';
 
+  // Get recent signals (last 10)
+  const recentSnapshots = result.portfolioSnapshots.slice(-10).reverse();
+  const signalsHtml =
+    recentSnapshots.length > 0
+      ? recentSnapshots
+          .map((snapshot) => {
+            const signalEmoji = {
+              [SignalType.Buy]: "🟢",
+              [SignalType.Hold]: "🔵",
+              [SignalType.Sell]: "🔴",
+              [SignalType.WaitingForSmallDrop]: "🟡",
+              [SignalType.WaitingForSmallRecovery]: "🟡",
+              [SignalType.WaitingForDrop]: "🟠",
+              [SignalType.WaitingForRecovery]: "🟠",
+            };
+            const emoji = signalEmoji[snapshot.signal.signalType] || "❓";
+            return `<tr><td>${snapshot.date}</td><td>${emoji} ${snapshot.signal.signalType}</td></tr>`;
+          })
+          .join("")
+      : '<tr><td colspan="2">No recent signals</td></tr>';
+
   const subject = `MMR Strategy Daily Report - ${currentDate} - ${signal?.signalType || "N/A"}`;
 
   const html = `
@@ -250,6 +278,19 @@ function createEmailContent(result: Simulation, currentDate: string): { subject:
         Current Signal<br>
         ${signalDescription}
       </div>
+
+      <h3>📊 Recent Signals (Last 10)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Signal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${signalsHtml}
+        </tbody>
+      </table>
 
       <h3>📋 Recent Orders (Last 10)</h3>
       <table>
@@ -323,7 +364,10 @@ async function runDailyEmailSimulation() {
     // Load email configuration
     console.log("Loading email configuration...");
     const emailConfig = loadEmailConfig();
-    console.log(`Email will be sent from ${emailConfig.from} to ${emailConfig.to}\n`);
+    const recipients = Array.isArray(emailConfig.to) ? emailConfig.to : [emailConfig.to];
+    console.log(`Email will be sent from ${emailConfig.from} to ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}:`);
+    recipients.forEach(email => console.log(`  - ${email}`));
+    console.log();
 
     // Load market data
     const marketData = await loadMarketData();
@@ -376,7 +420,7 @@ async function runDailyEmailSimulation() {
       console.log(`Current Signal: ${latestSnapshot.signal.signalType}`);
       console.log(`Portfolio Value: ${formatCurrency(latestSnapshot.investments.total)}`);
       console.log(`Recent Orders: ${result.report.orders.slice(-5).length} in last 5 trades`);
-      console.log(`Recipient: ${emailConfig.to}`);
+      console.log(`Recipients: ${recipients.length} (${recipients.join(', ')})`);
     }
 
     console.log("\n=== Daily email report complete ===");
