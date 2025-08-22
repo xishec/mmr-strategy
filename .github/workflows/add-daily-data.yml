@@ -22,6 +22,7 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install -r ./src/data/script/requirements.txt
       - name: update stock data
+        id: update-data
         env:
           TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
@@ -30,12 +31,22 @@ jobs:
         run: |
           python3 ./src/data/script/daily_update.py
 
+      - name: Check for changes
+        id: check-changes
+        run: |
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has-changes=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Commit and push if changes
+        if: steps.check-changes.outputs.has-changes == 'true'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add --all
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update stocks data [automated]"
+          git commit -m "Update stocks data [automated]"
           git pull --rebase 
           sleep 5
           for i in {1..10}; do
@@ -44,3 +55,23 @@ jobs:
             git pull --rebase 
           done
           git push
+
+      - name: Setup Node.js
+        if: steps.check-changes.outputs.has-changes == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install npm dependencies
+        if: steps.check-changes.outputs.has-changes == 'true'
+        run: |
+          npm install
+
+      - name: Run daily email simulation
+        if: steps.check-changes.outputs.has-changes == 'true'
+        env:
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+        run: |
+          npx tsx standalone-simulation-email.ts

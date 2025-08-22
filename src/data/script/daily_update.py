@@ -1,9 +1,6 @@
 import json
 import requests
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
@@ -13,21 +10,6 @@ root_dir = os.path.dirname(os.path.dirname(os.path.dirname(DIR)))
 
 # API Keys
 TWELVEDATA_API_KEY = os.getenv("TWELVEDATA_API_KEY")
-
-# Email Configuration
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
-RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
-
-# Parse recipient emails - can be a single email or comma-separated list
-RECIPIENT_EMAILS = []
-if RECIPIENT_EMAIL:
-    # Split by comma and clean up whitespace
-    RECIPIENT_EMAILS = [
-        email.strip() for email in RECIPIENT_EMAIL.split(",") if email.strip()
-    ]
 
 
 def is_market_closed():
@@ -65,62 +47,6 @@ def is_market_closed():
         # Simple time check (this assumes local time is close to ET)
         current_hour = now.hour
         return current_hour < 9 or current_hour >= 16
-
-
-def send_email_notification(subject, body):
-    """Send email notification to all recipients"""
-    if not all([EMAIL_USER, EMAIL_PASSWORD]) or not RECIPIENT_EMAILS:
-        print("⚠️  Email configuration incomplete - skipping email notification")
-        if not RECIPIENT_EMAILS:
-            print("   No recipient emails configured")
-        return False
-
-    try:
-        # Create message
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_USER
-        msg["Subject"] = subject
-
-        # Add all recipients to BCC for privacy
-        msg["To"] = EMAIL_USER  # Show sender as primary recipient
-        msg["Bcc"] = ", ".join(RECIPIENT_EMAILS)
-
-        msg.attach(MIMEText(body, "html"))
-
-        # Send email
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(EMAIL_USER, EMAIL_PASSWORD)
-        text = msg.as_string()
-
-        # Send to all recipients (including sender and all BCC recipients)
-        all_recipients = [EMAIL_USER] + RECIPIENT_EMAILS
-        server.sendmail(EMAIL_USER, all_recipients, text)
-        server.quit()
-
-        print(f"✅ Email sent successfully to {len(RECIPIENT_EMAILS)} recipient(s):")
-        for email in RECIPIENT_EMAILS:
-            print(f"   - {email}")
-        return True
-
-    except Exception as e:
-        print(f"❌ Failed to send email: {e}")
-        return False
-
-
-def send_notifications(subject, email_body):
-    """Send email notification"""
-    print("\n📧 Sending email notification...")
-
-    email_success = send_email_notification(subject, email_body)
-
-    if email_success:
-        print("✅ Email notification sent successfully")
-    else:
-        print("❌ Email notification failed")
-        print("💡 Check your email configuration and try running a test")
-
-    return email_success
 
 
 def load_existing_data(ticker):
@@ -493,126 +419,6 @@ def update_ticker(ticker):
     }
 
 
-def create_email_content(qqq_data=None, tqqq_data=None, date_override=None):
-    """Create email subject and body for notifications
-
-    Args:
-        qqq_data: Dict with QQQ data (close, sma200, sma300, sma3, day_rate)
-        tqqq_data: Dict with TQQQ data (close, day_rate)
-        date_override: Optional date string to use instead of current date
-
-    Returns:
-        tuple: (subject, email_body)
-    """
-    # Create simple subject focused on QQQ vs SMA200*1.05
-    if qqq_data:
-        if "recentBigPullback" in qqq_data:
-            subject = "🧀🧀🧀 QQQ Above Threshold"
-        else:
-            subject = "❌❌❌ PLEASE PANIC NOW !!! QQQ Below Threshold"
-    else:
-        subject = ""
-
-    # Create simple, clean email body
-    email_body = "<html><body style='font-family: Arial, sans-serif;'>"
-
-    if qqq_data and tqqq_data:
-        sma_threshold = qqq_data["sma200"] * 1.05
-        # Use the date from QQQ data, or fall back to today's date
-        display_date = qqq_data.get(
-            "date", date_override or datetime.now().strftime("%Y-%m-%d")
-        )
-        email_body += f"<p><strong>Update for :</strong> {display_date}</p>"
-        email_body += f"<p><strong>QQQ Change :</strong> {qqq_data['rate']:+.2f}%<br>"
-        email_body += f"<strong>TQQQ Change :</strong> {tqqq_data['rate']:+.2f}%</p>"
-
-        email_body += f"<p><strong>QQQ Close :</strong> ${qqq_data['close']:.2f}<br>"
-        email_body += f"<strong>Threshold :</strong> >${sma_threshold:.2f}</p>"
-
-        # Optional pullback info
-        if "recentBigPullback" in qqq_data:
-            pullback_ratio_pct = qqq_data.get("pullbackRatio", 1) * 100
-            email_body += (
-                f"<p><strong>Recent Big Pullback (>=25% off peak):</strong> "
-                f"{'YES' if qqq_data['recentBigPullback'] else 'No'}"
-                f" (Current/Peak: {pullback_ratio_pct:.2f}%)</p>"
-            )
-
-        # Add a celebratory GIF if QQQ is above threshold, Warren Buffett panic image if below
-        if qqq_data["close"] > sma_threshold:
-            email_body += "<img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExdWZ5bjczZGRlYzR5cmQxcmpvNnB0azFuaXc1NTRzN2F2aHRwM25mdyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/NEvPzZ8bd1V4Y/giphy.gif' alt='Nice' style='width:100%; max-width:600px;'><br>"
-        else:
-            # You'll need to replace 'your-domain.com' with your actual deployed domain
-            email_body += "<img src='https://raw.githubusercontent.com/xishec/mmr-strategy/refs/heads/main/public/warren-buffett-panic.jpeg' alt='Warren Buffett Panic' style='width:100%; max-width:600px;'><br>"
-
-    email_body += "</body></html>"
-
-    return subject, email_body
-
-
-def send_update_notifications(updates_summary):
-    """Send simple, focused email notification"""
-    if not updates_summary:
-        return
-
-    # Get QQQ and TQQQ data
-    qqq_data = None
-    tqqq_data = None
-
-    update = updates_summary[-1]
-    ticker = update["ticker"]
-    latest_date = update["dates"][-1]  # Most recent date
-
-    # Load the updated data
-    data_dir = os.path.join(root_dir, "src", "data")
-    file_path = os.path.join(data_dir, f"{ticker}.json")
-
-    try:
-        with open(file_path, "r") as f:
-            data = json.load(f)
-
-        latest_data = data[latest_date]
-        close_price = latest_data["close"]
-
-        # Compute SMA200 via helper
-        sma200 = compute_sma(data, latest_date, 200, "close")
-        latest_data["sma200"] = sma200
-        rate = latest_data["rate"]
-
-        if ticker == "QQQ":
-            # Pullback metrics via helper
-            pullback_ratio, recent_big_pullback = compute_recent_big_pullback(
-                data, latest_date, 200, 0.75, "close"
-            )
-
-            qqq_data = {
-                "close": close_price,
-                "sma200": sma200,
-                "rate": rate,
-                "date": latest_date,
-                "pullbackRatio": pullback_ratio,
-                "recentBigPullback": recent_big_pullback,
-            }
-        elif ticker == "TQQQ":
-            tqqq_data = {
-                "close": close_price,
-                "sma200": sma200,
-                "rate": rate,
-                "date": latest_date,
-            }
-    except Exception as e:
-        print(f"⚠️  Could not analyze {ticker}: {e}")
-
-    # Use the shared email creation function
-    subject, email_body = create_email_content(qqq_data, tqqq_data)
-
-    if subject == "" or email_body == "":
-        print("⚠️  No data to report")
-        return
-    else:
-        send_notifications(subject, email_body)
-
-
 def update_all_data():
     """Main function to update all stock data"""
     print("🔄 Daily Stock Data Updater")
@@ -667,10 +473,6 @@ def update_all_data():
     else:
         print(f"⚠️  COMPLETED WITH ISSUES: {success_count}/{total_count} successful")
     print("=" * 40)
-
-    # Send notifications if new data was added
-    if updates_summary:
-        send_update_notifications(updates_summary)
 
     return success_count == total_count
 
