@@ -83,7 +83,9 @@ export const getYesterdaySignal = (
   const fastDrop = simulation.portfolioSnapshots
     .slice(-2)
     .some((snapshot) => marketData.TQQQ[snapshot.date].rate < -20);
-  const miniDrop = simulation.portfolioSnapshots.slice(-2).some((snapshot) => marketData.TQQQ[snapshot.date].rate < -5);
+  // const miniDrop = simulation.portfolioSnapshots
+  //   .slice(-2)
+  //   .some((snapshot) => marketData.TQQQ[snapshot.date].rate < -10);
 
   const lastPeriodMaxClose = marketDates
     .slice(Math.max(0, yesterdayIndex - 180), yesterdayIndex + 1)
@@ -126,14 +128,14 @@ export const getYesterdaySignal = (
     simulation.portfolioSnapshots.slice(-60).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
     yesterdaySignal.signalType === SignalType.WaitingForSmallDrop;
 
-  const lastSoldSnapshot = [...simulation.portfolioSnapshots]
-    .reverse()
-    .find((snapshot) => snapshot.signal.signalType === SignalType.Sell);
-  const shouldResume = simulation.portfolioSnapshots
-    .slice(-5)
-    .every((snapshot) => snapshot.signal.signalType === SignalType.Pause);
-  // const shouldResume =
-  //   lastSoldSnapshot && marketData.TQQQ[yesterdayDate].close >= marketData.TQQQ[lastSoldSnapshot?.date].close;
+  // const lastSoldSnapshot = [...simulation.portfolioSnapshots]
+  //   .reverse()
+  //   .find((snapshot) => snapshot.signal.signalType === SignalType.Sell);
+  // const shouldResume = simulation.portfolioSnapshots
+  //   .slice(-5)
+  //   .every((snapshot) => snapshot.signal.signalType === SignalType.Pause);
+  // // const shouldResume =
+  // //   lastSoldSnapshot && marketData.TQQQ[yesterdayDate].close >= marketData.TQQQ[lastSoldSnapshot?.date].close;
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
@@ -156,14 +158,6 @@ export const getYesterdaySignal = (
         signalType = SignalType.WaitingForDrop;
       }
       break;
-
-    // case SignalType.Pause:
-    //   if (shouldResume) {
-    //     signalType = SignalType.Buy;
-    //   } else {
-    //     signalType = SignalType.Pause;
-    //   }
-    //   break;
 
     case SignalType.WaitingForSmallDrop:
       if (slowDrop || mediumDrop || fastDrop) {
