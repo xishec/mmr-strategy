@@ -129,7 +129,7 @@ const getInitialSignal = (date: string, marketData: MarketData, startDate: strin
   } else if (growTooFast) {
     signalType = SignalType.WaitingForSmallDrop;
   } else {
-    signalType = SignalType.WaitingForRecovery;
+    signalType = SignalType.Buy;
   }
 
   return {
@@ -191,10 +191,10 @@ export const getYesterdaySignal = (
     const aboveCount = windowDates.filter(
       (d) => marketData.QQQ[d].sma && marketData.QQQ[d].close >= marketData.QQQ[d].sma! * 1.1
     ).length;
-    return aboveCount / windowDates.length >= 0.5;
+    return aboveCount / windowDates.length >= 0.8;
   })();
   const wasRecovering = simulation.portfolioSnapshots
-    .slice(-250)
+    .slice(-90)
     .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery);
   // const justBought = simulation.portfolioSnapshots
   //   .slice(-90)
@@ -248,7 +248,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.Hold:
-      if (fastDrop || mediumDrop || slowDrop || growTooFast) {
+      if (fastDrop || mediumDrop || slowDrop) {
         signalType = SignalType.Sell;
       } else {
         signalType = SignalType.Hold;
@@ -256,11 +256,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.Sell:
-      if (growTooFast) {
-        signalType = SignalType.WaitingForSmallDrop;
-      } else {
-        signalType = SignalType.WaitingForDrop;
-      }
+      signalType = SignalType.WaitingForDrop;
       break;
 
     case SignalType.WaitingForSmallDrop:
@@ -268,8 +264,6 @@ export const getYesterdaySignal = (
         signalType = SignalType.WaitingForDrop;
       } else if (isBelow95SMA200) {
         signalType = SignalType.WaitingForRecovery;
-      } else if (waitingForSmallDropForTooLong && !isAboveSMAForAWhile) {
-        signalType = SignalType.Buy;
       } else {
         signalType = SignalType.WaitingForSmallDrop;
       }
