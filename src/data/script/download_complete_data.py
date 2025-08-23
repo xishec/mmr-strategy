@@ -24,13 +24,13 @@ root_dir = os.path.dirname(os.path.dirname(os.path.dirname(DIR)))
 # API Keys
 TWELVEDATA_API_KEY = os.getenv("TWELVEDATA_API_KEY")
 
-# Simulation configuration for TQQQ (v2 logic)
-TQQQ_ANNUAL_EXPENSE_RATIO = 0.0095  # 0.95%
-TQQQ_BORROW_COST = 0.004  # 0.4% additional financing cost
-TQQQ_MAX_DAILY_TRACKING_ERROR = 0.0002  # 0.02%
-TQQQ_CALIBRATION_METHOD = "trimmed"  # trimmed | mean | median | none
-TQQQ_TRIM_FRACTION = 0.05
-TQQQ_EXTRA_DAILY_DRIFT = 0.0  # keep zero unless intentionally biasing
+# Simulation configuration for SPXL (v2 logic)
+SPXL_ANNUAL_EXPENSE_RATIO = 0.0095  # 0.95%
+SPXL_BORROW_COST = 0.004  # 0.4% additional financing cost
+SPXL_MAX_DAILY_TRACKING_ERROR = 0.0002  # 0.02%
+SPXL_CALIBRATION_METHOD = "trimmed"  # trimmed | mean | median | none
+SPXL_TRIM_FRACTION = 0.05
+SPXL_EXTRA_DAILY_DRIFT = 0.0  # keep zero unless intentionally biasing
 
 def smart_delay(attempt=0, base_delay=1):
     """
@@ -370,8 +370,8 @@ def merge_and_calculate(data_dict):
     # Return sorted data
     return {date: data_dict[date] for date in sorted_dates}
 
-def simulate_tqqq_from_qqq(
-    qqq_data: dict,
+def simulate_spxl_from_spy(
+    spy_data: dict,
     leverage: float = 3.0,
     annual_expense_ratio: float = 0.0095,
     trading_days_per_year: int = 252,
@@ -384,7 +384,7 @@ def simulate_tqqq_from_qqq(
     additional_annual_borrow_cost: float = 0.01,  # approximate financing/borrow cost
     extra_daily_drift: float = 0.0,  # manual additional daily negative drift (decimal), e.g. -0.00005
 ) -> dict:
-    """Simulate leveraged ETF (TQQQ) from QQQ data with minimal bias.
+    """Simulate leveraged ETF (SPXL) from SPY data with minimal bias.
 
     Changes (v2):
       • Removed explicit volatility drag adjustment (naturally emerges via compounding).
@@ -392,12 +392,12 @@ def simulate_tqqq_from_qqq(
       • Optionally calibrate average daily tracking error from real overlapping data.
       • Scale starting price to underlying*leverage unless overridden.
     """
-    print("🔄 Simulating TQQQ from QQQ data (v2)...")
-    if not qqq_data:
+    print("🔄 Simulating SPXL from SPY data (v2)...")
+    if not spy_data:
         return {}
-    dates = sorted(qqq_data.keys())
+    dates = sorted(spy_data.keys())
     first = dates[0]
-    first_close_under = qqq_data[first]["close"]
+    first_close_under = spy_data[first]["close"]
     if starting_price is None:
         start_close = first_close_under * leverage
     else:
@@ -412,14 +412,14 @@ def simulate_tqqq_from_qqq(
         overlaps = [d for d in dates if d in calibrate_with_real][1:]
         if overlaps:
             diffs = []
-            prev_u = qqq_data[first]["close"]
+            prev_u = spy_data[first]["close"]
             prev_real_close = calibrate_with_real[overlaps[0]]["close"] if overlaps[0] in calibrate_with_real else None
             # Build mapping of close series for real
             # Iterate in date order
             prev_real = calibrate_with_real[first]["close"] if first in calibrate_with_real else None
             for d in overlaps:
                 u_prev = prev_u
-                u_now = qqq_data[d]["close"]
+                u_now = spy_data[d]["close"]
                 r_u = u_now / u_prev - 1
                 if prev_real is not None and d in calibrate_with_real:
                     real_prev = prev_real
@@ -450,6 +450,8 @@ def simulate_tqqq_from_qqq(
                 print(f"📐 Calibrated tracking error ({calibration_method} capped): {tracking_error_daily*100:.4f}% per day (n={len(diffs)})")
             else:
                 tracking_error_daily = 0.0
+        else:
+            tracking_error_daily = 0.0
     elif tracking_error_daily is None:
         tracking_error_daily = 0.0
 
@@ -466,7 +468,7 @@ def simulate_tqqq_from_qqq(
     prev_close_u = first_close_under
 
     for d in dates[1:]:
-        u = qqq_data[d]
+        u = spy_data[d]
         o_u = u["open"]
         c_u = u["close"]
         if prev_close_u <= 0 or o_u <= 0 or c_u <= 0:
@@ -590,20 +592,20 @@ def save_data(ticker, data, output_dir):
     
     return output_path
 
-def adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data):
-    """Adjust real TQQQ data to continue seamlessly from simulated data"""
-    print("🔄 Adjusting real TQQQ data to match simulated data levels...")
+def adjust_real_spxl_to_simulated(simulated_spxl, raw_real_spxl_data):
+    """Adjust real SPXL data to continue seamlessly from simulated data"""
+    print("🔄 Adjusting real SPXL data to match simulated data levels...")
     
-    if not simulated_tqqq or not raw_real_tqqq_data:
-        return raw_real_tqqq_data
+    if not simulated_spxl or not raw_real_spxl_data:
+        return raw_real_spxl_data
     
     # Get the last simulated close price
-    last_sim_date = max(simulated_tqqq.keys())
-    last_sim_close = simulated_tqqq[last_sim_date]["close"]
+    last_sim_date = max(simulated_spxl.keys())
+    last_sim_close = simulated_spxl[last_sim_date]["close"]
     
     # Get the first real trading day data
-    first_real_date = min(raw_real_tqqq_data.keys())
-    first_real_data = raw_real_tqqq_data[first_real_date]
+    first_real_date = min(raw_real_spxl_data.keys())
+    first_real_data = raw_real_spxl_data[first_real_date]
     first_real_open = first_real_data["open"]
     first_real_close = first_real_data["close"]
     
@@ -616,9 +618,9 @@ def adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data):
     
     print(f"📊 Scaling factor: {scaling_factor:.6f}")
     
-    # Apply scaling to all real TQQQ data
+    # Apply scaling to all real SPXL data
     adjusted_real_data = {}
-    for date, data in raw_real_tqqq_data.items():
+    for date, data in raw_real_spxl_data.items():
         adjusted_real_data[date] = {
             "open": data["open"] * scaling_factor,
             "close": data["close"] * scaling_factor,
@@ -650,145 +652,146 @@ def download_complete_data():
     output_dir = os.path.join(root_dir, "src", "data")
     os.makedirs(output_dir, exist_ok=True)
     
-    # Download QQQ data
+    # Download SPY data
     print("=" * 50)
-    print("📈 DOWNLOADING QQQ DATA")
+    print("📈 DOWNLOADING SPY DATA")
     print("=" * 50)
     
     try:
-        qqq_data, qqq_twelvedata_start = download_hybrid_data("QQQ", "1998-01-01")
+        spy_data, spy_twelvedata_start = download_hybrid_data("SPY", "1998-01-01")
         
-        if not qqq_data:
-            print("❌ Failed to download QQQ data from all sources")
-            print("🛡️  Checking if existing QQQ data can be used...")
+        if not spy_data:
+            print("❌ Failed to download SPY data from all sources")
+            print("🛡️  Checking if existing SPY data can be used...")
             
-            # Check for existing QQQ data
-            existing_qqq_path = os.path.join(output_dir, "QQQ.json")
-            if os.path.exists(existing_qqq_path):
+            # Check for existing SPY data
+            existing_spy_path = os.path.join(output_dir, "SPY.json")
+            if os.path.exists(existing_spy_path):
                 try:
-                    with open(existing_qqq_path, 'r') as f:
-                        qqq_data = json.load(f)
-                    print(f"✅ Using existing QQQ data ({len(qqq_data)} days)")
+                    with open(existing_spy_path, 'r') as f:
+                        spy_data = json.load(f)
+                    print(f"✅ Using existing SPY data ({len(spy_data)} days)")
+                    spy_path = existing_spy_path
                 except Exception as e:
-                    print(f"❌ Could not load existing QQQ data: {e}")
-                    print("🚫 Cannot proceed without QQQ data")
+                    print(f"❌ Could not load existing SPY data: {e}")
+                    print("🚫 Cannot proceed without SPY data")
                     return
             else:
-                print("🚫 No existing QQQ data found. Cannot proceed.")
+                print("🚫 No existing SPY data found. Cannot proceed.")
                 return
         else:
-            qqq_data = merge_and_calculate(qqq_data)
-            qqq_path = save_data("QQQ", qqq_data, output_dir)
+            spy_data = merge_and_calculate(spy_data)
+            spy_path = save_data("SPY", spy_data, output_dir)
     
     except Exception as e:
-        print(f"❌ Unexpected error downloading QQQ data: {e}")
-        print("🛡️  Checking if existing QQQ data can be used...")
+        print(f"❌ Unexpected error downloading SPY data: {e}")
+        print("🛡️  Checking if existing SPY data can be used...")
         
         # Try to use existing data
-        existing_qqq_path = os.path.join(output_dir, "QQQ.json")
-        if os.path.exists(existing_qqq_path):
+        existing_spy_path = os.path.join(output_dir, "SPY.json")
+        if os.path.exists(existing_spy_path):
             try:
-                with open(existing_qqq_path, 'r') as f:
-                    qqq_data = json.load(f)
-                print(f"✅ Using existing QQQ data ({len(qqq_data)} days)")
+                with open(existing_spy_path, 'r') as f:
+                    spy_data = json.load(f)
+                print(f"✅ Using existing SPY data ({len(spy_data)} days)")
             except Exception as e2:
-                print(f"❌ Could not load existing QQQ data: {e2}")
-                print("🚫 Cannot proceed without QQQ data")
+                print(f"❌ Could not load existing SPY data: {e2}")
+                print("🚫 Cannot proceed without SPY data")
                 return
         else:
-            print("🚫 No existing QQQ data found. Cannot proceed.")
+            print("🚫 No existing SPY data found. Cannot proceed.")
             return
     
     # Add delay between different ticker downloads to avoid rate limiting
     smart_delay(base_delay=3)
     
-    # Download TQQQ data (real + simulated)
+    # Download SPXL data (real + simulated)
     print("\n" + "=" * 50)
-    print("📈 DOWNLOADING TQQQ DATA")
+    print("📈 DOWNLOADING SPXL DATA")
     print("=" * 50)
     
     try:
-        # Step 1: Simulate TQQQ for early years (1998-2010) from QQQ data
-        print("🔄 Simulating TQQQ for early years (1998-2010)...")
-        early_qqq = {date: data for date, data in qqq_data.items() if date < "2010-02-11"}
-        simulated_tqqq = simulate_tqqq_from_qqq(
-            early_qqq,
-            annual_expense_ratio=TQQQ_ANNUAL_EXPENSE_RATIO,
-            additional_annual_borrow_cost=TQQQ_BORROW_COST,
+        # Step 1: Simulate SPXL for early years (1998-2008) from SPY data
+        print("🔄 Simulating SPXL for early years (1998-2008)...")
+        early_spy = {date: data for date, data in spy_data.items() if date < "2008-11-05"}
+        simulated_spxl = simulate_spxl_from_spy(
+            early_spy,
+            annual_expense_ratio=SPXL_ANNUAL_EXPENSE_RATIO,
+            additional_annual_borrow_cost=SPXL_BORROW_COST,
             calibration_method="none",  # calibrate after real data fetched
-            max_abs_tracking_error=TQQQ_MAX_DAILY_TRACKING_ERROR,
-            trim_fraction=TQQQ_TRIM_FRACTION,
-            extra_daily_drift=TQQQ_EXTRA_DAILY_DRIFT,
+            max_abs_tracking_error=SPXL_MAX_DAILY_TRACKING_ERROR,
+            trim_fraction=SPXL_TRIM_FRACTION,
+            extra_daily_drift=SPXL_EXTRA_DAILY_DRIFT,
         )
         
-        # Step 2: Get real TQQQ data from launch date onwards using hybrid approach
-        print("🔄 Downloading real TQQQ data from launch date...")
+        # Step 2: Get real SPXL data from launch date onwards using hybrid approach
+        print("🔄 Downloading real SPXL data from launch date...")
         smart_delay(base_delay=2)  # Add delay before API call
-        tqqq_real_data, tqqq_twelvedata_start = download_hybrid_data("TQQQ", "2010-02-11")  # TQQQ launch date
+        spxl_real_data, spxl_twelvedata_start = download_hybrid_data("SPXL", "2008-11-05")  # SPXL launch date
         
-        if not tqqq_real_data:
-            print("❌ Failed to download real TQQQ data from all sources")
-            print("🛡️  Checking if existing TQQQ data can be used...")
+        if not spxl_real_data:
+            print("❌ Failed to download real SPXL data from all sources")
+            print("🛡️  Checking if existing SPXL data can be used...")
             
-            # Check for existing TQQQ data
-            existing_tqqq_path = os.path.join(output_dir, "TQQQ.json")
-            if os.path.exists(existing_tqqq_path):
+            # Check for existing SPXL data
+            existing_spxl_path = os.path.join(output_dir, "SPXL.json")
+            if os.path.exists(existing_spxl_path):
                 try:
-                    with open(existing_tqqq_path, 'r') as f:
-                        existing_tqqq_data = json.load(f)
-                    print(f"✅ Existing TQQQ data found ({len(existing_tqqq_data)} days)")
-                    print("🛡️  Keeping existing TQQQ data - not overwriting with incomplete data")
+                    with open(existing_spxl_path, 'r') as f:
+                        existing_spxl_data = json.load(f)
+                    print(f"✅ Existing SPXL data found ({len(existing_spxl_data)} days)")
+                    print("🛡️  Keeping existing SPXL data - not overwriting with incomplete data")
                     
                     # Still show final summary
                     print("\n" + "🎉" * 20)
                     print("✅ DATA DOWNLOAD COMPLETED (with existing data)")
                     print("🎉" * 20)
-                    print(f"📁 QQQ data: {len(qqq_data)} days")
-                    print(f"📁 TQQQ data: {len(existing_tqqq_data)} days (existing)")
+                    print(f"📁 SPY data: {len(spy_data)} days")
+                    print(f"📁 SPXL data: {len(existing_spxl_data)} days (existing)")
                     return
                     
                 except Exception as e:
-                    print(f"❌ Could not load existing TQQQ data: {e}")
+                    print(f"❌ Could not load existing SPXL data: {e}")
                     print("⚠️  Will proceed with simulated data only")
                     
             # Use only simulated data if no existing data
-            print("⚠️  Using simulated TQQQ data only (no real data available)")
-            tqqq_data = simulated_tqqq
+            print("⚠️  Using simulated SPXL data only (no real data available)")
+            spxl_data = simulated_spxl
         else:
-            raw_real_tqqq_data = merge_and_calculate(tqqq_real_data)
+            raw_real_spxl_data = merge_and_calculate(spxl_real_data)
 
             # Re-simulate early period WITH calibration now that real data is available
-            print("🔄 Re-simulating pre-launch TQQQ with calibration against real data...")
-            if early_qqq:
-                simulated_tqqq = simulate_tqqq_from_qqq(
-                    early_qqq,
-                    annual_expense_ratio=TQQQ_ANNUAL_EXPENSE_RATIO,
-                    additional_annual_borrow_cost=TQQQ_BORROW_COST,
-                    calibration_method=TQQQ_CALIBRATION_METHOD,
-                    max_abs_tracking_error=TQQQ_MAX_DAILY_TRACKING_ERROR,
-                    trim_fraction=TQQQ_TRIM_FRACTION,
-                    extra_daily_drift=TQQQ_EXTRA_DAILY_DRIFT,
-                    calibrate_with_real=raw_real_tqqq_data,
+            print("🔄 Re-simulating pre-launch SPXL with calibration against real data...")
+            if early_spy:
+                simulated_spxl = simulate_spxl_from_spy(
+                    early_spy,
+                    annual_expense_ratio=SPXL_ANNUAL_EXPENSE_RATIO,
+                    additional_annual_borrow_cost=SPXL_BORROW_COST,
+                    calibration_method=SPXL_CALIBRATION_METHOD,
+                    max_abs_tracking_error=SPXL_MAX_DAILY_TRACKING_ERROR,
+                    trim_fraction=SPXL_TRIM_FRACTION,
+                    extra_daily_drift=SPXL_EXTRA_DAILY_DRIFT,
+                    calibrate_with_real=raw_real_spxl_data,
                 )
             else:
-                print("ℹ️  No pre-launch QQQ data available for re-simulation calibration.")
+                print("ℹ️  No pre-launch SPY data available for re-simulation calibration.")
             
-            # Step 3: Adjust real TQQQ data to continue seamlessly from simulated data
-            adjusted_real_tqqq = adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data)
+            # Step 3: Adjust real SPXL data to continue seamlessly from simulated data
+            adjusted_real_spxl = adjust_real_spxl_to_simulated(simulated_spxl, raw_real_spxl_data)
             
-            # Step 4: Merge simulated and adjusted real TQQQ data
-            all_tqqq_data = {}
-            all_tqqq_data.update(simulated_tqqq)
-            all_tqqq_data.update(adjusted_real_tqqq)
+            # Step 4: Merge simulated and adjusted real SPXL data
+            all_spxl_data = {}
+            all_spxl_data.update(simulated_spxl)
+            all_spxl_data.update(adjusted_real_spxl)
             
             # Step 5: Recalculate rates for the complete dataset
-            print("🔄 Recalculating rates for complete TQQQ dataset...")
-            sorted_dates = sorted(all_tqqq_data.keys())
+            print("🔄 Recalculating rates for complete SPXL dataset...")
+            sorted_dates = sorted(all_spxl_data.keys())
             
             # Recalculate all rates
             for i, date in enumerate(sorted_dates):
-                close_value = all_tqqq_data[date]["close"]
-                open_value = all_tqqq_data[date]["open"]
+                close_value = all_spxl_data[date]["close"]
+                open_value = all_spxl_data[date]["open"]
                 
                 if i == 0:
                     # First day - no previous data
@@ -796,7 +799,7 @@ def download_complete_data():
                     combined_rate = 0
                 else:
                     prev_date = sorted_dates[i-1]
-                    prev_close = all_tqqq_data[prev_date]["close"]
+                    prev_close = all_spxl_data[prev_date]["close"]
                     
                     # Overnight rate: previous close to current open
                     overnight_rate = (open_value - prev_close) / prev_close * 100
@@ -808,51 +811,51 @@ def download_complete_data():
                 day_rate = (close_value - open_value) / open_value * 100
                 
                 # Update rates
-                all_tqqq_data[date]["overnight_rate"] = round(overnight_rate, 6)
-                all_tqqq_data[date]["day_rate"] = round(day_rate, 6)
-                all_tqqq_data[date]["rate"] = round(combined_rate, 6)
+                all_spxl_data[date]["overnight_rate"] = round(overnight_rate, 6)
+                all_spxl_data[date]["day_rate"] = round(day_rate, 6)
+                all_spxl_data[date]["rate"] = round(combined_rate, 6)
             
             # Sort by date
-            tqqq_data = {date: all_tqqq_data[date] for date in sorted_dates}
+            spxl_data = {date: all_spxl_data[date] for date in sorted_dates}
         
-        tqqq_path = save_data("TQQQ", tqqq_data, output_dir)
+        spxl_path = save_data("SPXL", spxl_data, output_dir)
         
     except Exception as e:
-        print(f"❌ Unexpected error processing TQQQ data: {e}")
-        print("🛡️  Checking if existing TQQQ data should be preserved...")
+        print(f"❌ Unexpected error processing SPXL data: {e}")
+        print("🛡️  Checking if existing SPXL data should be preserved...")
         
-        # Check for existing TQQQ data
-        existing_tqqq_path = os.path.join(output_dir, "TQQQ.json")
-        if os.path.exists(existing_tqqq_path):
+        # Check for existing SPXL data
+        existing_spxl_path = os.path.join(output_dir, "SPXL.json")
+        if os.path.exists(existing_spxl_path):
             try:
-                with open(existing_tqqq_path, 'r') as f:
-                    existing_tqqq_data = json.load(f)
-                print(f"✅ Existing TQQQ data preserved ({len(existing_tqqq_data)} days)")
+                with open(existing_spxl_path, 'r') as f:
+                    existing_spxl_data = json.load(f)
+                print(f"✅ Existing SPXL data preserved ({len(existing_spxl_data)} days)")
                 
                 # Show final summary with existing data
                 print("\n" + "🎉" * 20)
                 print("✅ DATA DOWNLOAD COMPLETED (with existing data)")
                 print("🎉" * 20)
-                print(f"📁 QQQ data: {len(qqq_data)} days")
-                print(f"📁 TQQQ data: {len(existing_tqqq_data)} days (existing)")
+                print(f"📁 SPY data: {len(spy_data)} days")
+                print(f"📁 SPXL data: {len(existing_spxl_data)} days (existing)")
                 return
                 
             except Exception as e2:
-                print(f"❌ Could not verify existing TQQQ data: {e2}")
+                print(f"❌ Could not verify existing SPXL data: {e2}")
         
-        print("🚫 TQQQ data processing failed and no existing data available")
+        print("🚫 SPXL data processing failed and no existing data available")
         return
     
     print("\n" + "🎉" * 20)
     print("✅ COMPLETE DATA DOWNLOAD FINISHED!")
     print("🎉" * 20)
-    print(f"📁 QQQ data saved to: {qqq_path}")
-    print(f"📁 TQQQ data saved to: {tqqq_path}")
+    print(f"📁 SPY data saved to: {spy_path}")
+    print(f"📁 SPXL data saved to: {spxl_path}")
     
-    if qqq_data:
-        print(f"📊 QQQ: {min(qqq_data.keys())} to {max(qqq_data.keys())} ({len(qqq_data)} days)")
-    if tqqq_data:
-        print(f"📊 TQQQ: {min(tqqq_data.keys())} to {max(tqqq_data.keys())} ({len(tqqq_data)} days)")
+    if spy_data:
+        print(f"📊 SPY: {min(spy_data.keys())} to {max(spy_data.keys())} ({len(spy_data)} days)")
+    if spxl_data:
+        print(f"📊 SPXL: {min(spxl_data.keys())} to {max(spxl_data.keys())} ({len(spxl_data)} days)")
 
 if __name__ == "__main__":
     download_complete_data()

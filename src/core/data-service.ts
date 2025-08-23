@@ -187,12 +187,14 @@ export class DataService {
   private async loadFromLocalFiles(): Promise<MarketData> {
     try {
       console.log("Loading data from local files...");
-      const rawQQQData = (await import("../data/QQQ.json")).default;
-      const rawTQQQData = (await import("../data/TQQQ.json")).default;
+      const rawQQQData = (await import("../data/SPY.json")).default;
+      const rawTQQQData = (await import("../data/SPXL.json")).default;
+      // const rawQQQData = (await import("../data/QQQ.json")).default;
+      // const rawTQQQData = (await import("../data/TQQQ.json")).default;
       
       // Transform raw data to include sma and maxClose properties
       const transformedQQQData: Record<string, any> = {};
-      for (const [date, data] of Object.entries(rawQQQData)) {
+      for (const [date, data] of Object.entries(rawQQQData)) { 
         transformedQQQData[date] = {
           ...(data as any),
           sma: null,
