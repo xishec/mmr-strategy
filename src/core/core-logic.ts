@@ -129,7 +129,7 @@ const getInitialSignal = (date: string, marketData: MarketData, startDate: strin
   } else if (growTooFast) {
     signalType = SignalType.WaitingForSmallDrop;
   } else {
-    signalType = SignalType.Hold;
+    signalType = SignalType.WaitingForRecovery;
   }
 
   return {
