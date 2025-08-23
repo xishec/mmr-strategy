@@ -24,13 +24,13 @@ root_dir = os.path.dirname(os.path.dirname(os.path.dirname(DIR)))
 # API Keys
 TWELVEDATA_API_KEY = os.getenv("TWELVEDATA_API_KEY")
 
-# Simulation configuration for SPXL (v2 logic)
-SPXL_ANNUAL_EXPENSE_RATIO = 0.0095  # 0.95%
-SPXL_BORROW_COST = 0.004  # 0.4% additional financing cost
-SPXL_MAX_DAILY_TRACKING_ERROR = 0.0002  # 0.02%
-SPXL_CALIBRATION_METHOD = "trimmed"  # trimmed | mean | median | none
-SPXL_TRIM_FRACTION = 0.05
-SPXL_EXTRA_DAILY_DRIFT = 0.0  # keep zero unless intentionally biasing
+# Simulation configuration for SOXL (v2 logic)
+SOXL_ANNUAL_EXPENSE_RATIO = 0.0095  # 0.95%
+SOXL_BORROW_COST = 0.004  # 0.4% additional financing cost
+SOXL_MAX_DAILY_TRACKING_ERROR = 0.0002  # 0.02%
+SOXL_CALIBRATION_METHOD = "trimmed"  # trimmed | mean | median | none
+SOXL_TRIM_FRACTION = 0.05
+SOXL_EXTRA_DAILY_DRIFT = 0.0  # keep zero unless intentionally biasing
 
 def smart_delay(attempt=0, base_delay=1):
     """
@@ -370,8 +370,8 @@ def merge_and_calculate(data_dict):
     # Return sorted data
     return {date: data_dict[date] for date in sorted_dates}
 
-def simulate_spxl_from_spy(
-    spy_data: dict,
+def simulate_soxl_from_soxx(
+    soxx_data: dict,
     leverage: float = 3.0,
     annual_expense_ratio: float = 0.0095,
     trading_days_per_year: int = 252,
@@ -384,7 +384,7 @@ def simulate_spxl_from_spy(
     additional_annual_borrow_cost: float = 0.01,  # approximate financing/borrow cost
     extra_daily_drift: float = 0.0,  # manual additional daily negative drift (decimal), e.g. -0.00005
 ) -> dict:
-    """Simulate leveraged ETF (SPXL) from SPY data with minimal bias.
+    """Simulate leveraged ETF (SOXL) from SOXX data with minimal bias.
 
     Changes (v2):
       • Removed explicit volatility drag adjustment (naturally emerges via compounding).
@@ -392,12 +392,12 @@ def simulate_spxl_from_spy(
       • Optionally calibrate average daily tracking error from real overlapping data.
       • Scale starting price to underlying*leverage unless overridden.
     """
-    print("🔄 Simulating SPXL from SPY data (v2)...")
-    if not spy_data:
+    print("🔄 Simulating SOXL from SOXX data (v2)...")
+    if not soxx_data:
         return {}
-    dates = sorted(spy_data.keys())
+    dates = sorted(soxx_data.keys())
     first = dates[0]
-    first_close_under = spy_data[first]["close"]
+    first_close_under = soxx_data[first]["close"]
     if starting_price is None:
         start_close = first_close_under * leverage
     else:
@@ -412,14 +412,14 @@ def simulate_spxl_from_spy(
         overlaps = [d for d in dates if d in calibrate_with_real][1:]
         if overlaps:
             diffs = []
-            prev_u = spy_data[first]["close"]
+            prev_u = soxx_data[first]["close"]
             prev_real_close = calibrate_with_real[overlaps[0]]["close"] if overlaps[0] in calibrate_with_real else None
             # Build mapping of close series for real
             # Iterate in date order
             prev_real = calibrate_with_real[first]["close"] if first in calibrate_with_real else None
             for d in overlaps:
                 u_prev = prev_u
-                u_now = spy_data[d]["close"]
+                u_now = soxx_data[d]["close"]
                 r_u = u_now / u_prev - 1
                 if prev_real is not None and d in calibrate_with_real:
                     real_prev = prev_real
@@ -468,7 +468,7 @@ def simulate_spxl_from_spy(
     prev_close_u = first_close_under
 
     for d in dates[1:]:
-        u = spy_data[d]
+        u = soxx_data[d]
         o_u = u["open"]
         c_u = u["close"]
         if prev_close_u <= 0 or o_u <= 0 or c_u <= 0:
@@ -592,20 +592,20 @@ def save_data(ticker, data, output_dir):
     
     return output_path
 
-def adjust_real_spxl_to_simulated(simulated_spxl, raw_real_spxl_data):
-    """Adjust real SPXL data to continue seamlessly from simulated data"""
-    print("🔄 Adjusting real SPXL data to match simulated data levels...")
+def adjust_real_soxl_to_simulated(simulated_soxl, raw_real_soxl_data):
+    """Adjust real SOXL data to continue seamlessly from simulated data"""
+    print("🔄 Adjusting real SOXL data to match simulated data levels...")
     
-    if not simulated_spxl or not raw_real_spxl_data:
-        return raw_real_spxl_data
+    if not simulated_soxl or not raw_real_soxl_data:
+        return raw_real_soxl_data
     
     # Get the last simulated close price
-    last_sim_date = max(simulated_spxl.keys())
-    last_sim_close = simulated_spxl[last_sim_date]["close"]
+    last_sim_date = max(simulated_soxl.keys())
+    last_sim_close = simulated_soxl[last_sim_date]["close"]
     
     # Get the first real trading day data
-    first_real_date = min(raw_real_spxl_data.keys())
-    first_real_data = raw_real_spxl_data[first_real_date]
+    first_real_date = min(raw_real_soxl_data.keys())
+    first_real_data = raw_real_soxl_data[first_real_date]
     first_real_open = first_real_data["open"]
     first_real_close = first_real_data["close"]
     
@@ -618,9 +618,9 @@ def adjust_real_spxl_to_simulated(simulated_spxl, raw_real_spxl_data):
     
     print(f"📊 Scaling factor: {scaling_factor:.6f}")
     
-    # Apply scaling to all real SPXL data
+    # Apply scaling to all real SOXL data
     adjusted_real_data = {}
-    for date, data in raw_real_spxl_data.items():
+    for date, data in raw_real_soxl_data.items():
         adjusted_real_data[date] = {
             "open": data["open"] * scaling_factor,
             "close": data["close"] * scaling_factor,
@@ -652,146 +652,146 @@ def download_complete_data():
     output_dir = os.path.join(root_dir, "src", "data")
     os.makedirs(output_dir, exist_ok=True)
     
-    # Download SPY data
+    # Download SOXX data
     print("=" * 50)
-    print("📈 DOWNLOADING SPY DATA")
+    print("📈 DOWNLOADING SOXX DATA")
     print("=" * 50)
     
     try:
-        spy_data, spy_twelvedata_start = download_hybrid_data("SPY", "1998-01-01")
+        soxx_data, soxx_twelvedata_start = download_hybrid_data("SOXX", "1998-01-01")
         
-        if not spy_data:
-            print("❌ Failed to download SPY data from all sources")
-            print("🛡️  Checking if existing SPY data can be used...")
+        if not soxx_data:
+            print("❌ Failed to download SOXX data from all sources")
+            print("🛡️  Checking if existing SOXX data can be used...")
             
-            # Check for existing SPY data
-            existing_spy_path = os.path.join(output_dir, "SPY.json")
-            if os.path.exists(existing_spy_path):
+            # Check for existing SOXX data
+            existing_soxx_path = os.path.join(output_dir, "SOXX.json")
+            if os.path.exists(existing_soxx_path):
                 try:
-                    with open(existing_spy_path, 'r') as f:
-                        spy_data = json.load(f)
-                    print(f"✅ Using existing SPY data ({len(spy_data)} days)")
-                    spy_path = existing_spy_path
+                    with open(existing_soxx_path, 'r') as f:
+                        soxx_data = json.load(f)
+                    print(f"✅ Using existing SOXX data ({len(soxx_data)} days)")
+                    soxx_path = existing_soxx_path
                 except Exception as e:
-                    print(f"❌ Could not load existing SPY data: {e}")
-                    print("🚫 Cannot proceed without SPY data")
+                    print(f"❌ Could not load existing SOXX data: {e}")
+                    print("🚫 Cannot proceed without SOXX data")
                     return
             else:
-                print("🚫 No existing SPY data found. Cannot proceed.")
+                print("🚫 No existing SOXX data found. Cannot proceed.")
                 return
         else:
-            spy_data = merge_and_calculate(spy_data)
-            spy_path = save_data("SPY", spy_data, output_dir)
+            soxx_data = merge_and_calculate(soxx_data)
+            soxx_path = save_data("SOXX", soxx_data, output_dir)
     
     except Exception as e:
-        print(f"❌ Unexpected error downloading SPY data: {e}")
-        print("🛡️  Checking if existing SPY data can be used...")
+        print(f"❌ Unexpected error downloading SOXX data: {e}")
+        print("🛡️  Checking if existing SOXX data can be used...")
         
         # Try to use existing data
-        existing_spy_path = os.path.join(output_dir, "SPY.json")
-        if os.path.exists(existing_spy_path):
+        existing_soxx_path = os.path.join(output_dir, "SOXX.json")
+        if os.path.exists(existing_soxx_path):
             try:
-                with open(existing_spy_path, 'r') as f:
-                    spy_data = json.load(f)
-                print(f"✅ Using existing SPY data ({len(spy_data)} days)")
+                with open(existing_soxx_path, 'r') as f:
+                    soxx_data = json.load(f)
+                print(f"✅ Using existing SOXX data ({len(soxx_data)} days)")
             except Exception as e2:
-                print(f"❌ Could not load existing SPY data: {e2}")
-                print("🚫 Cannot proceed without SPY data")
+                print(f"❌ Could not load existing SOXX data: {e2}")
+                print("🚫 Cannot proceed without SOXX data")
                 return
         else:
-            print("🚫 No existing SPY data found. Cannot proceed.")
+            print("🚫 No existing SOXX data found. Cannot proceed.")
             return
     
     # Add delay between different ticker downloads to avoid rate limiting
     smart_delay(base_delay=3)
     
-    # Download SPXL data (real + simulated)
+    # Download SOXL data (real + simulated)
     print("\n" + "=" * 50)
-    print("📈 DOWNLOADING SPXL DATA")
+    print("📈 DOWNLOADING SOXL DATA")
     print("=" * 50)
     
     try:
-        # Step 1: Simulate SPXL for early years (1998-2008) from SPY data
-        print("🔄 Simulating SPXL for early years (1998-2008)...")
-        early_spy = {date: data for date, data in spy_data.items() if date < "2008-11-05"}
-        simulated_spxl = simulate_spxl_from_spy(
-            early_spy,
-            annual_expense_ratio=SPXL_ANNUAL_EXPENSE_RATIO,
-            additional_annual_borrow_cost=SPXL_BORROW_COST,
+        # Step 1: Simulate SOXL for early years (1998-2010) from SOXX data
+        print("🔄 Simulating SOXL for early years (1998-2010)...")
+        early_soxx = {date: data for date, data in soxx_data.items() if date < "2010-03-11"}
+        simulated_soxl = simulate_soxl_from_soxx(
+            early_soxx,
+            annual_expense_ratio=SOXL_ANNUAL_EXPENSE_RATIO,
+            additional_annual_borrow_cost=SOXL_BORROW_COST,
             calibration_method="none",  # calibrate after real data fetched
-            max_abs_tracking_error=SPXL_MAX_DAILY_TRACKING_ERROR,
-            trim_fraction=SPXL_TRIM_FRACTION,
-            extra_daily_drift=SPXL_EXTRA_DAILY_DRIFT,
+            max_abs_tracking_error=SOXL_MAX_DAILY_TRACKING_ERROR,
+            trim_fraction=SOXL_TRIM_FRACTION,
+            extra_daily_drift=SOXL_EXTRA_DAILY_DRIFT,
         )
         
-        # Step 2: Get real SPXL data from launch date onwards using hybrid approach
-        print("🔄 Downloading real SPXL data from launch date...")
+        # Step 2: Get real SOXL data from launch date onwards using hybrid approach
+        print("🔄 Downloading real SOXL data from launch date...")
         smart_delay(base_delay=2)  # Add delay before API call
-        spxl_real_data, spxl_twelvedata_start = download_hybrid_data("SPXL", "2008-11-05")  # SPXL launch date
+        soxl_real_data, soxl_twelvedata_start = download_hybrid_data("SOXL", "2010-03-11")  # SOXL launch date
         
-        if not spxl_real_data:
-            print("❌ Failed to download real SPXL data from all sources")
-            print("🛡️  Checking if existing SPXL data can be used...")
+        if not soxl_real_data:
+            print("❌ Failed to download real SOXL data from all sources")
+            print("🛡️  Checking if existing SOXL data can be used...")
             
-            # Check for existing SPXL data
-            existing_spxl_path = os.path.join(output_dir, "SPXL.json")
-            if os.path.exists(existing_spxl_path):
+            # Check for existing SOXL data
+            existing_soxl_path = os.path.join(output_dir, "SOXL.json")
+            if os.path.exists(existing_soxl_path):
                 try:
-                    with open(existing_spxl_path, 'r') as f:
-                        existing_spxl_data = json.load(f)
-                    print(f"✅ Existing SPXL data found ({len(existing_spxl_data)} days)")
-                    print("🛡️  Keeping existing SPXL data - not overwriting with incomplete data")
+                    with open(existing_soxl_path, 'r') as f:
+                        existing_soxl_data = json.load(f)
+                    print(f"✅ Existing SOXL data found ({len(existing_soxl_data)} days)")
+                    print("🛡️  Keeping existing SOXL data - not overwriting with incomplete data")
                     
                     # Still show final summary
                     print("\n" + "🎉" * 20)
                     print("✅ DATA DOWNLOAD COMPLETED (with existing data)")
                     print("🎉" * 20)
-                    print(f"📁 SPY data: {len(spy_data)} days")
-                    print(f"📁 SPXL data: {len(existing_spxl_data)} days (existing)")
+                    print(f"📁 SOXX data: {len(soxx_data)} days")
+                    print(f"📁 SOXL data: {len(existing_soxl_data)} days (existing)")
                     return
                     
                 except Exception as e:
-                    print(f"❌ Could not load existing SPXL data: {e}")
+                    print(f"❌ Could not load existing SOXL data: {e}")
                     print("⚠️  Will proceed with simulated data only")
                     
             # Use only simulated data if no existing data
-            print("⚠️  Using simulated SPXL data only (no real data available)")
-            spxl_data = simulated_spxl
+            print("⚠️  Using simulated SOXL data only (no real data available)")
+            soxl_data_out = simulated_soxl
         else:
-            raw_real_spxl_data = merge_and_calculate(spxl_real_data)
+            raw_real_soxl_data = merge_and_calculate(soxl_real_data)
 
             # Re-simulate early period WITH calibration now that real data is available
-            print("🔄 Re-simulating pre-launch SPXL with calibration against real data...")
-            if early_spy:
-                simulated_spxl = simulate_spxl_from_spy(
-                    early_spy,
-                    annual_expense_ratio=SPXL_ANNUAL_EXPENSE_RATIO,
-                    additional_annual_borrow_cost=SPXL_BORROW_COST,
-                    calibration_method=SPXL_CALIBRATION_METHOD,
-                    max_abs_tracking_error=SPXL_MAX_DAILY_TRACKING_ERROR,
-                    trim_fraction=SPXL_TRIM_FRACTION,
-                    extra_daily_drift=SPXL_EXTRA_DAILY_DRIFT,
-                    calibrate_with_real=raw_real_spxl_data,
+            print("🔄 Re-simulating pre-launch SOXL with calibration against real data...")
+            if early_soxx:
+                simulated_soxl = simulate_soxl_from_soxx(
+                    early_soxx,
+                    annual_expense_ratio=SOXL_ANNUAL_EXPENSE_RATIO,
+                    additional_annual_borrow_cost=SOXL_BORROW_COST,
+                    calibration_method=SOXL_CALIBRATION_METHOD,
+                    max_abs_tracking_error=SOXL_MAX_DAILY_TRACKING_ERROR,
+                    trim_fraction=SOXL_TRIM_FRACTION,
+                    extra_daily_drift=SOXL_EXTRA_DAILY_DRIFT,
+                    calibrate_with_real=raw_real_soxl_data,
                 )
             else:
-                print("ℹ️  No pre-launch SPY data available for re-simulation calibration.")
+                print("ℹ️  No pre-launch SOXX data available for re-simulation calibration.")
             
-            # Step 3: Adjust real SPXL data to continue seamlessly from simulated data
-            adjusted_real_spxl = adjust_real_spxl_to_simulated(simulated_spxl, raw_real_spxl_data)
+            # Step 3: Adjust real SOXL data to continue seamlessly from simulated data
+            adjusted_real_soxl = adjust_real_soxl_to_simulated(simulated_soxl, raw_real_soxl_data)
             
-            # Step 4: Merge simulated and adjusted real SPXL data
-            all_spxl_data = {}
-            all_spxl_data.update(simulated_spxl)
-            all_spxl_data.update(adjusted_real_spxl)
+            # Step 4: Merge simulated and adjusted real SOXL data
+            all_soxl_data = {}
+            all_soxl_data.update(simulated_soxl)
+            all_soxl_data.update(adjusted_real_soxl)
             
             # Step 5: Recalculate rates for the complete dataset
-            print("🔄 Recalculating rates for complete SPXL dataset...")
-            sorted_dates = sorted(all_spxl_data.keys())
+            print("🔄 Recalculating rates for complete SOXL dataset...")
+            sorted_dates = sorted(all_soxl_data.keys())
             
             # Recalculate all rates
             for i, date in enumerate(sorted_dates):
-                close_value = all_spxl_data[date]["close"]
-                open_value = all_spxl_data[date]["open"]
+                close_value = all_soxl_data[date]["close"]
+                open_value = all_soxl_data[date]["open"]
                 
                 if i == 0:
                     # First day - no previous data
@@ -799,7 +799,7 @@ def download_complete_data():
                     combined_rate = 0
                 else:
                     prev_date = sorted_dates[i-1]
-                    prev_close = all_spxl_data[prev_date]["close"]
+                    prev_close = all_soxl_data[prev_date]["close"]
                     
                     # Overnight rate: previous close to current open
                     overnight_rate = (open_value - prev_close) / prev_close * 100
@@ -811,51 +811,51 @@ def download_complete_data():
                 day_rate = (close_value - open_value) / open_value * 100
                 
                 # Update rates
-                all_spxl_data[date]["overnight_rate"] = round(overnight_rate, 6)
-                all_spxl_data[date]["day_rate"] = round(day_rate, 6)
-                all_spxl_data[date]["rate"] = round(combined_rate, 6)
+                all_soxl_data[date]["overnight_rate"] = round(overnight_rate, 6)
+                all_soxl_data[date]["day_rate"] = round(day_rate, 6)
+                all_soxl_data[date]["rate"] = round(combined_rate, 6)
             
             # Sort by date
-            spxl_data = {date: all_spxl_data[date] for date in sorted_dates}
+            soxl_data_out = {date: all_soxl_data[date] for date in sorted_dates}
         
-        spxl_path = save_data("SPXL", spxl_data, output_dir)
+        soxl_path = save_data("SOXL", soxl_data_out, output_dir)
         
     except Exception as e:
-        print(f"❌ Unexpected error processing SPXL data: {e}")
-        print("🛡️  Checking if existing SPXL data should be preserved...")
+        print(f"❌ Unexpected error processing SOXL data: {e}")
+        print("🛡️  Checking if existing SOXL data should be preserved...")
         
-        # Check for existing SPXL data
-        existing_spxl_path = os.path.join(output_dir, "SPXL.json")
-        if os.path.exists(existing_spxl_path):
+        # Check for existing SOXL data
+        existing_soxl_path = os.path.join(output_dir, "SOXL.json")
+        if os.path.exists(existing_soxl_path):
             try:
-                with open(existing_spxl_path, 'r') as f:
-                    existing_spxl_data = json.load(f)
-                print(f"✅ Existing SPXL data preserved ({len(existing_spxl_data)} days)")
+                with open(existing_soxl_path, 'r') as f:
+                    existing_soxl_data = json.load(f)
+                print(f"✅ Existing SOXL data preserved ({len(existing_soxl_data)} days)")
                 
                 # Show final summary with existing data
                 print("\n" + "🎉" * 20)
                 print("✅ DATA DOWNLOAD COMPLETED (with existing data)")
                 print("🎉" * 20)
-                print(f"📁 SPY data: {len(spy_data)} days")
-                print(f"📁 SPXL data: {len(existing_spxl_data)} days (existing)")
+                print(f"📁 SOXX data: {len(soxx_data)} days")
+                print(f"📁 SOXL data: {len(existing_soxl_data)} days (existing)")
                 return
                 
             except Exception as e2:
-                print(f"❌ Could not verify existing SPXL data: {e2}")
+                print(f"❌ Could not verify existing SOXL data: {e2}")
         
-        print("🚫 SPXL data processing failed and no existing data available")
+        print("🚫 SOXL data processing failed and no existing data available")
         return
     
     print("\n" + "🎉" * 20)
     print("✅ COMPLETE DATA DOWNLOAD FINISHED!")
     print("🎉" * 20)
-    print(f"📁 SPY data saved to: {spy_path}")
-    print(f"📁 SPXL data saved to: {spxl_path}")
+    print(f"📁 SOXX data saved to: {soxx_path}")
+    print(f"📁 SOXL data saved to: {soxl_path}")
     
-    if spy_data:
-        print(f"📊 SPY: {min(spy_data.keys())} to {max(spy_data.keys())} ({len(spy_data)} days)")
-    if spxl_data:
-        print(f"📊 SPXL: {min(spxl_data.keys())} to {max(spxl_data.keys())} ({len(spxl_data)} days)")
+    if soxx_data:
+        print(f"📊 SOXX: {min(soxx_data.keys())} to {max(soxx_data.keys())} ({len(soxx_data)} days)")
+    if soxl_data_out:
+        print(f"📊 SOXL: {min(soxl_data_out.keys())} to {max(soxl_data_out.keys())} ({len(soxl_data_out)} days)")
 
 if __name__ == "__main__":
     download_complete_data()
