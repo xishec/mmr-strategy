@@ -191,8 +191,6 @@ function getSignalDescription(signalType: SignalType): string {
       "<img src='https://raw.githubusercontent.com/xishec/mmr-strategy/refs/heads/main/public/warren-buffett-panic.jpeg' width='600' alt='Sell signal'>",
     [SignalType.WaitingForSmallDrop]:
       "<img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='600' alt='Waiting for small drop'>",
-    [SignalType.WaitingForSmallRecovery]:
-      "<img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='600' alt='Waiting for recovery'>",
     [SignalType.WaitingForDrop]:
       "<img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='600' alt='Waiting for drop'>",
     [SignalType.WaitingForRecovery]:
@@ -208,7 +206,12 @@ function getSignalDescription(signalType: SignalType): string {
 /**
  * Create HTML email content
  */
-function createEmailContent(result: Simulation, currentDate: string): { subject: string; html: string } {
+function createEmailContent(
+  result: Simulation,
+  currentDate: string,
+  latestTqqqDate: string,
+  latestTqqqRate: number
+): { subject: string; html: string } {
   const latestSnapshot = result.portfolioSnapshots[result.portfolioSnapshots.length - 1];
   const signal = latestSnapshot?.signal;
   const signalDescription = signal ? getSignalDescription(signal.signalType) : "No signal available";
@@ -219,7 +222,6 @@ function createEmailContent(result: Simulation, currentDate: string): { subject:
     [SignalType.Hold]: "🔵 Hold - Maintain current position",
     [SignalType.Sell]: "🔴 Sell - Exit positions immediately",
     [SignalType.WaitingForSmallDrop]: "🟡 Waiting for small drop - Looking for entry opportunity",
-    [SignalType.WaitingForSmallRecovery]: "🟡 Waiting for small recovery - Monitoring for entry",
     [SignalType.WaitingForDrop]: "🟠 Waiting for drop - Staying in cash",
     [SignalType.WaitingForRecovery]: "🟠 Waiting for recovery - Staying in cash until recovery",
   };
@@ -248,33 +250,168 @@ function createEmailContent(result: Simulation, currentDate: string): { subject:
           .join("")
       : '<tr><td colspan="2">No recent signals</td></tr>';
 
-  const subject = `${signalEmoji[latestSnapshot.signal.signalType]} MMR Strategy Daily Report`;
+  const subject = `${signalEmoji[latestSnapshot.signal.signalType]} - MMR Strategy Daily Report`;
 
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
       <style>
-        body { font-family: Arial, sans-serif; line-height: 1.4; padding: 20px; }
-        table { border-collapse: collapse; width: 100%; margin: 10px 0; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; white-space: nowrap; }
-        th { background-color: #f0f0f0; }
-        h1 { text-align: center; }
-        h3 { margin-top: 25px; }
-        .signal { text-align: center; font-weight: bold; padding: 20px; width: 100%; max-width: 800px; }
-        .signal-title { font-size: 20px; margin-bottom: 15px; text-align: center;}
-        .signal img { border-radius: 5px; display: block; margin-left: auto; margin-right: auto; }
+        /* Reset and base styles */
+        body { 
+          font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; 
+          line-height: 1.6; 
+          margin: 0; 
+          padding: 20px; 
+          background-color: #ffffff;
+          color: #333333;
+        }
+        
+        /* Container for better email client compatibility */
+        .container {
+          max-width: 800px;
+          margin: 0 auto;
+          background-color: #ffffff;
+        }
+        
+        /* Typography */
+        h1 { 
+          text-align: center; 
+          color: #2c3e50;
+          margin-bottom: 10px;
+          font-size: 28px;
+          font-weight: 700;
+        }
+        
+        h3 { 
+          margin-top: 30px; 
+          margin-bottom: 15px;
+          color: #34495e;
+          font-size: 18px;
+          font-weight: 600;
+        }
+        
+        /* Tables */
+        table { 
+          border-collapse: collapse; 
+          width: 100%; 
+          margin: 15px 0; 
+          font-size: 14px;
+        }
+        
+        th, td { 
+          border: 1px solid #ddd; 
+          padding: 12px 8px; 
+          text-align: left; 
+          vertical-align: top;
+        }
+        
+        th { 
+          background-color: #f8f9fa; 
+          font-weight: 600;
+          color: #495057;
+        }
+        
+        /* Signal display */
+        .signal { 
+          text-align: center; 
+          font-weight: bold; 
+          padding: 25px 20px; 
+          margin: 20px auto;
+          background-color: #f8f9fa;
+          border-radius: 8px;
+          border: 2px solid #e9ecef;
+          font-size: 18px;
+          color: #495057;
+        }
+        
+        .signal-title { 
+          font-size: 24px; 
+          margin-bottom: 15px; 
+          text-align: center;
+          line-height: 1.2;
+        }
+        
+        /* Info bar - fallback for email clients that don't support flexbox */
+        .info-bar { 
+          text-align: center; 
+          margin: 20px 0;
+          color: #495057;
+          font-size: 16px;
+        }
+        
+        .info-bar span {
+          margin: 0 4px;
+        }
+        
+        .chip { 
+          display: inline-block; 
+          padding: 8px 12px; 
+          font-weight: 600;
+          margin: 0 6px;
+        }
+        
+        /* Links */
+        a {
+        }
+        
+        a:hover {
+          text-decoration: underline;
+        }
+        
+        
+        /* Footer */
+        .footer {
+          margin-top: 40px;
+          padding-top: 20px;
+          border-top: 1px solid #e9ecef;
+          text-align: center; 
+          font-size: 12px; 
+          color: #868e96;
+          line-height: 1.5;
+        }
+        
+        /* Responsive adjustments */
+        @media only screen and (max-width: 600px) {
+          body {
+            padding: 10px;
+          }
+          
+          .signal {
+            padding: 20px 15px;
+            font-size: 16px;
+          }
+          
+          .signal-title {
+            font-size: 20px;
+          }
+          
+          table {
+            font-size: 13px;
+          }
+          
+          th, td {
+            padding: 8px 6px;
+          }
+        }
       </style>
     </head>
     <body>
-      <h1>MMR Strategy Daily Report</h1>
-      <p style="text-align: center;">${currentDate}</p>
-      
-      <div class="signal-title">${signal ? signalEmoji[signal.signalType] || "❓" : "❓"}</div>
+      <div class="container">
+        <h1>MMR Strategy Daily Report</h1>
+        <p style="text-align: center; color: #666; font-size: 16px;">${currentDate}</p>
+        
+        <div class="info-bar">
+          <span>Latest TQQQ rate:</span>
+          <span class="chip">${latestTqqqRate.toFixed(2)}%</span>
+          <a href="https://www.tradingview.com/chart/?symbol=NASDAQ%3ATQQQ" target="_blank" rel="noopener noreferrer">View on TV</a>
+        </div>
+        
+        <div class="signal-title">${signal ? signalEmoji[signal.signalType] || "❓" : "❓"}</div>
 
-      <div class="signal">
-        ${signalDescription}
-      </div>
+        <div class="signal">
+          ${signalDescription}
+        </div>
 
       <h3>📊 Recent Signals (Last 10)</h3>
       <table>
@@ -302,10 +439,11 @@ function createEmailContent(result: Simulation, currentDate: string): { subject:
         </tbody>
       </table>
 
-      <p style="text-align: center; font-size: 12px; color: #666;">
-        This report was automatically generated by the MMR Strategy system.<br>
-        Report generated at: ${new Date().toLocaleString()}
-      </p>
+        <div class="footer">
+          This report was automatically generated by the MMR Strategy system.<br>
+          Report generated at: ${new Date().toLocaleString()}
+        </div>
+      </div>
     </body>
     </html>
   `;
@@ -406,9 +544,14 @@ async function runDailyEmailSimulation() {
 
     console.log(`Simulation completed in ${endTime - startTime}ms\n`);
 
+    // Find latest TQQQ date and rate
+    const tqqqDatesSorted = Object.keys(marketData.TQQQ).sort();
+    const latestTqqqDate = tqqqDatesSorted[tqqqDatesSorted.length - 1];
+    const latestTqqqRate = marketData.TQQQ[latestTqqqDate]?.rate ?? 0;
+
     // Create email content
     console.log("Preparing email content...");
-    const { subject, html } = createEmailContent(result, currentDate);
+    const { subject, html } = createEmailContent(result, currentDate, latestTqqqDate, latestTqqqRate);
 
     // Send email
     await sendEmail(emailConfig, subject, html);
