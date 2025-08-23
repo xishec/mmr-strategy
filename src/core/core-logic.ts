@@ -196,6 +196,9 @@ export const getYesterdaySignal = (
   const wasRecovering = simulation.portfolioSnapshots
     .slice(-250)
     .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery);
+  // const justBought = simulation.portfolioSnapshots
+  //   .slice(-90)
+  //   .some((snapshot) => snapshot.signal.signalType === SignalType.Buy);
   // const lastSoldSnapshot =
   //   [...simulation.portfolioSnapshots].reverse()
   //   .find((snapshot) => snapshot.signal.signalType === SignalType.Sell) ??
@@ -219,6 +222,18 @@ export const getYesterdaySignal = (
   const waitingForSmallDropForTooLong =
     simulation.portfolioSnapshots.slice(-60).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
     yesterdaySignal.signalType === SignalType.WaitingForSmallDrop;
+
+  // const wasMid = (() => {
+  //   const windowDates = marketDates.slice(Math.max(0, yesterdayIndex - 60), yesterdayIndex + 1);
+  //   if (windowDates.length === 0) return false;
+  //   const aboveCount = windowDates.filter(
+  //     (d) =>
+  //       marketData.QQQ[d].sma &&
+  //       marketData.QQQ[d].close < marketData.QQQ[d].sma! * 1.05 &&
+  //       marketData.QQQ[d].close >= marketData.QQQ[d].sma! * 0.95
+  //   ).length;
+  //   return aboveCount / windowDates.length >= 0.8;
+  // })();
 
   // const shouldResume = simulation.portfolioSnapshots
   //   .slice(-5)
