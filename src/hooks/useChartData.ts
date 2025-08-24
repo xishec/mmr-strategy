@@ -36,7 +36,7 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
         hasOrangeMarker:
           snapshot.signal.hasOrangeMarker && !simulation.portfolioSnapshots[i - 1]?.signal.hasOrangeMarker,
         hasRedMarker: snapshot.signal.hasRedMarker && !simulation.portfolioSnapshots[i - 1]?.signal.hasRedMarker,
-        hasBlueMarker: snapshot.signal.hasBlueMarker && !simulation.portfolioSnapshots[i - 1]?.signal.hasBlueMarker,
+        hasBlueMarker: snapshot.signal.hasBlueMarker,
         hasGreenTriangle:
           snapshot.signal.hasGreenTriangle && !simulation.portfolioSnapshots[i - 1]?.signal.hasGreenTriangle,
         hasBlackTriangle:

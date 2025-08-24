@@ -189,9 +189,9 @@ export const getYesterdaySignal = (
     const windowDates = marketDates.slice(Math.max(0, yesterdayIndex - 30), yesterdayIndex + 1);
     if (windowDates.length === 0) return false;
     const aboveCount = windowDates.filter(
-      (d) => marketData.QQQ[d].sma && marketData.QQQ[d].close >= marketData.QQQ[d].sma! * 1.1
+      (d) => marketData.QQQ[d].sma && marketData.QQQ[d].close >= marketData.QQQ[d].sma! * 1.09
     ).length;
-    return aboveCount / windowDates.length >= 0.8;
+    return aboveCount / windowDates.length >= 0.75;
   })();
   const wasRecovering = simulation.portfolioSnapshots
     .slice(-200)
@@ -268,7 +268,7 @@ export const getYesterdaySignal = (
         signalType = SignalType.WaitingForDrop;
       } else if (isBelow95SMA200) {
         signalType = SignalType.WaitingForRecovery;
-      } else if (waitingForSmallDropForTooLong && !isAboveSMAForAWhile) {
+      } else if (waitingForSmallDropForTooLong && !growTooFast) {
         signalType = SignalType.Buy;
       } else {
         signalType = SignalType.WaitingForSmallDrop;
