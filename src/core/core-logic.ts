@@ -194,7 +194,7 @@ export const getYesterdaySignal = (
     return aboveCount / windowDates.length >= 0.8;
   })();
   const wasRecovering = simulation.portfolioSnapshots
-    .slice(-250)
+    .slice(-200)
     .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery);
   // const justBought = simulation.portfolioSnapshots
   //   .slice(-90)

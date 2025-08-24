@@ -30,7 +30,7 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
       mockTotalTQQQ: simulation.portfolioSnapshots.map((snapshot, i) => ({
         time: snapshot.date,
         value: snapshot.investments.mockTotalTQQQ,
-        hasXMarker: snapshot.signal.hasXMarker && !simulation.portfolioSnapshots[i - 1]?.signal.hasXMarker,
+        hasXMarker: snapshot.signal.hasXMarker,
         hasYellowMarker:
           snapshot.signal.hasYellowMarker && !simulation.portfolioSnapshots[i - 1]?.signal.hasYellowMarker,
         hasOrangeMarker:
