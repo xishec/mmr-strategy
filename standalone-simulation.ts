@@ -215,7 +215,7 @@ async function runStandaloneSimulation() {
       const recentOrders = result.report.orders.slice(-10);
       recentOrders.forEach(order => {
         const action = order.type === SignalType.Buy ? "BUY " : "SELL";
-        console.log(`${order.date}: ${action} - ${formatCurrency(order.deltaMoney)}`);
+        console.log(`${order.date}: ${action} - ${formatCurrency(order.currentTotal)}`);
       });
     }
     

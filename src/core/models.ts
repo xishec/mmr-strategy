@@ -22,7 +22,7 @@ export interface TradeStatistics {
 export interface Order {
   date: string;
   type: SignalType;
-  deltaMoney: number;
+  currentTotal: number;
 }
 
 export interface SimulationVariables {

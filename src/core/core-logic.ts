@@ -345,7 +345,7 @@ const updateStrategyToSnapshotYesterday = (
       simulation.report.orders.push({
         date: newSnapshot.date,
         type: SignalType.Sell,
-        deltaMoney: newSnapshot.investments.total,
+        currentTotal: newSnapshot.investments.total,
       });
       break;
     case SignalType.Buy:
@@ -357,7 +357,7 @@ const updateStrategyToSnapshotYesterday = (
       simulation.report.orders.push({
         date: newSnapshot.date,
         type: SignalType.Buy,
-        deltaMoney: newSnapshot.investments.total,
+        currentTotal: newSnapshot.investments.total,
       });
       // apply day rate after all-in
       newSnapshot.investments.TQQQ *= TQQQDayRate / 100 + 1;
