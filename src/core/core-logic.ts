@@ -325,7 +325,8 @@ const updateStrategyToSnapshotYesterday = (
 
   switch (signal.signalType) {
     case SignalType.WaitingForRecovery:
-      if (newSnapshot.investments.ratio <= 0 && goodRange) {
+      if (goodRange) {
+        newSnapshot.investments.ratio = -1;
         newSnapshot.investments.total *= 1 - TQQQRate / 3 / 100;
         newSnapshot.signal = signal;
       }
