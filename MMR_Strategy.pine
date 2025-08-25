@@ -145,28 +145,29 @@ if signal == -1 and strategy.position_size > 0
     strategy.close("Long")
 
 
-// VIX high volatility marker when VIX > 30
-plotshape(vix_close > 30, title="High VIX", location=location.top, color=color.purple, style=shape.circle, size=size.tiny)
+// // VIX high volatility marker when VIX > 30
+// plotshape(vix_close > 30, title="High VIX", location=location.top, color=color.purple, style=shape.circle, size=size.tiny)
 
 // Plot SMA200 lines
-plot(sma200_qqq, "QQQ SMA 200", color=color.blue, linewidth=2)
+plot(sma200_tqqq * 1.05, "TQQQ SMA 200", color=color.green, linewidth=1)
 plot(sma200_tqqq, "TQQQ SMA 200", color=color.navy, linewidth=1)
+plot(sma200_tqqq * 0.95, "TQQQ SMA 200", color=color.red, linewidth=1)
 
 // Plot buy/sell signals
 plotshape(signal == 1, title="Buy Signal", location=location.belowbar, color=color.green, style=shape.triangleup, size=size.small)
 plotshape(signal == -1, title="Sell Signal", location=location.abovebar, color=color.red, style=shape.triangledown, size=size.small)
 
-// Plot market condition markers
-plotshape(fastDrop, title="Fast Drop", location=location.top, color=color.red, style=shape.circle, size=size.tiny)
-plotshape(mediumDrop, title="Medium Drop", location=location.top, color=color.orange, style=shape.square, size=size.tiny)
-plotshape(slowDrop, title="Slow Drop", location=location.top, color=color.yellow, style=shape.diamond, size=size.tiny)
-plotshape(growTooFast, title="Grow Too Fast", location=location.top, color=color.blue, style=shape.triangleup, size=size.tiny)
+// // Plot market condition markers
+// plotshape(fastDrop, title="Fast Drop", location=location.abovebar, color=color.red, style=shape.circle, size=size.tiny)
+// plotshape(mediumDrop, title="Medium Drop", location=location.abovebar, color=color.orange, style=shape.square, size=size.tiny)
+// plotshape(slowDrop, title="Slow Drop", location=location.abovebar, color=color.yellow, style=shape.diamond, size=size.tiny)
+// plotshape(growTooFast, title="Grow Too Fast", location=location.abovebar, color=color.blue, style=shape.triangleup, size=size.tiny)
 
 // Background color for drop conditions
 bgcolor(fastDrop ? color.new(color.red, 90) : mediumDrop ? color.new(color.orange, 90) : slowDrop ? color.new(color.yellow, 90) : na, title="Drop Background")
 
 // Table to show current status
-var table info_table = table.new(position.top_right, 3, 9, bgcolor=color.white, border_width=1)
+var table info_table = table.new(position.bottom_right, 3, 9, bgcolor=color.white, border_width=1)
 if barstate.islast
     table.cell(info_table, 0, 0, "Metric", text_color=color.black, bgcolor=color.gray)
     table.cell(info_table, 1, 0, "Value", text_color=color.black, bgcolor=color.gray)
@@ -212,8 +213,3 @@ if barstate.islast
     vix_status_color = vix_close < 20 ? color.green : vix_close > 30 ? color.red : color.gray
     table.cell(info_table, 1, 8, str.tostring(math.round(vix_close, 2)), text_color=color.black)
     table.cell(info_table, 2, 8, vix_status, text_color=vix_status_color)
-
-// Alert conditions
-alertcondition(signal == 1, title="Buy Alert", message="MMR Strategy V2: BUY signal generated - State: " + signal_state)
-alertcondition(signal == -1, title="Sell Alert", message="MMR Strategy V2: SELL signal generated - State: " + signal_state)
-alertcondition(signal_state != signal_state[1], title="State Change Alert", message="MMR Strategy V2: State changed from " + str.tostring(signal_state[1]) + " to " + signal_state)
