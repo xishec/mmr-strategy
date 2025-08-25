@@ -303,6 +303,9 @@ export const getYesterdaySignal = (
     hasBlueMarker: growTooFast,
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
+    // hasXMarker:
+    //   signalType === SignalType.WaitingForRecovery &&
+    //   marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.65,
     hasXMarker: false,
     signalType,
   };
@@ -319,12 +322,12 @@ const updateStrategyToSnapshotYesterday = (
   const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
   const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
 
-  const isBelow100SMA200 = marketData.QQQ[newSnapshot.date].close < marketData.QQQ[newSnapshot.date].sma! * 0.95;
+  const goodRange = marketData.QQQ[newSnapshot.date].close < marketData.QQQ[newSnapshot.date].sma! * 0.95;
 
   switch (signal.signalType) {
     case SignalType.WaitingForRecovery:
-      if (newSnapshot.investments.ratio <= 0 && isBelow100SMA200) {
-        newSnapshot.investments.total *= 1 - QQQRate / 2 / 100;
+      if (newSnapshot.investments.ratio <= 0 && goodRange) {
+        newSnapshot.investments.total *= 1 - TQQQRate / 3 / 100;
         newSnapshot.signal = signal;
       }
       break;
