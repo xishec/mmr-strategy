@@ -241,6 +241,8 @@ export const getYesterdaySignal = (
   // const shouldResume =
   //   lastSoldSnapshot && marketData.TQQQ[yesterdayDate].close >= marketData.TQQQ[lastSoldSnapshot?.date].close;
 
+  const goodRange = marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.95;
+
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
     case SignalType.Buy:
@@ -284,10 +286,20 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.WaitingForRecovery:
-      if (isAbove105SMA200) {
+      if (goodRange) {
+        signalType = SignalType.Short;
+      } else if (isAbove105SMA200) {
         signalType = SignalType.Buy;
       } else {
         signalType = SignalType.WaitingForRecovery;
+      }
+      break;
+
+    case SignalType.Short:
+      if (!goodRange) {
+        signalType = SignalType.WaitingForRecovery;
+      } else {
+        signalType = SignalType.Short;
       }
       break;
 
@@ -303,6 +315,9 @@ export const getYesterdaySignal = (
     hasBlueMarker: growTooFast,
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
+    // hasXMarker:
+    //   signalType === SignalType.WaitingForRecovery &&
+    //   marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.65,
     hasXMarker: false,
     signalType,
   };
@@ -317,8 +332,13 @@ const updateStrategyToSnapshotYesterday = (
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
   const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
   const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
-
+if (newSnapshot.investments.ratio === )  newSnapshot.investments.ratio = 1;
   switch (signal.signalType) {
+    case SignalType.Short:
+      newSnapshot.investments.ratio = -1;
+      newSnapshot.investments.total *= 1 - TQQQRate / 3 / 100;
+      newSnapshot.signal = signal;
+      break;
     case SignalType.Hold:
       if (newSnapshot.investments.ratio > 0) {
         // if have position, add new cash
