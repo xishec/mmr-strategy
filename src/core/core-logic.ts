@@ -315,10 +315,19 @@ const updateStrategyToSnapshotYesterday = (
   simulation: Simulation
 ) => {
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
+  const QQQRate = marketData.QQQ[newSnapshot.date].rate || 0;
   const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
   const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
 
+  const isBelow100SMA200 = marketData.QQQ[newSnapshot.date].close < marketData.QQQ[newSnapshot.date].sma! * 1;
+
   switch (signal.signalType) {
+    case SignalType.WaitingForRecovery:
+      if (newSnapshot.investments.ratio <= 0 && isBelow100SMA200) {
+        newSnapshot.investments.total *= 1 - QQQRate / 2 / 100;
+        newSnapshot.signal = signal;
+      }
+      break;
     case SignalType.Hold:
       if (newSnapshot.investments.ratio > 0) {
         // if have position, add new cash
