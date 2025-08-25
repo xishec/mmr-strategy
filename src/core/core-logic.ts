@@ -318,7 +318,6 @@ const updateStrategyToSnapshotYesterday = (
   simulation: Simulation
 ) => {
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
-  const QQQRate = marketData.QQQ[newSnapshot.date].rate || 0;
   const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
   const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
 
