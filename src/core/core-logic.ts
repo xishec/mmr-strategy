@@ -319,7 +319,7 @@ const updateStrategyToSnapshotYesterday = (
   const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
   const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
 
-  const isBelow100SMA200 = marketData.QQQ[newSnapshot.date].close < marketData.QQQ[newSnapshot.date].sma! * 1;
+  const isBelow100SMA200 = marketData.QQQ[newSnapshot.date].close < marketData.QQQ[newSnapshot.date].sma! * 0.95;
 
   switch (signal.signalType) {
     case SignalType.WaitingForRecovery:
