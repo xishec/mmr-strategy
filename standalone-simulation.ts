@@ -13,7 +13,7 @@ import { MarketData, Simulation, SignalType } from './src/core/models';
 // Default variables from useSimulation hook
 const DEFAULT_SIMULATION_VARIABLES = {
   initialMoney: 200000,
-  cashYearRate: 2000,
+  cashYearRate: 0,
   SMAUpMargin: 0.0,
   SMADownMargin: -0.0,
   monthlyNewCash: 0,
@@ -77,8 +77,8 @@ async function loadMarketData(): Promise<MarketData> {
   try {
     console.log("Loading market data from local files...");
     
-    const qqqPath = path.join(__dirname, 'src', 'data', 'QQQ.json');
-    const tqqqPath = path.join(__dirname, 'src', 'data', 'TQQQ.json');
+    const qqqPath = path.join(__dirname, 'src', 'data', 'N225.json');
+    const tqqqPath = path.join(__dirname, 'src', 'data', 'N225L.json');
     
     const rawQQQData = JSON.parse(fs.readFileSync(qqqPath, 'utf8'));
     const rawTQQQData = JSON.parse(fs.readFileSync(tqqqPath, 'utf8'));

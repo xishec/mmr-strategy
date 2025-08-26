@@ -187,8 +187,10 @@ export class DataService {
   private async loadFromLocalFiles(): Promise<MarketData> {
     try {
       console.log("Loading data from local files...");
-      const rawQQQData = (await import("../data/SOXX.json")).default;
-      const rawTQQQData = (await import("../data/SOXL.json")).default;
+      const rawQQQData = (await import("../data/N225.json")).default;
+      const rawTQQQData = (await import("../data/N225L.json")).default;
+      // const rawQQQData = (await import("../data/SOXX.json")).default;
+      // const rawTQQQData = (await import("../data/SOXL.json")).default;
       // const rawQQQData = (await import("../data/SPY.json")).default;
       // const rawTQQQData = (await import("../data/SPXL.json")).default;
       // const rawQQQData = (await import("../data/QQQ.json")).default;

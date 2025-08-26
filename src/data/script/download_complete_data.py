@@ -32,6 +32,14 @@ SOXL_CALIBRATION_METHOD = "trimmed"  # trimmed | mean | median | none
 SOXL_TRIM_FRACTION = 0.05
 SOXL_EXTRA_DAILY_DRIFT = 0.0  # keep zero unless intentionally biasing
 
+# Simulation configuration for 3x leveraged Nikkei 225 (N225L - simulated)
+N225L_ANNUAL_EXPENSE_RATIO = 0.0095  # 0.95% (similar to other 3x ETFs)
+N225L_BORROW_COST = 0.006  # 0.6% additional financing cost (slightly higher for international exposure)
+N225L_MAX_DAILY_TRACKING_ERROR = 0.0003  # 0.03% (slightly higher for international markets)
+N225L_CALIBRATION_METHOD = "none"  # no real data to calibrate against for leveraged Nikkei
+N225L_TRIM_FRACTION = 0.05
+N225L_EXTRA_DAILY_DRIFT = 0.0  # keep zero unless intentionally biasing
+
 def smart_delay(attempt=0, base_delay=1):
     """
     Add intelligent delays to prevent rate limiting
@@ -370,8 +378,8 @@ def merge_and_calculate(data_dict):
     # Return sorted data
     return {date: data_dict[date] for date in sorted_dates}
 
-def simulate_soxl_from_soxx(
-    soxx_data: dict,
+def simulate_leveraged_etf_from_underlying(
+    underlying_data: dict,
     leverage: float = 3.0,
     annual_expense_ratio: float = 0.0095,
     trading_days_per_year: int = 252,
@@ -384,7 +392,7 @@ def simulate_soxl_from_soxx(
     additional_annual_borrow_cost: float = 0.01,  # approximate financing/borrow cost
     extra_daily_drift: float = 0.0,  # manual additional daily negative drift (decimal), e.g. -0.00005
 ) -> dict:
-    """Simulate leveraged ETF (SOXL) from SOXX data with minimal bias.
+    """Simulate leveraged ETF from underlying data with minimal bias.
 
     Changes (v2):
       • Removed explicit volatility drag adjustment (naturally emerges via compounding).
@@ -392,12 +400,12 @@ def simulate_soxl_from_soxx(
       • Optionally calibrate average daily tracking error from real overlapping data.
       • Scale starting price to underlying*leverage unless overridden.
     """
-    print("🔄 Simulating SOXL from SOXX data (v2)...")
-    if not soxx_data:
+    print("🔄 Simulating leveraged ETF from underlying data (v2)...")
+    if not underlying_data:
         return {}
-    dates = sorted(soxx_data.keys())
+    dates = sorted(underlying_data.keys())
     first = dates[0]
-    first_close_under = soxx_data[first]["close"]
+    first_close_under = underlying_data[first]["close"]
     if starting_price is None:
         start_close = first_close_under * leverage
     else:
@@ -412,14 +420,14 @@ def simulate_soxl_from_soxx(
         overlaps = [d for d in dates if d in calibrate_with_real][1:]
         if overlaps:
             diffs = []
-            prev_u = soxx_data[first]["close"]
+            prev_u = underlying_data[first]["close"]
             prev_real_close = calibrate_with_real[overlaps[0]]["close"] if overlaps[0] in calibrate_with_real else None
             # Build mapping of close series for real
             # Iterate in date order
             prev_real = calibrate_with_real[first]["close"] if first in calibrate_with_real else None
             for d in overlaps:
                 u_prev = prev_u
-                u_now = soxx_data[d]["close"]
+                u_now = underlying_data[d]["close"]
                 r_u = u_now / u_prev - 1
                 if prev_real is not None and d in calibrate_with_real:
                     real_prev = prev_real
@@ -468,7 +476,7 @@ def simulate_soxl_from_soxx(
     prev_close_u = first_close_under
 
     for d in dates[1:]:
-        u = soxx_data[d]
+        u = underlying_data[d]
         o_u = u["open"]
         c_u = u["close"]
         if prev_close_u <= 0 or o_u <= 0 or c_u <= 0:
@@ -503,6 +511,66 @@ def simulate_soxl_from_soxx(
         prev_close_u = c_u
 
     return out
+
+def simulate_soxl_from_soxx(
+    soxx_data: dict,
+    leverage: float = 3.0,
+    annual_expense_ratio: float = 0.0095,
+    trading_days_per_year: int = 252,
+    starting_price: float | None = None,
+    tracking_error_daily: float | None = None,
+    calibrate_with_real: dict | None = None,
+    calibration_method: str = "trimmed",  # mean | median | trimmed | none
+    trim_fraction: float = 0.05,  # fraction each tail removed if trimmed
+    max_abs_tracking_error: float = 0.0002,  # 0.02% cap per day
+    additional_annual_borrow_cost: float = 0.01,  # approximate financing/borrow cost
+    extra_daily_drift: float = 0.0,  # manual additional daily negative drift (decimal), e.g. -0.00005
+) -> dict:
+    """Wrapper function to simulate SOXL from SOXX using the general leveraged ETF simulator."""
+    return simulate_leveraged_etf_from_underlying(
+        soxx_data,
+        leverage,
+        annual_expense_ratio,
+        trading_days_per_year,
+        starting_price,
+        tracking_error_daily,
+        calibrate_with_real,
+        calibration_method,
+        trim_fraction,
+        max_abs_tracking_error,
+        additional_annual_borrow_cost,
+        extra_daily_drift,
+    )
+
+def simulate_n225l_from_n225(
+    n225_data: dict,
+    leverage: float = 3.0,
+    annual_expense_ratio: float = 0.0095,
+    trading_days_per_year: int = 252,
+    starting_price: float | None = None,
+    tracking_error_daily: float | None = None,
+    calibrate_with_real: dict | None = None,
+    calibration_method: str = "none",  # mean | median | trimmed | none
+    trim_fraction: float = 0.05,  # fraction each tail removed if trimmed
+    max_abs_tracking_error: float = 0.0003,  # 0.03% cap per day
+    additional_annual_borrow_cost: float = 0.006,  # approximate financing/borrow cost
+    extra_daily_drift: float = 0.0,  # manual additional daily negative drift (decimal), e.g. -0.00005
+) -> dict:
+    """Simulate 3x leveraged Nikkei 225 ETF (N225L) from N225 data."""
+    return simulate_leveraged_etf_from_underlying(
+        n225_data,
+        leverage,
+        annual_expense_ratio,
+        trading_days_per_year,
+        starting_price,
+        tracking_error_daily,
+        calibrate_with_real,
+        calibration_method,
+        trim_fraction,
+        max_abs_tracking_error,
+        additional_annual_borrow_cost,
+        extra_daily_drift,
+    )
 
 def save_data(ticker, data, output_dir):
     """Save data to JSON file with protection against overwriting good data with bad data"""
@@ -857,5 +925,193 @@ def download_complete_data():
     if soxl_data_out:
         print(f"📊 SOXL: {min(soxl_data_out.keys())} to {max(soxl_data_out.keys())} ({len(soxl_data_out)} days)")
 
+def download_nikkei_data():
+    """Function to download Nikkei 225 data and simulate 3x leveraged version"""
+    print("🚀 Nikkei 225 Data Downloader")
+    print("=============================")
+    print("📅 Period: As far back as possible to Today")
+    print("📊 Sources: Yahoo Finance + Twelve Data")
+    print("🎯 Output: N225 + Simulated N225L (3x leveraged)")
+    print()
+    print("⚠️  Note: This script includes delays to prevent rate limiting")
+    print("    from data providers. Please be patient.")
+    print("🛡️  Data protection: Existing data will not be overwritten with incomplete/invalid data")
+    print()
+    
+    output_dir = os.path.join(root_dir, "src", "data")
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Download N225 data (Nikkei 225 index)
+    print("=" * 50)
+    print("📈 DOWNLOADING NIKKEI 225 DATA")
+    print("=" * 50)
+    
+    try:
+        # Try different ticker symbols for Nikkei 225
+        # ^N225 is the most common symbol for Yahoo Finance
+        # N225.T might work for some providers
+        nikkei_tickers = ["^N225", "N225.T", "NKY"]
+        n225_data = None
+        successful_ticker = None
+        
+        for ticker in nikkei_tickers:
+            print(f"🔄 Trying ticker symbol: {ticker}")
+            try:
+                n225_data, n225_twelvedata_start = download_hybrid_data(ticker, "1984-01-01")  # Nikkei goes back to 1984
+                if n225_data and len(n225_data) > 100:  # Need substantial data
+                    successful_ticker = ticker
+                    print(f"✅ Successfully downloaded {len(n225_data)} days of data using {ticker}")
+                    break
+                else:
+                    print(f"⚠️  Insufficient data from {ticker} ({len(n225_data) if n225_data else 0} days)")
+            except Exception as e:
+                print(f"❌ Failed to download data using {ticker}: {e}")
+            
+            # Add delay between ticker attempts
+            smart_delay(base_delay=2)
+        
+        if not n225_data or not successful_ticker:
+            print("❌ Failed to download N225 data from all ticker symbols")
+            print("🛡️  Checking if existing N225 data can be used...")
+            
+            # Check for existing N225 data
+            existing_n225_path = os.path.join(output_dir, "N225.json")
+            if os.path.exists(existing_n225_path):
+                try:
+                    with open(existing_n225_path, 'r') as f:
+                        n225_data = json.load(f)
+                    print(f"✅ Using existing N225 data ({len(n225_data)} days)")
+                    n225_path = existing_n225_path
+                    successful_ticker = "N225 (existing)"
+                except Exception as e:
+                    print(f"❌ Could not load existing N225 data: {e}")
+                    print("🚫 Cannot proceed without N225 data")
+                    return
+            else:
+                print("🚫 No existing N225 data found. Cannot proceed.")
+                return
+        else:
+            n225_data = merge_and_calculate(n225_data)
+            n225_path = save_data("N225", n225_data, output_dir)
+    
+    except Exception as e:
+        print(f"❌ Unexpected error downloading N225 data: {e}")
+        print("🛡️  Checking if existing N225 data can be used...")
+        
+        # Try to use existing data
+        existing_n225_path = os.path.join(output_dir, "N225.json")
+        if os.path.exists(existing_n225_path):
+            try:
+                with open(existing_n225_path, 'r') as f:
+                    n225_data = json.load(f)
+                print(f"✅ Using existing N225 data ({len(n225_data)} days)")
+                successful_ticker = "N225 (existing)"
+            except Exception as e2:
+                print(f"❌ Could not load existing N225 data: {e2}")
+                print("🚫 Cannot proceed without N225 data")
+                return
+        else:
+            print("🚫 No existing N225 data found. Cannot proceed.")
+            return
+    
+    # Add delay between downloads
+    smart_delay(base_delay=3)
+    
+    # Simulate N225L (3x leveraged Nikkei 225)
+    print("\n" + "=" * 50)
+    print("📈 SIMULATING 3X LEVERAGED NIKKEI 225 (N225L)")
+    print("=" * 50)
+    
+    try:
+        print("🔄 Simulating N225L (3x leveraged Nikkei 225) from N225 data...")
+        simulated_n225l = simulate_n225l_from_n225(
+            n225_data,
+            annual_expense_ratio=N225L_ANNUAL_EXPENSE_RATIO,
+            additional_annual_borrow_cost=N225L_BORROW_COST,
+            calibration_method=N225L_CALIBRATION_METHOD,
+            max_abs_tracking_error=N225L_MAX_DAILY_TRACKING_ERROR,
+            trim_fraction=N225L_TRIM_FRACTION,
+            extra_daily_drift=N225L_EXTRA_DAILY_DRIFT,
+        )
+        
+        if not simulated_n225l:
+            print("❌ Failed to simulate N225L data")
+            print("🛡️  Checking if existing N225L data should be preserved...")
+            
+            # Check for existing N225L data
+            existing_n225l_path = os.path.join(output_dir, "N225L.json")
+            if os.path.exists(existing_n225l_path):
+                try:
+                    with open(existing_n225l_path, 'r') as f:
+                        existing_n225l_data = json.load(f)
+                    print(f"✅ Existing N225L data preserved ({len(existing_n225l_data)} days)")
+                    
+                    # Show final summary with existing data
+                    print("\n" + "🎉" * 20)
+                    print("✅ NIKKEI DATA DOWNLOAD COMPLETED (with existing leveraged data)")
+                    print("🎉" * 20)
+                    print(f"📁 N225 data: {len(n225_data)} days (ticker: {successful_ticker})")
+                    print(f"📁 N225L data: {len(existing_n225l_data)} days (existing)")
+                    return
+                    
+                except Exception as e:
+                    print(f"❌ Could not load existing N225L data: {e}")
+                    print("⚠️  Will continue without leveraged data")
+        else:
+            n225l_path = save_data("N225L", simulated_n225l, output_dir)
+        
+    except Exception as e:
+        print(f"❌ Unexpected error simulating N225L data: {e}")
+        print("🛡️  Checking if existing N225L data should be preserved...")
+        
+        # Check for existing N225L data
+        existing_n225l_path = os.path.join(output_dir, "N225L.json")
+        if os.path.exists(existing_n225l_path):
+            try:
+                with open(existing_n225l_path, 'r') as f:
+                    existing_n225l_data = json.load(f)
+                print(f"✅ Existing N225L data preserved ({len(existing_n225l_data)} days)")
+                
+                # Show final summary with existing data
+                print("\n" + "🎉" * 20)
+                print("✅ NIKKEI DATA DOWNLOAD COMPLETED (with existing leveraged data)")
+                print("🎉" * 20)
+                print(f"📁 N225 data: {len(n225_data)} days (ticker: {successful_ticker})")
+                print(f"📁 N225L data: {len(existing_n225l_data)} days (existing)")
+                return
+                
+            except Exception as e2:
+                print(f"❌ Could not verify existing N225L data: {e2}")
+        
+        print("⚠️  N225L simulation failed - continuing with N225 data only")
+        simulated_n225l = {}
+    
+    print("\n" + "🎉" * 20)
+    print("✅ NIKKEI DATA DOWNLOAD FINISHED!")
+    print("🎉" * 20)
+    print(f"📁 N225 data saved to: {n225_path} (ticker: {successful_ticker})")
+    if simulated_n225l:
+        print(f"📁 N225L data saved to: {n225l_path}")
+    
+    if n225_data:
+        print(f"📊 N225: {min(n225_data.keys())} to {max(n225_data.keys())} ({len(n225_data)} days)")
+    if simulated_n225l:
+        print(f"📊 N225L: {min(simulated_n225l.keys())} to {max(simulated_n225l.keys())} ({len(simulated_n225l)} days)")
+
 if __name__ == "__main__":
-    download_complete_data()
+    # Ask user what data to download
+    print("📊 Data Download Options:")
+    print("1. Download SOXX/SOXL data (original)")
+    print("2. Download Nikkei 225/N225L data (new)")
+    print("3. Download both")
+    
+    choice = input("\nEnter your choice (1/2/3) [2]: ").strip()
+    
+    if choice == "1":
+        download_complete_data()
+    elif choice == "3":
+        download_complete_data()
+        print("\n" + "="*60 + "\n")
+        download_nikkei_data()
+    else:  # Default to option 2
+        download_nikkei_data()
