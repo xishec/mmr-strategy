@@ -333,6 +333,7 @@ const updateStrategyToSnapshotYesterday = (
   signal: Signal,
   simulation: Simulation
 ) => {
+  const QQQRate = marketData.QQQ[newSnapshot.date].rate || 0;
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
   const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
   const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
@@ -390,6 +391,13 @@ const updateStrategyToSnapshotYesterday = (
       newSnapshot.signal = signal;
       break;
     default:
+      if (newSnapshot.signal.signalType === SignalType.WaitingForRecovery) {
+        newSnapshot.investments.ratio = -1;
+        newSnapshot.investments.total *= 1 - QQQRate / 100;
+        newSnapshot.signal = signal;
+      } else {
+        newSnapshot.investments.ratio = 0;
+      }
       break;
   }
 };
