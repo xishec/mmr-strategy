@@ -129,7 +129,7 @@ const getInitialSignal = (date: string, marketData: MarketData, startDate: strin
   } else if (growTooFast) {
     signalType = SignalType.WaitingForSmallDrop;
   } else {
-    signalType = SignalType.Buy;
+    signalType = SignalType.WaitingForRecovery;
   }
 
   return {
@@ -189,12 +189,12 @@ export const getYesterdaySignal = (
     const windowDates = marketDates.slice(Math.max(0, yesterdayIndex - 30), yesterdayIndex + 1);
     if (windowDates.length === 0) return false;
     const aboveCount = windowDates.filter(
-      (d) => marketData.QQQ[d].sma && marketData.QQQ[d].close >= marketData.QQQ[d].sma! * 1.1
+      (d) => marketData.QQQ[d].sma && marketData.QQQ[d].close >= marketData.QQQ[d].sma! * 1.09
     ).length;
-    return aboveCount / windowDates.length >= 0.8;
+    return aboveCount / windowDates.length >= 0.75;
   })();
   const wasRecovering = simulation.portfolioSnapshots
-    .slice(-90)
+    .slice(-200)
     .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery);
   // const justBought = simulation.portfolioSnapshots
   //   .slice(-90)
@@ -248,7 +248,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.Hold:
-      if (fastDrop || mediumDrop || slowDrop) {
+      if (fastDrop || mediumDrop || slowDrop || growTooFast) {
         signalType = SignalType.Sell;
       } else {
         signalType = SignalType.Hold;
@@ -256,7 +256,11 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.Sell:
-      signalType = SignalType.WaitingForDrop;
+      if (growTooFast) {
+        signalType = SignalType.WaitingForSmallDrop;
+      } else {
+        signalType = SignalType.WaitingForDrop;
+      }
       break;
 
     case SignalType.WaitingForSmallDrop:
@@ -264,6 +268,8 @@ export const getYesterdaySignal = (
         signalType = SignalType.WaitingForDrop;
       } else if (isBelow95SMA200) {
         signalType = SignalType.WaitingForRecovery;
+      } else if (waitingForSmallDropForTooLong && !growTooFast) {
+        signalType = SignalType.Buy;
       } else {
         signalType = SignalType.WaitingForSmallDrop;
       }
@@ -339,7 +345,7 @@ const updateStrategyToSnapshotYesterday = (
       simulation.report.orders.push({
         date: newSnapshot.date,
         type: SignalType.Sell,
-        deltaMoney: newSnapshot.investments.total,
+        currentTotal: newSnapshot.investments.total,
       });
       break;
     case SignalType.Buy:
@@ -351,7 +357,7 @@ const updateStrategyToSnapshotYesterday = (
       simulation.report.orders.push({
         date: newSnapshot.date,
         type: SignalType.Buy,
-        deltaMoney: newSnapshot.investments.total,
+        currentTotal: newSnapshot.investments.total,
       });
       // apply day rate after all-in
       newSnapshot.investments.TQQQ *= TQQQDayRate / 100 + 1;

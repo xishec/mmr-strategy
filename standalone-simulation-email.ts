@@ -6,6 +6,8 @@ import * as nodemailer from "nodemailer";
 import * as dotenv from "dotenv";
 import { runSingleSimulation } from "./src/core/core-logic";
 import { MarketData, Simulation, SignalType } from "./src/core/models";
+import { daysBetween } from "./src/core/date-utils";
+import { calculateAnnualizedRate } from "./src/core/functions";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -231,12 +233,40 @@ function createEmailContent(
   const ordersHtml =
     recentOrders.length > 0
       ? recentOrders
-          .map((order) => {
+          .map((order, index) => {
             const action = order.type === SignalType.Buy ? "🟢 Buy" : "🔴 Sell";
-            return `<tr><td>${order.date}</td><td>${action}</td></tr>`;
+
+            // Calculate profit by comparing with previous order's total
+            let profitHtml = "";
+            if (index < recentOrders.length - 1) {
+              const previousOrder = recentOrders[index + 1]; // Next in array (previous chronologically)
+              const profit = order.currentTotal - previousOrder.currentTotal;
+              const profitPercent = (profit / previousOrder.currentTotal) * 100;
+              const profitColor = profit >= 0 ? "#28a745" : "#dc3545";
+              const profitSign = profit >= 0 ? "+" : "";
+              if (order.type === SignalType.Sell) {
+                profitHtml = `<td style="color: ${profitColor}; font-weight: 600;">
+                ${profitSign}${profitPercent.toFixed(2)}% in ${daysBetween(
+                  previousOrder.date,
+                  order.date
+                )} days (${profitSign}CAGR ${
+                  calculateAnnualizedRate(
+                    previousOrder.currentTotal,
+                    order.currentTotal,
+                    previousOrder.date,
+                    order.date
+                  ) * 100
+                }%)
+              </td>`;
+              }
+            } else {
+              profitHtml = `<td style="color: #6c757d;">-</td>`;
+            }
+
+            return `<tr><td>${order.date}</td><td>${action}</td>${profitHtml}</tr>`;
           })
           .join("")
-      : '<tr><td colspan="2">No recent orders</td></tr>';
+      : '<tr><td colspan="4">No recent orders</td></tr>';
 
   // Get recent signals (last 10)
   const recentSnapshots = result.portfolioSnapshots.slice(-10).reverse();
@@ -432,6 +462,8 @@ function createEmailContent(
           <tr>
             <th>Date</th>
             <th>Action</th>
+            <th>Profit</th>
+            <th>Portfolio Total</th>
           </tr>
         </thead>
         <tbody>

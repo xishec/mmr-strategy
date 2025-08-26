@@ -101,7 +101,7 @@ export const startSimulation = (
   setSimulation(runSingleSimulation(simulation, marketData));
 };
 
-const calculateAnnualizedRate = (
+export const calculateAnnualizedRate = (
   initial: number,
   end: number,
   initialDateString: string,
