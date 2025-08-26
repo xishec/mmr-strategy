@@ -242,6 +242,12 @@ export const getYesterdaySignal = (
   //   lastSoldSnapshot && marketData.TQQQ[yesterdayDate].close >= marketData.TQQQ[lastSoldSnapshot?.date].close;
 
   const goodRange = marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.95;
+  const shortForTooLong = simulation.portfolioSnapshots
+    .slice(-10)
+    .every((snapshot) => snapshot.signal.signalType === SignalType.Short);
+  const recentlyShorted = simulation.portfolioSnapshots
+    .slice(-30)
+    .some((snapshot) => snapshot.signal.signalType === SignalType.Short);
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
@@ -286,7 +292,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.WaitingForRecovery:
-      if (goodRange) {
+      if (goodRange && !recentlyShorted && fastDrop) {
         signalType = SignalType.Short;
       } else if (isAbove105SMA200) {
         signalType = SignalType.Buy;
@@ -296,7 +302,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.Short:
-      if (!goodRange) {
+      if (!goodRange || shortForTooLong) {
         signalType = SignalType.WaitingForRecovery;
       } else {
         signalType = SignalType.Short;
@@ -318,7 +324,7 @@ export const getYesterdaySignal = (
     // hasXMarker:
     //   signalType === SignalType.WaitingForRecovery &&
     //   marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.65,
-    hasXMarker: false,
+    hasXMarker: shortForTooLong,
     signalType,
   };
 };
@@ -332,7 +338,7 @@ const updateStrategyToSnapshotYesterday = (
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
   const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
   const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
-if (newSnapshot.investments.ratio === )  newSnapshot.investments.ratio = 1;
+  if (newSnapshot.investments.ratio === -1) newSnapshot.investments.ratio = 0;
   switch (signal.signalType) {
     case SignalType.Short:
       newSnapshot.investments.ratio = -1;
