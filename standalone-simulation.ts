@@ -77,9 +77,10 @@ async function loadMarketData(): Promise<MarketData> {
   try {
     console.log("Loading market data from local files...");
 
-    const qqqPath = path.join(__dirname, "src", "data", "N225.json");
-    const tqqqPath = path.join(__dirname, "src", "data", "N225L.json");
-
+    const qqqPath = path.join(__dirname, "src", "data", "MSFT.json");
+    const tqqqPath = path.join(__dirname, "src", "data", "MSFTL.json");
+    // const qqqPath = path.join(__dirname, "src", "data", "N225.json");
+    // const tqqqPath = path.join(__dirname, "src", "data", "N225L.json");
     // const qqqPath = path.join(__dirname, 'src', 'data', 'QQQ.json');
     // const tqqqPath = path.join(__dirname, 'src', 'data', 'TQQQ.json');
 

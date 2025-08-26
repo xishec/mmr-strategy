@@ -290,10 +290,15 @@ export const getYesterdaySignal = (
     marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * requiredSMAThreshold &&
     hasTimeConfirmation &&
     hasStrongMomentum;
+  // const meetsRecoveryRequirements =
+  //   marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * requiredSMAThreshold;
 
   const waitingForSmallDropForTooLong =
     simulation.portfolioSnapshots.slice(-60).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
     yesterdaySignal.signalType === SignalType.WaitingForSmallDrop;
+  const waitingForDropForTooLong =
+    simulation.portfolioSnapshots.slice(-180).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
+    yesterdaySignal.signalType === SignalType.WaitingForDrop;
 
   // const wasMid = (() => {
   //   const windowDates = marketDates.slice(Math.max(0, yesterdayIndex - 60), yesterdayIndex + 1);
@@ -350,6 +355,8 @@ export const getYesterdaySignal = (
     case SignalType.WaitingForDrop:
       if (isBelow90SMA200) {
         signalType = SignalType.WaitingForRecovery;
+      } else if (meetsRecoveryRequirements && waitingForDropForTooLong) {
+        signalType = SignalType.Buy;
       } else {
         signalType = SignalType.WaitingForDrop;
       }

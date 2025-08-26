@@ -1098,20 +1098,181 @@ def download_nikkei_data():
     if simulated_n225l:
         print(f"📊 N225L: {min(simulated_n225l.keys())} to {max(simulated_n225l.keys())} ({len(simulated_n225l)} days)")
 
+
+def download_microsoft_data():
+    """Function to download Microsoft (MSFT) data and simulate 3x leveraged version"""
+    print("🚀 Microsoft (MSFT) Data Downloader")
+    print("====================================")
+    print("📅 Period: As far back as possible to Today")
+    print("📊 Sources: Yahoo Finance + Twelve Data")
+    print("🎯 Output: MSFT + Simulated MSFTL (3x leveraged)")
+    print()
+    print("⚠️  Note: This script includes delays to prevent rate limiting")
+    print("    from data providers. Please be patient.")
+    print("🛡️  Data protection: Existing data will not be overwritten with incomplete/invalid data")
+    print()
+    
+    output_dir = os.path.join(root_dir, "src", "data")
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Download MSFT data (Microsoft Corporation)
+    print("=" * 50)
+    print("📈 DOWNLOADING MICROSOFT (MSFT) DATA")
+    print("=" * 50)
+    
+    try:
+        # MSFT is well-supported on most platforms
+        print(f"🔄 Downloading MSFT data...")
+        msft_data, msft_twelvedata_start = download_hybrid_data("MSFT", "1986-03-01")  # MSFT IPO was March 13, 1986
+        
+        if not msft_data or len(msft_data) < 100:  # Need substantial data
+            print(f"⚠️  Insufficient MSFT data ({len(msft_data) if msft_data else 0} days)")
+            print("🛡️  Checking if existing MSFT data can be used...")
+            
+            # Check for existing MSFT data
+            existing_msft_path = os.path.join(output_dir, "MSFT.json")
+            if os.path.exists(existing_msft_path):
+                try:
+                    with open(existing_msft_path, 'r') as f:
+                        msft_data = json.load(f)
+                    print(f"✅ Using existing MSFT data ({len(msft_data)} days)")
+                    msft_path = existing_msft_path
+                except Exception as e:
+                    print(f"❌ Could not load existing MSFT data: {e}")
+                    print("🚫 Cannot proceed without MSFT data")
+                    return
+            else:
+                print("🚫 No existing MSFT data found. Cannot proceed.")
+                return
+        else:
+            print(f"✅ Successfully downloaded {len(msft_data)} days of MSFT data")
+            msft_data = merge_and_calculate(msft_data)
+            msft_path = save_data("MSFT", msft_data, output_dir)
+    
+    except Exception as e:
+        print(f"❌ Unexpected error downloading MSFT data: {e}")
+        print("🛡️  Checking if existing MSFT data can be used...")
+        
+        # Try to use existing data
+        existing_msft_path = os.path.join(output_dir, "MSFT.json")
+        if os.path.exists(existing_msft_path):
+            try:
+                with open(existing_msft_path, 'r') as f:
+                    msft_data = json.load(f)
+                print(f"✅ Using existing MSFT data ({len(msft_data)} days)")
+            except Exception as e2:
+                print(f"❌ Could not load existing MSFT data: {e2}")
+                print("🚫 Cannot proceed without MSFT data")
+                return
+        else:
+            print("🚫 No existing MSFT data found. Cannot proceed.")
+            return
+    
+    # Add delay between downloads
+    smart_delay(base_delay=3)
+    
+    # Simulate MSFTL (3x leveraged Microsoft)
+    print("\n" + "=" * 50)
+    print("📈 SIMULATING 3X LEVERAGED MICROSOFT (MSFTL)")
+    print("=" * 50)
+    
+    try:
+        print("🔄 Simulating MSFTL (3x leveraged Microsoft) from MSFT data...")
+        simulated_msftl = simulate_leveraged_etf_from_underlying(
+            msft_data,
+            leverage=3.0,
+            annual_expense_ratio=0.0095,  # 0.95% similar to other 3x ETFs
+            additional_annual_borrow_cost=0.004,  # 0.4% financing cost
+            max_abs_tracking_error=0.0002,  # 0.02% tracking error
+            calibration_method="none",  # no real 3x MSFT ETF to calibrate against
+            trim_fraction=0.05,
+            extra_daily_drift=0.0
+        )
+        
+        if not simulated_msftl:
+            print("❌ Failed to simulate MSFTL data")
+            print("🛡️  Checking if existing MSFTL data should be preserved...")
+            
+            # Check for existing MSFTL data
+            existing_msftl_path = os.path.join(output_dir, "MSFTL.json")
+            if os.path.exists(existing_msftl_path):
+                try:
+                    with open(existing_msftl_path, 'r') as f:
+                        existing_msftl_data = json.load(f)
+                    print(f"✅ Existing MSFTL data preserved ({len(existing_msftl_data)} days)")
+                    
+                    # Show final summary with existing data
+                    print("\n" + "🎉" * 20)
+                    print("✅ MICROSOFT DATA DOWNLOAD COMPLETED (with existing leveraged data)")
+                    print("🎉" * 20)
+                    print(f"📁 MSFT data: {len(msft_data)} days")
+                    print(f"📁 MSFTL data: {len(existing_msftl_data)} days (existing)")
+                    return
+                    
+                except Exception as e:
+                    print(f"❌ Could not load existing MSFTL data: {e}")
+                    print("⚠️  Will continue without leveraged data")
+        else:
+            msftl_path = save_data("MSFTL", simulated_msftl, output_dir)
+        
+    except Exception as e:
+        print(f"❌ Unexpected error simulating MSFTL data: {e}")
+        print("🛡️  Checking if existing MSFTL data should be preserved...")
+        
+        # Check for existing MSFTL data
+        existing_msftl_path = os.path.join(output_dir, "MSFTL.json")
+        if os.path.exists(existing_msftl_path):
+            try:
+                with open(existing_msftl_path, 'r') as f:
+                    existing_msftl_data = json.load(f)
+                print(f"✅ Existing MSFTL data preserved ({len(existing_msftl_data)} days)")
+                
+                # Show final summary with existing data
+                print("\n" + "🎉" * 20)
+                print("✅ MICROSOFT DATA DOWNLOAD COMPLETED (with existing leveraged data)")
+                print("🎉" * 20)
+                print(f"📁 MSFT data: {len(msft_data)} days")
+                print(f"📁 MSFTL data: {len(existing_msftl_data)} days (existing)")
+                return
+                
+            except Exception as e2:
+                print(f"❌ Could not verify existing MSFTL data: {e2}")
+        
+        print("⚠️  MSFTL simulation failed - continuing with MSFT data only")
+        simulated_msftl = {}
+    
+    print("\n" + "🎉" * 20)
+    print("✅ MICROSOFT DATA DOWNLOAD FINISHED!")
+    print("🎉" * 20)
+    print(f"📁 MSFT data saved to: {msft_path}")
+    if simulated_msftl:
+        print(f"📁 MSFTL data saved to: {msftl_path}")
+    
+    if msft_data:
+        print(f"📊 MSFT: {min(msft_data.keys())} to {max(msft_data.keys())} ({len(msft_data)} days)")
+    if simulated_msftl:
+        print(f"📊 MSFTL: {min(simulated_msftl.keys())} to {max(simulated_msftl.keys())} ({len(simulated_msftl)} days)")
+
+
 if __name__ == "__main__":
     # Ask user what data to download
     print("📊 Data Download Options:")
-    print("1. Download SOXX/SOXL data (original)")
-    print("2. Download Nikkei 225/N225L data (new)")
-    print("3. Download both")
+    print("1. Download SOXX/SOXL data (semiconductor 3x ETF)")
+    print("2. Download Nikkei 225/N225L data (Japanese market)")
+    print("3. Download Microsoft MSFT/MSFTL data (3x leveraged MSFT)")
+    print("4. Download all data types")
     
-    choice = input("\nEnter your choice (1/2/3) [2]: ").strip()
+    choice = input("\nEnter your choice (1/2/3/4) [3]: ").strip()
     
     if choice == "1":
         download_complete_data()
-    elif choice == "3":
+    elif choice == "2":
+        download_nikkei_data()
+    elif choice == "4":
         download_complete_data()
         print("\n" + "="*60 + "\n")
         download_nikkei_data()
-    else:  # Default to option 2
-        download_nikkei_data()
+        print("\n" + "="*60 + "\n")
+        download_microsoft_data()
+    else:  # Default to option 3 (Microsoft)
+        download_microsoft_data()
