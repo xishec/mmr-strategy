@@ -292,9 +292,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.WaitingForRecovery:
-      if (goodRange && !recentlyShorted && fastDrop) {
-        signalType = SignalType.Short;
-      } else if (isAbove105SMA200) {
+      if (isAbove105SMA200) {
         signalType = SignalType.Buy;
       } else {
         signalType = SignalType.WaitingForRecovery;
