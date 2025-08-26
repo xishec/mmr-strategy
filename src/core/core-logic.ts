@@ -113,12 +113,14 @@ const getInitialSignal = (date: string, marketData: MarketData, startDate: strin
     marketData.QQQ[previousDate].sma && marketData.QQQ[previousDate].close < marketData.QQQ[previousDate].sma! * 0.9;
   const isBelow95SMA200 =
     marketData.QQQ[previousDate].sma && marketData.QQQ[previousDate].close < marketData.QQQ[previousDate].sma! * 0.95;
-  const isAbove105SMA200 = marketData.QQQ[previousDate].close >= marketData.QQQ[previousDate].sma! * 1.05;
+
+  // Conservative initial signal - require strong confirmation
+  const isStronglyAboveSMA = marketData.QQQ[previousDate].close >= marketData.QQQ[previousDate].sma! * 1.08;
 
   // Determine initial signal type based on market conditions
   let signalType = SignalType.Hold;
 
-  if (isAbove105SMA200) {
+  if (isStronglyAboveSMA) {
     signalType = SignalType.Buy;
   } else if (isBelow90SMA200) {
     signalType = SignalType.WaitingForRecovery;
@@ -216,8 +218,78 @@ export const getYesterdaySignal = (
   const isBelow95SMA200 =
     marketData.QQQ[yesterdayDate].sma &&
     marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.95;
-  const isAbove105SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
-  // const isAbove100SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.0;
+
+  // Anti-bull trap logic: Progressive recovery requirements based on crash severity
+  const getRecoveryRequirement = () => {
+    // Check recent crash severity (last 180 days)
+    const recentMaxClose = marketDates
+      .slice(Math.max(0, yesterdayIndex - 180), yesterdayIndex + 1)
+      .map((date) => marketData.QQQ[date]?.close || 0)
+      .reduce((max, closePrice) => Math.max(max, closePrice), 0);
+
+    const currentPullback = marketData.QQQ[yesterdayDate].close / recentMaxClose;
+
+    // Determine required threshold based on crash severity
+    if (currentPullback < 0.5) {
+      // Very large crash (>50% drop): require 115% of SMA + time confirmation
+      return { threshold: 1.15, daysRequired: 10 };
+    } else if (currentPullback < 0.6) {
+      // Large crash (40-50% drop): require 112% of SMA + time confirmation
+      return { threshold: 1.12, daysRequired: 7 };
+    } else if (currentPullback < 0.75) {
+      // Medium crash (25-40% drop): require 110% of SMA + time confirmation
+      return { threshold: 1.1, daysRequired: 5 };
+    } else if (currentPullback < 0.85) {
+      // Small crash (15-25% drop): require 107% of SMA + time confirmation
+      return { threshold: 1.07, daysRequired: 3 };
+    } else {
+      // Minor pullback (<15%): standard 105% requirement
+      return { threshold: 1.05, daysRequired: 1 };
+    }
+  };
+
+  const recoveryReq = getRecoveryRequirement();
+  const requiredSMAThreshold = recoveryReq.threshold;
+  const requiredConfirmationDays = recoveryReq.daysRequired;
+
+  // Check if price has been above the required threshold for enough days
+  const hasTimeConfirmation = (() => {
+    if (requiredConfirmationDays <= 1) return true;
+
+    const recentDates = marketDates.slice(
+      Math.max(0, yesterdayIndex - requiredConfirmationDays + 1),
+      yesterdayIndex + 1
+    );
+    if (recentDates.length < requiredConfirmationDays) return false;
+
+    return recentDates.every(
+      (date) =>
+        marketData.QQQ[date].sma && marketData.QQQ[date].close >= marketData.QQQ[date].sma! * requiredSMAThreshold
+    );
+  })();
+
+  // Enhanced momentum check - ensure consistent upward trend
+  const hasStrongMomentum = (() => {
+    const lookbackDays = Math.min(10, marketDates.length - yesterdayIndex - 1);
+    if (lookbackDays < 5) return true; // Not enough data, allow buy
+
+    const recentDates = marketDates.slice(yesterdayIndex - lookbackDays + 1, yesterdayIndex + 1);
+    const prices = recentDates.map((date) => marketData.QQQ[date].close);
+
+    // Check if trend is generally upward (allow for some volatility)
+    let upDays = 0;
+    for (let i = 1; i < prices.length; i++) {
+      if (prices[i] > prices[i - 1]) upDays++;
+    }
+
+    // Require at least 60% of recent days to be up
+    return upDays / (prices.length - 1) >= 0.6;
+  })();
+
+  const meetsRecoveryRequirements =
+    marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * requiredSMAThreshold &&
+    hasTimeConfirmation &&
+    hasStrongMomentum;
 
   const waitingForSmallDropForTooLong =
     simulation.portfolioSnapshots.slice(-60).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
@@ -284,7 +356,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.WaitingForRecovery:
-      if (isAbove105SMA200) {
+      if (meetsRecoveryRequirements) {
         signalType = SignalType.Buy;
       } else {
         signalType = SignalType.WaitingForRecovery;
