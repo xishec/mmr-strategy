@@ -336,7 +336,7 @@ const updateStrategyToSnapshotYesterday = (
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
   const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
   const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
-  if (newSnapshot.investments.ratio === -1) newSnapshot.investments.ratio = 0;
+
   switch (signal.signalType) {
     case SignalType.Short:
       newSnapshot.investments.ratio = -1;
