@@ -7,6 +7,7 @@ export const DATA_CONFIG = {
   // GitHub repository raw file URLs for dynamic data loading
   QQQ_DATA_URL: 'https://raw.githubusercontent.com/xishec/mmr-strategy/main/src/data/QQQ.json',
   TQQQ_DATA_URL: 'https://raw.githubusercontent.com/xishec/mmr-strategy/main/src/data/TQQQ.json',
+  FEAR_GREED_DATA_URL: 'https://raw.githubusercontent.com/xishec/mmr-strategy/main/src/data/fear_greed.json',
   
   // Cache duration for market data (5 minutes)
   CACHE_DURATION_MS: 5 * 60 * 1000,

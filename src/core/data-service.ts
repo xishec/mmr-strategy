@@ -189,6 +189,7 @@ export class DataService {
       console.log("Loading data from local files...");
       const rawQQQData = (await import("../data/QQQ.json")).default;
       const rawTQQQData = (await import("../data/TQQQ.json")).default;
+      const rawFearGreedData = (await import("../data/fear_greed.json")).default;
       
       // Transform raw data to include sma and maxClose properties
       const transformedQQQData: Record<string, any> = {};
@@ -212,6 +213,7 @@ export class DataService {
       const marketData = {
         QQQ: transformedQQQData,
         TQQQ: transformedTQQQData,
+        fearGreed: rawFearGreedData,
       };
       console.log("Successfully loaded data from local files");
       return marketData;
@@ -266,11 +268,13 @@ export class DataService {
     // Fallback to fetch method
     const qqqUrl = DATA_CONFIG.QQQ_DATA_URL;
     const tqqqUrl = DATA_CONFIG.TQQQ_DATA_URL;
+    const fearGreedUrl = DATA_CONFIG.FEAR_GREED_DATA_URL;
     
-    // Fetch both datasets in parallel
-    const [rawQQQData, rawTQQQData] = await Promise.all([
+    // Fetch all datasets in parallel
+    const [rawQQQData, rawTQQQData, rawFearGreedData] = await Promise.all([
       this.fetchFromUrl(qqqUrl),
       this.fetchFromUrl(tqqqUrl),
+      this.fetchFromUrl(fearGreedUrl),
     ]);
 
     // Transform raw data to include sma and maxClose properties
@@ -295,6 +299,7 @@ export class DataService {
     const marketData: MarketData = {
       QQQ: transformedQQQData,
       TQQQ: transformedTQQQData,
+      fearGreed: rawFearGreedData,
     };
 
     // Cache the successful result
@@ -314,12 +319,13 @@ export class DataService {
     // Method 1: Try with different fetch options
     try {
       console.log("Method 1: Fetch with mode: 'cors'");
-      const [qqqData, tqqqData] = await Promise.all([
+      const [qqqData, tqqqData, fearGreedData] = await Promise.all([
         this.fetchWithCorsMode(DATA_CONFIG.QQQ_DATA_URL),
         this.fetchWithCorsMode(DATA_CONFIG.TQQQ_DATA_URL),
+        this.fetchWithCorsMode(DATA_CONFIG.FEAR_GREED_DATA_URL),
       ]);
       
-      return { QQQ: qqqData, TQQQ: tqqqData };
+      return { QQQ: qqqData, TQQQ: tqqqData, fearGreed: fearGreedData };
     } catch (error) {
       console.warn("Method 1 failed:", error);
     }
@@ -327,12 +333,13 @@ export class DataService {
     // Method 2: Try with different headers
     try {
       console.log("Method 2: Fetch with different headers");
-      const [qqqData, tqqqData] = await Promise.all([
+      const [qqqData, tqqqData, fearGreedData] = await Promise.all([
         this.fetchWithDifferentHeaders(DATA_CONFIG.QQQ_DATA_URL),
         this.fetchWithDifferentHeaders(DATA_CONFIG.TQQQ_DATA_URL),
+        this.fetchWithDifferentHeaders(DATA_CONFIG.FEAR_GREED_DATA_URL),
       ]);
       
-      return { QQQ: qqqData, TQQQ: tqqqData };
+      return { QQQ: qqqData, TQQQ: tqqqData, fearGreed: fearGreedData };
     } catch (error) {
       console.warn("Method 2 failed:", error);
     }
@@ -340,12 +347,13 @@ export class DataService {
     // Method 3: Try with CORS proxy
     try {
       console.log("Method 3: Using CORS proxy");
-      const [qqqData, tqqqData] = await Promise.all([
+      const [qqqData, tqqqData, fearGreedData] = await Promise.all([
         this.fetchWithCorsProxy(DATA_CONFIG.QQQ_DATA_URL),
         this.fetchWithCorsProxy(DATA_CONFIG.TQQQ_DATA_URL),
+        this.fetchWithCorsProxy(DATA_CONFIG.FEAR_GREED_DATA_URL),
       ]);
       
-      return { QQQ: qqqData, TQQQ: tqqqData };
+      return { QQQ: qqqData, TQQQ: tqqqData, fearGreed: fearGreedData };
     } catch (error) {
       console.warn("Method 3 failed:", error);
     }

@@ -136,9 +136,14 @@ export interface DailyData {
   day_rate: number;
 }
 
+export interface FearGreedEntry {
+  value: number;
+}
+
 export interface MarketData {
   QQQ: Record<string, DailyData>;
   TQQQ: Record<string, DailyData>;
+  fearGreed: Record<string, FearGreedEntry>;
 }
 
 export interface ChartPoint {
