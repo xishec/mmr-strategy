@@ -162,19 +162,26 @@ export const getYesterdaySignal = (
 
   const yesterdaySignal = yesterdaySnapshot.signal;
 
+  // const sumLastRates = marketDates
+  //   .slice(Math.max(0, yesterdayIndex - 5), yesterdayIndex + 1)
+  //   .map((date) => marketData.TQQQ[date]?.rate || 0)
+  //   .reduce((sum, rate) => sum + rate, 0);
   const fastDrop = simulation.portfolioSnapshots
     .slice(-2)
     .some((snapshot) => marketData.TQQQ[snapshot.date].rate < -20);
-  // const miniDrop = simulation.portfolioSnapshots
-  //   .slice(-2)
-  //   .some((snapshot) => marketData.TQQQ[snapshot.date].rate < -10);
 
-  const lastPeriodMaxClose = marketDates
-    .slice(Math.max(0, yesterdayIndex - 180), yesterdayIndex + 1)
+  const lookbackPeriod = marketDates.slice(Math.max(0, yesterdayIndex - 180), yesterdayIndex + 1);
+  const lastPeriodMaxClose = lookbackPeriod
     .map((date) => marketData.QQQ[date]?.close || 0)
     .reduce((max, closePrice) => Math.max(max, closePrice), 0);
   const QQQPullBack = marketData.QQQ[yesterdayDate].close / lastPeriodMaxClose;
   const mediumDrop = QQQPullBack < 0.75;
+
+  // Find the date when the max close occurred and calculate days since
+  // const maxCloseDate =
+  //   lookbackPeriod.find((date) => marketData.QQQ[date]?.close === lastPeriodMaxClose) || yesterdayDate;
+  // const maxCloseDateIndex = marketDates.indexOf(maxCloseDate);
+  // const daysSinceLastPeriodMaxClose = yesterdayIndex - maxCloseDateIndex;
 
   const belowSMAForAWhile = marketDates
     .slice(Math.max(0, yesterdayIndex - 30), yesterdayIndex + 1)
@@ -196,19 +203,6 @@ export const getYesterdaySignal = (
   const wasRecovering = simulation.portfolioSnapshots
     .slice(-200)
     .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery);
-  // const justBought = simulation.portfolioSnapshots
-  //   .slice(-90)
-  //   .some((snapshot) => snapshot.signal.signalType === SignalType.Buy);
-  // const lastSoldSnapshot =
-  //   [...simulation.portfolioSnapshots].reverse()
-  //   .find((snapshot) => snapshot.signal.signalType === SignalType.Sell) ??
-  //   yesterdaySnapshot;
-  // const lastBoughtSnapshot =
-  //   [...simulation.portfolioSnapshots].reverse().find((snapshot) => snapshot.signal.signalType === SignalType.Buy) ??
-  //   yesterdaySnapshot;
-  // const soldPrice = marketData.TQQQ[lastSoldSnapshot?.date].close;
-  // const boughtPrice = marketData.TQQQ[lastBoughtSnapshot?.date].close;
-  // const currentPrice = marketData.TQQQ[yesterdayDate].close;
   const growTooFast = isAboveSMAForAWhile && !wasRecovering;
 
   const isBelow90SMA200 =
@@ -217,29 +211,10 @@ export const getYesterdaySignal = (
     marketData.QQQ[yesterdayDate].sma &&
     marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.95;
   const isAbove105SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
-  // const isAbove100SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.0;
 
   const waitingForSmallDropForTooLong =
     simulation.portfolioSnapshots.slice(-60).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
     yesterdaySignal.signalType === SignalType.WaitingForSmallDrop;
-
-  // const wasMid = (() => {
-  //   const windowDates = marketDates.slice(Math.max(0, yesterdayIndex - 60), yesterdayIndex + 1);
-  //   if (windowDates.length === 0) return false;
-  //   const aboveCount = windowDates.filter(
-  //     (d) =>
-  //       marketData.QQQ[d].sma &&
-  //       marketData.QQQ[d].close < marketData.QQQ[d].sma! * 1.05 &&
-  //       marketData.QQQ[d].close >= marketData.QQQ[d].sma! * 0.95
-  //   ).length;
-  //   return aboveCount / windowDates.length >= 0.8;
-  // })();
-
-  // const shouldResume = simulation.portfolioSnapshots
-  //   .slice(-5)
-  //   .every((snapshot) => snapshot.signal.signalType === SignalType.Pause);
-  // const shouldResume =
-  //   lastSoldSnapshot && marketData.TQQQ[yesterdayDate].close >= marketData.TQQQ[lastSoldSnapshot?.date].close;
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
