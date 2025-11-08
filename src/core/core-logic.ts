@@ -217,10 +217,10 @@ export const getYesterdaySignal = (
     yesterdaySignal.signalType === SignalType.WaitingForSmallDrop;
 
   const delta = marketDates
-    .slice(Math.max(0, yesterdayIndex - 15), yesterdayIndex + 1)
+    .slice(Math.max(0, yesterdayIndex - 20), yesterdayIndex + 1)
     .map((date) => marketData.QQQ[date]?.rate || 0)
     .reduce((sum, rate) => sum + Math.abs(rate), 0);
-  const stable = delta < 25;
+  const stable = delta < 35;
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
@@ -284,7 +284,7 @@ export const getYesterdaySignal = (
     hasBlueMarker: growTooFast,
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
-    hasXMarker: delta > 25,
+    hasXMarker: !stable,
     signalType,
   };
 };
