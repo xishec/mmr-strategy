@@ -216,6 +216,12 @@ export const getYesterdaySignal = (
     simulation.portfolioSnapshots.slice(-60).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
     yesterdaySignal.signalType === SignalType.WaitingForSmallDrop;
 
+  const delta = marketDates
+    .slice(Math.max(0, yesterdayIndex - 15), yesterdayIndex + 1)
+    .map((date) => marketData.QQQ[date]?.rate || 0)
+    .reduce((sum, rate) => sum + Math.abs(rate), 0);
+  const stable = delta < 25;
+
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
     case SignalType.Buy:
@@ -243,7 +249,7 @@ export const getYesterdaySignal = (
         signalType = SignalType.WaitingForDrop;
       } else if (isBelow95SMA200) {
         signalType = SignalType.WaitingForRecovery;
-      } else if (waitingForSmallDropForTooLong && !growTooFast) {
+      } else if (waitingForSmallDropForTooLong && !growTooFast && stable) {
         signalType = SignalType.Buy;
       } else {
         signalType = SignalType.WaitingForSmallDrop;
@@ -278,7 +284,7 @@ export const getYesterdaySignal = (
     hasBlueMarker: growTooFast,
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
-    hasXMarker: false,
+    hasXMarker: delta > 25,
     signalType,
   };
 };
