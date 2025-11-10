@@ -284,7 +284,7 @@ export const getYesterdaySignal = (
     hasBlueMarker: growTooFast,
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
-    hasXMarker: !stable,
+    hasXMarker: !stable && !wasRecovering,
     signalType,
   };
 };
