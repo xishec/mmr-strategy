@@ -298,6 +298,7 @@ const updateStrategyToSnapshotYesterday = (
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
   const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
   const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
+  const ShortRate = marketData.QQQ[newSnapshot.date].day_rate / 2 || 0;
 
   switch (signal.signalType) {
     case SignalType.Hold:
@@ -346,6 +347,21 @@ const updateStrategyToSnapshotYesterday = (
       newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
       newSnapshot.signal = signal;
       break;
+
+    case SignalType.WaitingForSmallDrop:
+    case SignalType.WaitingForDrop:
+    case SignalType.WaitingForRecovery:
+      // buy
+      newSnapshot.investments.TQQQ = newSnapshot.investments.total;
+      newSnapshot.investments.cash = 0;
+      newSnapshot.investments.ratio = -1;
+      // apply day rate after all-in
+      newSnapshot.investments.TQQQ *= -ShortRate / 100 + 1;
+      newSnapshot.investments.cash *= 1;
+      newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
+      newSnapshot.signal = signal;
+      break;
+
     default:
       break;
   }
