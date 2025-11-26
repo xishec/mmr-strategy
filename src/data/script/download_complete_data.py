@@ -594,14 +594,18 @@ def save_data(ticker, data, output_dir):
     
     return output_path
 
-def adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data):
-    """Adjust real TQQQ data to continue seamlessly from simulated data"""
-    print("🔄 Adjusting real TQQQ data to match simulated data levels...")
+def adjust_simulated_to_real_tqqq(simulated_tqqq, raw_real_tqqq_data):
+    """Adjust simulated TQQQ data backward to match real TQQQ price levels
+    
+    Real TQQQ data from Yahoo/TwelveData is already split-adjusted, so we trust it.
+    We scale the simulated data backward so it connects smoothly to the real data.
+    """
+    print("🔄 Adjusting simulated TQQQ data to match real TQQQ price levels...")
     
     if not simulated_tqqq or not raw_real_tqqq_data:
-        return raw_real_tqqq_data
+        return simulated_tqqq, raw_real_tqqq_data
     
-    # Get the last simulated close price
+    # Get the last simulated close price (day before real data starts)
     last_sim_date = max(simulated_tqqq.keys())
     last_sim_close = simulated_tqqq[last_sim_date]["close"]
     
@@ -614,16 +618,17 @@ def adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data):
     print(f"📊 Last simulated close ({last_sim_date}): ${last_sim_close:.6f}")
     print(f"📊 First real data ({first_real_date}): open=${first_real_open:.6f}, close=${first_real_close:.6f}")
     
-    # Calculate the scaling factor based on the opening price
-    # We want the first real opening price to match our simulated closing price from previous day
-    scaling_factor = last_sim_close / first_real_open
+    # Calculate the scaling factor: we want simulated close to match real open
+    # Scale simulated data DOWN to match the real (split-adjusted) price level
+    scaling_factor = first_real_open / last_sim_close
     
-    print(f"📊 Scaling factor: {scaling_factor:.6f}")
+    print(f"📊 Scaling factor for simulated data: {scaling_factor:.6f}")
+    print(f"📊 Real TQQQ data is already split-adjusted - keeping it as-is")
     
-    # Apply scaling to all real TQQQ data
-    adjusted_real_data = {}
-    for date, data in raw_real_tqqq_data.items():
-        adjusted_real_data[date] = {
+    # Apply scaling to ALL simulated TQQQ data (backward adjustment)
+    adjusted_simulated_data = {}
+    for date, data in simulated_tqqq.items():
+        adjusted_simulated_data[date] = {
             "open": data["open"] * scaling_factor,
             "close": data["close"] * scaling_factor,
             "overnight_rate": data.get("overnight_rate", 0),  # Keep original rate (percentage change)
@@ -632,11 +637,11 @@ def adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data):
         }
     
     # Verify the transition
-    adjusted_first_open = adjusted_real_data[first_real_date]["open"]
-    print(f"📊 Adjusted first real open: ${adjusted_first_open:.6f}")
-    print(f"📊 Transition gap: {((adjusted_first_open - last_sim_close) / last_sim_close * 100):.2f}%")
+    adjusted_last_close = adjusted_simulated_data[last_sim_date]["close"]
+    print(f"📊 Adjusted simulated close ({last_sim_date}): ${adjusted_last_close:.6f}")
+    print(f"📊 Transition gap: {((first_real_open - adjusted_last_close) / adjusted_last_close * 100):.2f}%")
     
-    return adjusted_real_data
+    return adjusted_simulated_data, raw_real_tqqq_data
 
 def download_complete_data(skip_qqq=False):
     """Main function to download complete historical data
@@ -804,13 +809,14 @@ def download_complete_data(skip_qqq=False):
             else:
                 print("ℹ️  No pre-launch QQQ data available for re-simulation calibration.")
             
-            # Step 3: Adjust real TQQQ data to continue seamlessly from simulated data
-            adjusted_real_tqqq = adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data)
+            # Step 3: Adjust simulated data backward to match real TQQQ price levels
+            # Real TQQQ data is already split-adjusted, so we trust it and scale simulated backward
+            adjusted_simulated_tqqq, real_tqqq_data = adjust_simulated_to_real_tqqq(simulated_tqqq, raw_real_tqqq_data)
             
-            # Step 4: Merge simulated and adjusted real TQQQ data
+            # Step 4: Merge adjusted simulated and real TQQQ data
             all_tqqq_data = {}
-            all_tqqq_data.update(simulated_tqqq)
-            all_tqqq_data.update(adjusted_real_tqqq)
+            all_tqqq_data.update(adjusted_simulated_tqqq)
+            all_tqqq_data.update(real_tqqq_data)
             
             # Step 5: Recalculate rates for the complete dataset
             print("🔄 Recalculating rates for complete TQQQ dataset...")
