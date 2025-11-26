@@ -26,11 +26,11 @@ TWELVEDATA_API_KEY = os.getenv("TWELVEDATA_API_KEY")
 
 # Simulation configuration for TQQQ (v2 logic)
 TQQQ_ANNUAL_EXPENSE_RATIO = 0.0095  # 0.95%
-TQQQ_BORROW_COST = 0.004  # 0.4% additional financing cost
-TQQQ_MAX_DAILY_TRACKING_ERROR = 0.0002  # 0.02%
+TQQQ_BORROW_COST = 0.048  # 4.8% additional financing cost (captures volatility decay + borrowing costs)
+TQQQ_MAX_DAILY_TRACKING_ERROR = 0.001  # 0.1% cap (increased to allow calibration to find true value)
 TQQQ_CALIBRATION_METHOD = "trimmed"  # trimmed | mean | median | none
 TQQQ_TRIM_FRACTION = 0.05
-TQQQ_EXTRA_DAILY_DRIFT = 0.0  # keep zero unless intentionally biasing
+TQQQ_EXTRA_DAILY_DRIFT = -0.00014  # Negative drift to capture additional friction
 
 def smart_delay(attempt=0, base_delay=1):
     """
@@ -425,8 +425,14 @@ def simulate_tqqq_from_qqq(
                     real_prev = prev_real
                     real_now = calibrate_with_real[d]["close"]
                     r_real = real_now / real_prev - 1
-                    expected_no_te = leverage * r_u - fee_daily
-                    diffs.append(r_real - expected_no_te)
+                    # In simulation: (1 + r_actual) = (1 + leverage*r_u) * (1 - fees) * (1 + tracking_error)
+                    # Solving for tracking_error:
+                    # tracking_error = [(1 + r_actual) / ((1 + leverage*r_u) * (1 - fees))] - 1
+                    total_fees = fee_daily + borrow_fee_daily
+                    expected_factor = (1 + leverage * r_u) * (1 - total_fees)
+                    if abs(expected_factor) > 1e-10:  # Avoid division by zero
+                        tracking_error_sample = ((1 + r_real) / expected_factor) - 1
+                        diffs.append(tracking_error_sample)
                     prev_real = real_now
                 prev_u = u_now
             if diffs:
@@ -478,17 +484,17 @@ def simulate_tqqq_from_qqq(
             continue
         r_o = o_u / prev_close_u - 1
         r_d = c_u / o_u - 1
-        # Overnight leveraged move (no fee yet)
-        t_open = prev_close_t * (1 + leverage * r_o + tracking_error_daily/2)
-        # Intraday leveraged move
-        t_close_raw = t_open * (1 + leverage * r_d + tracking_error_daily/2)
-        # Apply daily fee at close
-        # Apply fees & optional extra drift (drift is additive on return, approximate)
+        # Overnight leveraged move (no fee yet, no tracking error)
+        t_open = prev_close_t * (1 + leverage * r_o)
+        # Intraday leveraged move (no fee yet, no tracking error)
+        t_close_raw = t_open * (1 + leverage * r_d)
+        # Apply daily fee, tracking error, and optional extra drift at close
+        # Tracking error is typically negative (underperformance), applied once per day
         total_fee_factor = 1 - fee_daily - borrow_fee_daily
         # Ensure not negative
         if total_fee_factor <= 0:
             total_fee_factor = 0.000001
-        t_close = t_close_raw * total_fee_factor * (1 + extra_daily_drift)
+        t_close = t_close_raw * total_fee_factor * (1 + tracking_error_daily + extra_daily_drift)
 
         overnight_rate = (t_open / prev_close_t - 1) * 100
         day_rate = (t_close / t_open - 1) * 100
