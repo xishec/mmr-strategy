@@ -450,7 +450,11 @@ def simulate_tqqq_from_qqq(
                 print(f"📐 Calibrated tracking error ({calibration_method} capped): {tracking_error_daily*100:.4f}% per day (n={len(diffs)})")
             else:
                 tracking_error_daily = 0.0
-    elif tracking_error_daily is None:
+        else:
+            tracking_error_daily = 0.0
+    
+    # Ensure tracking_error_daily is set
+    if tracking_error_daily is None:
         tracking_error_daily = 0.0
 
     out = {
@@ -634,8 +638,12 @@ def adjust_real_tqqq_to_simulated(simulated_tqqq, raw_real_tqqq_data):
     
     return adjusted_real_data
 
-def download_complete_data():
-    """Main function to download complete historical data"""
+def download_complete_data(skip_qqq=False):
+    """Main function to download complete historical data
+    
+    Args:
+        skip_qqq: If True, skip QQQ download and use existing QQQ data to generate TQQQ only
+    """
     print("🚀 Complete Stock Data Downloader")
     print("==================================")
     print("📅 Period: 1998 to Today")
@@ -650,57 +658,80 @@ def download_complete_data():
     output_dir = os.path.join(root_dir, "src", "data")
     os.makedirs(output_dir, exist_ok=True)
     
-    # Download QQQ data
-    print("=" * 50)
-    print("📈 DOWNLOADING QQQ DATA")
-    print("=" * 50)
-    
-    try:
-        qqq_data, qqq_twelvedata_start = download_hybrid_data("QQQ", "1998-01-01")
+    # Download QQQ data (or load existing)
+    if skip_qqq:
+        print("=" * 50)
+        print("📂 LOADING EXISTING QQQ DATA")
+        print("=" * 50)
         
-        if not qqq_data:
-            print("❌ Failed to download QQQ data from all sources")
-            print("🛡️  Checking if existing QQQ data can be used...")
-            
-            # Check for existing QQQ data
-            existing_qqq_path = os.path.join(output_dir, "QQQ.json")
-            if os.path.exists(existing_qqq_path):
-                try:
-                    with open(existing_qqq_path, 'r') as f:
-                        qqq_data = json.load(f)
-                    print(f"✅ Using existing QQQ data ({len(qqq_data)} days)")
-                except Exception as e:
-                    print(f"❌ Could not load existing QQQ data: {e}")
-                    print("🚫 Cannot proceed without QQQ data")
-                    return
-            else:
-                print("🚫 No existing QQQ data found. Cannot proceed.")
-                return
-        else:
-            qqq_data = merge_and_calculate(qqq_data)
-            qqq_path = save_data("QQQ", qqq_data, output_dir)
-    
-    except Exception as e:
-        print(f"❌ Unexpected error downloading QQQ data: {e}")
-        print("🛡️  Checking if existing QQQ data can be used...")
-        
-        # Try to use existing data
         existing_qqq_path = os.path.join(output_dir, "QQQ.json")
         if os.path.exists(existing_qqq_path):
             try:
                 with open(existing_qqq_path, 'r') as f:
                     qqq_data = json.load(f)
                 print(f"✅ Using existing QQQ data ({len(qqq_data)} days)")
-            except Exception as e2:
-                print(f"❌ Could not load existing QQQ data: {e2}")
+                if qqq_data:
+                    print(f"📊 QQQ: {min(qqq_data.keys())} to {max(qqq_data.keys())}")
+            except Exception as e:
+                print(f"❌ Could not load existing QQQ data: {e}")
                 print("🚫 Cannot proceed without QQQ data")
                 return
         else:
-            print("🚫 No existing QQQ data found. Cannot proceed.")
+            print("❌ No existing QQQ data found")
+            print("🚫 Cannot generate TQQQ without QQQ data")
+            print("💡 Run without --skip-qqq flag to download QQQ data first")
             return
-    
-    # Add delay between different ticker downloads to avoid rate limiting
-    smart_delay(base_delay=3)
+    else:
+        print("=" * 50)
+        print("📈 DOWNLOADING QQQ DATA")
+        print("=" * 50)
+        
+        try:
+            qqq_data, qqq_twelvedata_start = download_hybrid_data("QQQ", "1998-01-01")
+            
+            if not qqq_data:
+                print("❌ Failed to download QQQ data from all sources")
+                print("🛡️  Checking if existing QQQ data can be used...")
+                
+                # Check for existing QQQ data
+                existing_qqq_path = os.path.join(output_dir, "QQQ.json")
+                if os.path.exists(existing_qqq_path):
+                    try:
+                        with open(existing_qqq_path, 'r') as f:
+                            qqq_data = json.load(f)
+                        print(f"✅ Using existing QQQ data ({len(qqq_data)} days)")
+                    except Exception as e:
+                        print(f"❌ Could not load existing QQQ data: {e}")
+                        print("🚫 Cannot proceed without QQQ data")
+                        return
+                else:
+                    print("🚫 No existing QQQ data found. Cannot proceed.")
+                    return
+            else:
+                qqq_data = merge_and_calculate(qqq_data)
+                qqq_path = save_data("QQQ", qqq_data, output_dir)
+        
+        except Exception as e:
+            print(f"❌ Unexpected error downloading QQQ data: {e}")
+            print("🛡️  Checking if existing QQQ data can be used...")
+            
+            # Try to use existing data
+            existing_qqq_path = os.path.join(output_dir, "QQQ.json")
+            if os.path.exists(existing_qqq_path):
+                try:
+                    with open(existing_qqq_path, 'r') as f:
+                        qqq_data = json.load(f)
+                    print(f"✅ Using existing QQQ data ({len(qqq_data)} days)")
+                except Exception as e2:
+                    print(f"❌ Could not load existing QQQ data: {e2}")
+                    print("🚫 Cannot proceed without QQQ data")
+                    return
+            else:
+                print("🚫 No existing QQQ data found. Cannot proceed.")
+                return
+        
+        # Add delay between different ticker downloads to avoid rate limiting
+        smart_delay(base_delay=3)
     
     # Download TQQQ data (real + simulated)
     print("\n" + "=" * 50)
@@ -819,6 +850,8 @@ def download_complete_data():
         
     except Exception as e:
         print(f"❌ Unexpected error processing TQQQ data: {e}")
+        import traceback
+        traceback.print_exc()
         print("🛡️  Checking if existing TQQQ data should be preserved...")
         
         # Check for existing TQQQ data
@@ -846,7 +879,8 @@ def download_complete_data():
     print("\n" + "🎉" * 20)
     print("✅ COMPLETE DATA DOWNLOAD FINISHED!")
     print("🎉" * 20)
-    print(f"📁 QQQ data saved to: {qqq_path}")
+    if not skip_qqq:
+        print(f"📁 QQQ data saved to: {qqq_path}")
     print(f"📁 TQQQ data saved to: {tqqq_path}")
     
     if qqq_data:
@@ -855,4 +889,13 @@ def download_complete_data():
         print(f"📊 TQQQ: {min(tqqq_data.keys())} to {max(tqqq_data.keys())} ({len(tqqq_data)} days)")
 
 if __name__ == "__main__":
-    download_complete_data()
+    import sys
+    
+    # Check for command line arguments
+    skip_qqq = "--skip-qqq" in sys.argv or "--tqqq-only" in sys.argv
+    
+    if skip_qqq:
+        print("🔧 Mode: TQQQ generation only (using existing QQQ data)")
+        print()
+    
+    download_complete_data(skip_qqq=skip_qqq)
