@@ -264,7 +264,6 @@ export const getYesterdaySignal = (
       if (isBelow90SMA200) {
         signalType = SignalType.WaitingForRecovery;
       } else {
-        hasXMarker = true;
         signalType = SignalType.WaitingForDrop;
       }
       break;
@@ -290,7 +289,7 @@ export const getYesterdaySignal = (
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
     belowSMA: isBelow95SMA200 || false,
-    hasXMarker: false,
+    hasXMarker: hasXMarker,
     signalType,
   };
 };
