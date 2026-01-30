@@ -1,18 +1,18 @@
 {
   "files": {
     "main.css": "/mmr-strategy/static/css/main.97176015.css",
-    "main.js": "/mmr-strategy/static/js/main.80430434.js",
-    "static/js/107.ec3b131e.chunk.js": "/mmr-strategy/static/js/107.ec3b131e.chunk.js",
-    "static/js/851.89779886.chunk.js": "/mmr-strategy/static/js/851.89779886.chunk.js",
-    "static/js/66.5e365017.chunk.js": "/mmr-strategy/static/js/66.5e365017.chunk.js",
-    "static/js/453.5ef876dd.chunk.js": "/mmr-strategy/static/js/453.5ef876dd.chunk.js",
+    "main.js": "/mmr-strategy/static/js/main.33e934eb.js",
+    "static/js/107.545a8db8.chunk.js": "/mmr-strategy/static/js/107.545a8db8.chunk.js",
+    "static/js/851.9f1fa376.chunk.js": "/mmr-strategy/static/js/851.9f1fa376.chunk.js",
+    "static/js/66.2752ef68.chunk.js": "/mmr-strategy/static/js/66.2752ef68.chunk.js",
+    "static/js/453.9ad3e90c.chunk.js": "/mmr-strategy/static/js/453.9ad3e90c.chunk.js",
     "index.html": "/mmr-strategy/index.html",
     "main.97176015.css.map": "/mmr-strategy/static/css/main.97176015.css.map",
-    "main.80430434.js.map": "/mmr-strategy/static/js/main.80430434.js.map",
-    "453.5ef876dd.chunk.js.map": "/mmr-strategy/static/js/453.5ef876dd.chunk.js.map"
+    "main.33e934eb.js.map": "/mmr-strategy/static/js/main.33e934eb.js.map",
+    "453.9ad3e90c.chunk.js.map": "/mmr-strategy/static/js/453.9ad3e90c.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.97176015.css",
-    "static/js/main.80430434.js"
+    "static/js/main.33e934eb.js"
   ]
 }
