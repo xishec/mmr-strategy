@@ -41,6 +41,8 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
           snapshot.signal.hasGreenTriangle && !simulation.portfolioSnapshots[i - 1]?.signal.hasGreenTriangle,
         hasBlackTriangle:
           snapshot.signal.hasBlackTriangle && !simulation.portfolioSnapshots[i - 1]?.signal.hasBlackTriangle,
+        belowSMA:
+          snapshot.signal.belowSMA && !simulation.portfolioSnapshots[i - 1]?.signal.belowSMA,
       })),
       strategyTotal: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,

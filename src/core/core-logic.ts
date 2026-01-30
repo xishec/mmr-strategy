@@ -71,6 +71,7 @@ const getInitialSignal = (date: string, marketData: MarketData, startDate: strin
       hasGreenTriangle: false,
       hasBlackTriangle: false,
       hasXMarker: false,
+      belowSMA: false,
       signalType: SignalType.WaitingForRecovery,
     };
   }
@@ -141,6 +142,7 @@ const getInitialSignal = (date: string, marketData: MarketData, startDate: strin
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: false, // Initial signal won't be a sell
     hasXMarker: false,
+    belowSMA: false,
     signalType,
   };
 };
@@ -222,6 +224,8 @@ export const getYesterdaySignal = (
     .reduce((sum, rate) => sum + Math.abs(rate), 0);
   const stable = delta < 35;
 
+  let hasXMarker = false;
+
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
     case SignalType.Buy:
@@ -260,6 +264,7 @@ export const getYesterdaySignal = (
       if (isBelow90SMA200) {
         signalType = SignalType.WaitingForRecovery;
       } else {
+        hasXMarker = true;
         signalType = SignalType.WaitingForDrop;
       }
       break;
@@ -284,6 +289,7 @@ export const getYesterdaySignal = (
     hasBlueMarker: growTooFast,
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
+    belowSMA: isBelow95SMA200 || false,
     hasXMarker: false,
     signalType,
   };

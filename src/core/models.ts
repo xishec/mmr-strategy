@@ -104,6 +104,7 @@ export interface Signal {
   hasBlueMarker: boolean;
   hasGreenTriangle: boolean;
   hasBlackTriangle: boolean;
+  belowSMA: boolean;
   signalType: SignalType;
 }
 

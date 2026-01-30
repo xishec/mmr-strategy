@@ -415,6 +415,7 @@ const Chart: React.FC<ChartProps> = ({
       drawColoredMarkers("hasOrangeMarker", "orange-marker", "#ffa600ff", 10, 4);
       drawColoredMarkers("hasRedMarker", "red-marker", COLORS.red, 15, 4);
       drawColoredMarkers("hasBlueMarker", "blue-marker", COLORS.blue, 20, 4);
+      drawColoredMarkers("belowSMA", "belowSMA-marker", "#888888", 20, 4);
     }
 
     // Helper function to create crosshair elements
