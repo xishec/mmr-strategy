@@ -233,7 +233,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.Hold:
-      if (fastDrop || mediumDrop || slowDrop || growTooFast) {
+      if (fastDrop || mediumDrop || slowDrop || (growTooFast && marketData.QQQ[yesterdayDate].rate < 0)) {
         signalType = SignalType.Sell;
       } else {
         signalType = SignalType.Hold;
