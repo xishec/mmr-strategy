@@ -106,6 +106,7 @@ export interface Signal {
   hasBlackTriangle: boolean;
   belowSMA: boolean;
   signalType: SignalType;
+  isAboveSMAForAWhile?: boolean;
 }
 
 export const enum SignalType {

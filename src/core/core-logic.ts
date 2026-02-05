@@ -164,6 +164,30 @@ export const getYesterdaySignal = (
 
   const yesterdaySignal = yesterdaySnapshot.signal;
 
+  // ------
+
+  let lastSellIndex = -1;
+  let lastBuyIndex = -1;
+  let lastRecoveryIndex = -1;
+
+  for (let i = simulation.portfolioSnapshots.length - 1; i >= 0; i--) {
+    if (simulation.portfolioSnapshots[i].signal.signalType === SignalType.Sell && lastSellIndex === -1) {
+      lastSellIndex = i;
+    }
+    if (simulation.portfolioSnapshots[i].signal.signalType === SignalType.Buy && lastBuyIndex === -1) {
+      lastBuyIndex = i;
+    }
+    if (
+      simulation.portfolioSnapshots[i].signal.signalType === SignalType.WaitingForRecovery &&
+      lastRecoveryIndex === -1
+    ) {
+      lastRecoveryIndex = i;
+    }
+    if (lastSellIndex !== -1 && lastBuyIndex !== -1 && lastRecoveryIndex !== -1) break;
+  }
+
+  //------
+
   const fastDrop = simulation.portfolioSnapshots
     .slice(-2)
     .some((snapshot) => marketData.TQQQ[snapshot.date].rate < -20);
@@ -197,43 +221,23 @@ export const getYesterdaySignal = (
     .slice(Math.max(0, yesterdayIndex - 240), yesterdayIndex + 1)
     .map((date) => marketData.QQQ[date]?.close || 0)
     .reduce((max, closePrice) => Math.max(max, closePrice), 0);
-  const wasRecovering =
-    simulation.portfolioSnapshots
-      .slice(-100)
-      .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery) &&
-    marketData.QQQ[yesterdayDate].close < lastPeriodMaxClose2 * 1.1;
+  const daysSinceLastRecovery = lastRecoveryIndex !== -1 ? yesterdayIndex - lastRecoveryIndex : Infinity;
+  const wasRecovering = daysSinceLastRecovery <= 200 && marketData.QQQ[yesterdayDate].close < lastPeriodMaxClose2 * 1.1;
   const growTooFast = isAboveSMAForAWhile && !wasRecovering;
 
   // ------------------------------
 
   const isBelow90SMA200 =
     marketData.QQQ[yesterdayDate].sma && marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.9;
-  const isBelow95SMA200 =
-    marketData.QQQ[yesterdayDate].sma &&
-    marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.95;
   const isAbove105SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
 
-  // Find the last date with SignalType.Sell and first blue marker after it
-  let firstBlueMarkerAfterSell: string | undefined;
-  let daysSinceFirstBlueMarkerAfterSell: number | undefined;
-  let lastSellIndex = -1;
-  let lastBuyIndex = -1;
-
-  for (let i = simulation.portfolioSnapshots.length - 1; i >= 0; i--) {
-    if (simulation.portfolioSnapshots[i].signal.signalType === SignalType.Sell && lastSellIndex === -1) {
-      lastSellIndex = i;
-    }
-    if (simulation.portfolioSnapshots[i].signal.signalType === SignalType.Buy && lastBuyIndex === -1) {
-      lastBuyIndex = i;
-    }
-    if (lastSellIndex !== -1 && lastBuyIndex !== -1) break;
-  }
-
+  let firstBelowSMAAfterSell: string | undefined;
+  let daysSinceFirstBelowSMAAfterSell: number | undefined;
   if (lastSellIndex !== -1) {
     for (let i = lastSellIndex + 1; i < simulation.portfolioSnapshots.length; i++) {
-      if (simulation.portfolioSnapshots[i].signal.hasBlueMarker) {
-        firstBlueMarkerAfterSell = simulation.portfolioSnapshots[i].date;
-        daysSinceFirstBlueMarkerAfterSell = daysBetween(firstBlueMarkerAfterSell, date);
+      if (!simulation.portfolioSnapshots[i].signal.isAboveSMAForAWhile) {
+        firstBelowSMAAfterSell = simulation.portfolioSnapshots[i].date;
+        daysSinceFirstBelowSMAAfterSell = daysBetween(firstBelowSMAAfterSell, yesterdayDate);
         break;
       }
     }
@@ -241,8 +245,11 @@ export const getYesterdaySignal = (
 
   const waitingForSmallDropForTooLong =
     yesterdaySignal.signalType === SignalType.WaitingForSmallDrop &&
-    daysSinceFirstBlueMarkerAfterSell !== undefined &&
-    daysSinceFirstBlueMarkerAfterSell >= 120;
+    daysSinceFirstBelowSMAAfterSell !== undefined &&
+    daysSinceFirstBelowSMAAfterSell >= 120;
+
+  let flag = false;
+  let hasXMarker = false;
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
@@ -267,9 +274,11 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.WaitingForSmallDrop:
+      hasXMarker = waitingForSmallDropForTooLong;
       if (slowDrop || mediumDrop || fastDrop) {
         signalType = SignalType.WaitingForDrop;
-      } else if (isBelow95SMA200) {
+      } else if (isBelow90SMA200) {
+        flag = true;
         signalType = SignalType.WaitingForRecovery;
       } else if (waitingForSmallDropForTooLong && !growTooFast) {
         signalType = SignalType.Buy;
@@ -306,9 +315,10 @@ export const getYesterdaySignal = (
     hasBlueMarker: growTooFast,
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
-    belowSMA: false,
-    hasXMarker: waitingForSmallDropForTooLong,
+    belowSMA: wasRecovering,
+    hasXMarker,
     signalType,
+    isAboveSMAForAWhile,
   };
 };
 
