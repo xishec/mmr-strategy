@@ -203,7 +203,7 @@ export const getYesterdaySignal = (
     return aboveCount / windowDates.length >= 0.75;
   })();
   const wasRecovering = simulation.portfolioSnapshots
-    .slice(-200)
+    .slice(-120)
     .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery);
   const growTooFast = isAboveSMAForAWhile && !wasRecovering;
 
@@ -214,9 +214,32 @@ export const getYesterdaySignal = (
     marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.95;
   const isAbove105SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
 
+  // Find the last date with SignalType.Sell and first blue marker after it
+  let firstBlueMarkerAfterSell: string | undefined;
+  let daysSinceFirstBlueMarkerAfterSell: number | undefined;
+  let lastSellIndex = -1;
+
+  for (let i = simulation.portfolioSnapshots.length - 1; i >= 0; i--) {
+    if (simulation.portfolioSnapshots[i].signal.signalType === SignalType.Sell) {
+      lastSellIndex = i;
+      break;
+    }
+  }
+
+  if (lastSellIndex !== -1) {
+    for (let i = lastSellIndex + 1; i < simulation.portfolioSnapshots.length; i++) {
+      if (simulation.portfolioSnapshots[i].signal.hasBlueMarker) {
+        firstBlueMarkerAfterSell = simulation.portfolioSnapshots[i].date;
+        daysSinceFirstBlueMarkerAfterSell = daysBetween(firstBlueMarkerAfterSell, date);
+        break;
+      }
+    }
+  }
+
   const waitingForSmallDropForTooLong =
-    simulation.portfolioSnapshots.slice(-60).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
-    yesterdaySignal.signalType === SignalType.WaitingForSmallDrop;
+    yesterdaySignal.signalType === SignalType.WaitingForSmallDrop &&
+    daysSinceFirstBlueMarkerAfterSell !== undefined &&
+    daysSinceFirstBlueMarkerAfterSell >= 120;
 
   const delta = marketDates
     .slice(Math.max(0, yesterdayIndex - 20), yesterdayIndex + 1)
@@ -224,7 +247,7 @@ export const getYesterdaySignal = (
     .reduce((sum, rate) => sum + Math.abs(rate), 0);
   const stable = delta < 35;
 
-  let hasXMarker = false;
+  let hasXMarker = waitingForSmallDropForTooLong;
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
@@ -288,7 +311,7 @@ export const getYesterdaySignal = (
     hasBlueMarker: growTooFast,
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
-    belowSMA: isBelow95SMA200 || false,
+    belowSMA: false,
     hasXMarker: hasXMarker,
     signalType,
   };
