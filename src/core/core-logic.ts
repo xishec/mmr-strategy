@@ -202,9 +202,17 @@ export const getYesterdaySignal = (
     ).length;
     return aboveCount / windowDates.length >= 0.75;
   })();
-  const wasRecovering = simulation.portfolioSnapshots
-    .slice(-120)
-    .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery);
+
+  const lastPeriodMaxClose2 = marketDates
+    .slice(Math.max(0, yesterdayIndex - 240), yesterdayIndex + 1)
+    .map((date) => marketData.QQQ[date]?.close || 0)
+    .reduce((max, closePrice) => Math.max(max, closePrice), 0);
+  const wasRecovering =
+    simulation.portfolioSnapshots
+      .slice(-100)
+      .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery) &&
+    marketData.QQQ[yesterdayDate].close < lastPeriodMaxClose2 * 1.1;
+
   const growTooFast = isAboveSMAForAWhile && !wasRecovering;
 
   const isBelow90SMA200 =
@@ -241,12 +249,6 @@ export const getYesterdaySignal = (
     daysSinceFirstBlueMarkerAfterSell !== undefined &&
     daysSinceFirstBlueMarkerAfterSell >= 120;
 
-  const delta = marketDates
-    .slice(Math.max(0, yesterdayIndex - 20), yesterdayIndex + 1)
-    .map((date) => marketData.QQQ[date]?.rate || 0)
-    .reduce((sum, rate) => sum + Math.abs(rate), 0);
-  const stable = delta < 35;
-
   let hasXMarker = waitingForSmallDropForTooLong;
 
   let signalType = SignalType.Hold;
@@ -256,7 +258,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.Hold:
-      if (fastDrop || mediumDrop || slowDrop || (growTooFast && marketData.QQQ[yesterdayDate].rate < 0)) {
+      if (fastDrop || mediumDrop || slowDrop || growTooFast) {
         signalType = SignalType.Sell;
       } else {
         signalType = SignalType.Hold;
@@ -276,7 +278,7 @@ export const getYesterdaySignal = (
         signalType = SignalType.WaitingForDrop;
       } else if (isBelow95SMA200) {
         signalType = SignalType.WaitingForRecovery;
-      } else if (waitingForSmallDropForTooLong && !growTooFast && stable) {
+      } else if (waitingForSmallDropForTooLong && !growTooFast) {
         signalType = SignalType.Buy;
       } else {
         signalType = SignalType.WaitingForSmallDrop;
