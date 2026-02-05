@@ -164,10 +164,6 @@ export const getYesterdaySignal = (
 
   const yesterdaySignal = yesterdaySnapshot.signal;
 
-  // const sumLastRates = marketDates
-  //   .slice(Math.max(0, yesterdayIndex - 5), yesterdayIndex + 1)
-  //   .map((date) => marketData.TQQQ[date]?.rate || 0)
-  //   .reduce((sum, rate) => sum + rate, 0);
   const fastDrop = simulation.portfolioSnapshots
     .slice(-2)
     .some((snapshot) => marketData.TQQQ[snapshot.date].rate < -20);
@@ -179,12 +175,6 @@ export const getYesterdaySignal = (
   const QQQPullBack = marketData.QQQ[yesterdayDate].close / lastPeriodMaxClose;
   const mediumDrop = QQQPullBack < 0.75;
 
-  // Find the date when the max close occurred and calculate days since
-  // const maxCloseDate =
-  //   lookbackPeriod.find((date) => marketData.QQQ[date]?.close === lastPeriodMaxClose) || yesterdayDate;
-  // const maxCloseDateIndex = marketDates.indexOf(maxCloseDate);
-  // const daysSinceLastPeriodMaxClose = yesterdayIndex - maxCloseDateIndex;
-
   const belowSMAForAWhile = marketDates
     .slice(Math.max(0, yesterdayIndex - 30), yesterdayIndex + 1)
     .every((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 1);
@@ -193,7 +183,8 @@ export const getYesterdaySignal = (
     .every((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 0.9);
   const slowDrop = belowSMAForAWhile && hadABigDrop;
 
-  // Use a 90% threshold rather than requiring every single day to be above SMA * 1.1
+  // ------------------------------
+
   const isAboveSMAForAWhile = (() => {
     const windowDates = marketDates.slice(Math.max(0, yesterdayIndex - 30), yesterdayIndex + 1);
     if (windowDates.length === 0) return false;
@@ -202,7 +193,6 @@ export const getYesterdaySignal = (
     ).length;
     return aboveCount / windowDates.length >= 0.75;
   })();
-
   const lastPeriodMaxClose2 = marketDates
     .slice(Math.max(0, yesterdayIndex - 240), yesterdayIndex + 1)
     .map((date) => marketData.QQQ[date]?.close || 0)
@@ -212,8 +202,9 @@ export const getYesterdaySignal = (
       .slice(-100)
       .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery) &&
     marketData.QQQ[yesterdayDate].close < lastPeriodMaxClose2 * 1.1;
-
   const growTooFast = isAboveSMAForAWhile && !wasRecovering;
+
+  // ------------------------------
 
   const isBelow90SMA200 =
     marketData.QQQ[yesterdayDate].sma && marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.9;
@@ -226,12 +217,16 @@ export const getYesterdaySignal = (
   let firstBlueMarkerAfterSell: string | undefined;
   let daysSinceFirstBlueMarkerAfterSell: number | undefined;
   let lastSellIndex = -1;
+  let lastBuyIndex = -1;
 
   for (let i = simulation.portfolioSnapshots.length - 1; i >= 0; i--) {
-    if (simulation.portfolioSnapshots[i].signal.signalType === SignalType.Sell) {
+    if (simulation.portfolioSnapshots[i].signal.signalType === SignalType.Sell && lastSellIndex === -1) {
       lastSellIndex = i;
-      break;
     }
+    if (simulation.portfolioSnapshots[i].signal.signalType === SignalType.Buy && lastBuyIndex === -1) {
+      lastBuyIndex = i;
+    }
+    if (lastSellIndex !== -1 && lastBuyIndex !== -1) break;
   }
 
   if (lastSellIndex !== -1) {
@@ -248,8 +243,6 @@ export const getYesterdaySignal = (
     yesterdaySignal.signalType === SignalType.WaitingForSmallDrop &&
     daysSinceFirstBlueMarkerAfterSell !== undefined &&
     daysSinceFirstBlueMarkerAfterSell >= 120;
-
-  let hasXMarker = waitingForSmallDropForTooLong;
 
   let signalType = SignalType.Hold;
   switch (yesterdaySignal.signalType) {
@@ -314,7 +307,7 @@ export const getYesterdaySignal = (
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
     belowSMA: false,
-    hasXMarker: hasXMarker,
+    hasXMarker: waitingForSmallDropForTooLong,
     signalType,
   };
 };

@@ -350,8 +350,8 @@ const Chart: React.FC<ChartProps> = ({
         .attr("transform", (d: any) => `translate(${xScale(d.parsedTime)}, ${yScale(d.value)})`)
         .selectAll("line")
         .data([
-          { x1: -4, y1: -4, x2: 4, y2: 4 }, // \ diagonal
-          { x1: -4, y1: 4, x2: 4, y2: -4 }, // / diagonal
+          { x1: -1, y1: -1, x2: 1, y2: 1 }, // \ diagonal
+          { x1: -1, y1: 1, x2: 1, y2: -1 }, // / diagonal
         ])
         .enter()
         .append("line")

@@ -30,19 +30,18 @@ export const useChartData = (simulation: Simulation, selectedDate: string | null
       mockTotalTQQQ: simulation.portfolioSnapshots.map((snapshot, i) => ({
         time: snapshot.date,
         value: snapshot.investments.mockTotalTQQQ,
-        hasXMarker: snapshot.signal.hasXMarker,
         hasYellowMarker:
           snapshot.signal.hasYellowMarker && !simulation.portfolioSnapshots[i - 1]?.signal.hasYellowMarker,
         hasOrangeMarker:
           snapshot.signal.hasOrangeMarker && !simulation.portfolioSnapshots[i - 1]?.signal.hasOrangeMarker,
         hasRedMarker: snapshot.signal.hasRedMarker && !simulation.portfolioSnapshots[i - 1]?.signal.hasRedMarker,
-        hasBlueMarker: snapshot.signal.hasBlueMarker && !simulation.portfolioSnapshots[i - 1]?.signal.hasBlueMarker,
+        hasBlueMarker: snapshot.signal.hasBlueMarker,
         hasGreenTriangle:
           snapshot.signal.hasGreenTriangle && !simulation.portfolioSnapshots[i - 1]?.signal.hasGreenTriangle,
         hasBlackTriangle:
           snapshot.signal.hasBlackTriangle && !simulation.portfolioSnapshots[i - 1]?.signal.hasBlackTriangle,
-        belowSMA:
-          snapshot.signal.belowSMA && !simulation.portfolioSnapshots[i - 1]?.signal.belowSMA,
+        belowSMA: snapshot.signal.belowSMA,
+        hasXMarker: snapshot.signal.hasXMarker,
       })),
       strategyTotal: simulation.portfolioSnapshots.map((snapshot) => ({
         time: snapshot.date,
