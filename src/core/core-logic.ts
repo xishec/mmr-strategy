@@ -186,10 +186,14 @@ export const getYesterdaySignal = (
     if (lastSellIndex !== -1 && lastBuyIndex !== -1 && lastRecoveryIndex !== -1) break;
   }
 
-  const recentHigh = marketDates
-    .slice(Math.max(0, yesterdayIndex - 480), yesterdayIndex)
-    .map((date) => marketData.QQQ[date]?.close || 0)
-    .reduce((max, closePrice) => Math.max(max, closePrice), 0);
+  // const recentHigh = marketDates
+  //   .slice(Math.max(0, yesterdayIndex - 480), yesterdayIndex)
+  //   .map((date) => marketData.QQQ[date]?.close || 0)
+  //   .reduce((max, closePrice) => Math.max(max, closePrice), 0);
+  // const recentLow = marketDates
+  //   .slice(Math.max(0, yesterdayIndex - 240), yesterdayIndex)
+  //   .map((date) => marketData.QQQ[date]?.close || 0)
+  //   .reduce((min, closePrice) => Math.min(min, closePrice), Infinity);
 
   //------
 
@@ -217,6 +221,9 @@ export const getYesterdaySignal = (
     ).length;
     return aboveCount / windowDates.length >= 0.75;
   })();
+  // const hasDropRecently = marketDates
+  //   .slice(Math.max(0, yesterdayIndex - 180), yesterdayIndex + 1)
+  //   .some((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 0.9);
   const daysSinceLastRecovery = lastRecoveryIndex !== -1 ? yesterdayIndex - lastRecoveryIndex : Infinity;
   const wasRecovering = daysSinceLastRecovery <= 240;
   const growTooFast = isAboveSMAForAWhile && !wasRecovering;
@@ -244,7 +251,7 @@ export const getYesterdaySignal = (
     daysSinceFirstBelowSMAAfterSell !== undefined &&
     daysSinceFirstBelowSMAAfterSell >= 120;
 
-  let belowSMA = false;
+  // let belowSMA = false;
   let hasXMarker = false;
 
   let signalType = SignalType.Hold;
