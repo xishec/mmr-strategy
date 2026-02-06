@@ -107,6 +107,7 @@ export interface Signal {
   belowSMA: boolean;
   signalType: SignalType;
   isAboveSMAForAWhile?: boolean;
+  growTooFast?: boolean;
 }
 
 export const enum SignalType {

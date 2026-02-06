@@ -186,18 +186,18 @@ export const getYesterdaySignal = (
     if (lastSellIndex !== -1 && lastBuyIndex !== -1 && lastRecoveryIndex !== -1) break;
   }
 
+  const recentHigh = marketDates
+    .slice(Math.max(0, yesterdayIndex - 480), yesterdayIndex)
+    .map((date) => marketData.QQQ[date]?.close || 0)
+    .reduce((max, closePrice) => Math.max(max, closePrice), 0);
+
   //------
 
   const fastDrop = simulation.portfolioSnapshots
     .slice(-2)
     .some((snapshot) => marketData.TQQQ[snapshot.date].rate < -20);
 
-  const lookbackPeriod = marketDates.slice(Math.max(0, yesterdayIndex - 180), yesterdayIndex + 1);
-  const lastPeriodMaxClose = lookbackPeriod
-    .map((date) => marketData.QQQ[date]?.close || 0)
-    .reduce((max, closePrice) => Math.max(max, closePrice), 0);
-  const QQQPullBack = marketData.QQQ[yesterdayDate].close / lastPeriodMaxClose;
-  const mediumDrop = QQQPullBack < 0.75;
+  const mediumDrop = false;
 
   const belowSMAForAWhile = marketDates
     .slice(Math.max(0, yesterdayIndex - 30), yesterdayIndex + 1)
@@ -262,7 +262,7 @@ export const getYesterdaySignal = (
       break;
 
     case SignalType.Sell:
-      if (growTooFast) {
+      if (yesterdaySignal.growTooFast) {
         signalType = SignalType.WaitingForSmallDrop;
       } else {
         signalType = SignalType.WaitingForDrop;
@@ -311,10 +311,11 @@ export const getYesterdaySignal = (
     hasBlueMarker: growTooFast,
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
-    belowSMA,
+    belowSMA: daysSinceFirstBelowSMAAfterSell === 0,
     hasXMarker,
     signalType,
     isAboveSMAForAWhile,
+    growTooFast,
   };
 };
 
