@@ -273,10 +273,10 @@ export const getYesterdaySignal = (
       hasXMarker = waitingForSmallDropForTooLong;
       if (slowDrop || mediumDrop || fastDrop) {
         signalType = SignalType.WaitingForDrop;
-      } else if (isBelow90SMA200) {
-        belowSMA = true;
-        signalType = SignalType.WaitingForRecovery;
-      } else if (waitingForSmallDropForTooLong && !growTooFast) {
+        // } else if (isBelow90SMA200) {
+        //   belowSMA = true;
+        //   signalType = SignalType.WaitingForRecovery;
+      } else if (waitingForSmallDropForTooLong && !growTooFast && !isBelow90SMA200) {
         signalType = SignalType.Buy;
       } else {
         signalType = SignalType.WaitingForSmallDrop;
