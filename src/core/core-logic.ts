@@ -226,6 +226,12 @@ export const getTonightSignal = (
   const daysSinceLastRecovery = lastRecoveryIndex !== -1 ? todayIndex - lastRecoveryIndex : Infinity;
   const growTooFast = isAboveSMAForAWhile && daysSinceLastRecovery > 240;
 
+  // const daysSinceLastRecovery = 0;
+  // const wasRecovering = simulation.portfolioSnapshots
+  //   .slice(-200)
+  //   .some((snapshot) => snapshot.signal.signalType === SignalType.WaitingForRecovery);
+  // const growTooFast = isAboveSMAForAWhile && !wasRecovering;
+
   // ------------------------------
 
   const isBelow90SMA200 = marketData.QQQ[date].sma && marketData.QQQ[date].close < marketData.QQQ[date].sma! * 0.9;
@@ -247,6 +253,10 @@ export const getTonightSignal = (
     yesterdaySignal.signalType === SignalType.WaitingForSmallDrop &&
     daysSinceFirstBelowSMAAfterSell !== undefined &&
     daysSinceFirstBelowSMAAfterSell >= 120;
+
+  // const waitingForSmallDropForTooLong =
+  //   simulation.portfolioSnapshots.slice(-60).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
+  //   yesterdaySignal.signalType === SignalType.WaitingForSmallDrop;
 
   // let belowSMA = false;
   let hasXMarker = false;
