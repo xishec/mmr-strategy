@@ -108,6 +108,7 @@ export interface Signal {
   signalType: SignalType;
   isAboveSMAForAWhile?: boolean;
   growTooFast?: boolean;
+  reason?: string;
 }
 
 export const enum SignalType {
@@ -146,7 +147,7 @@ export interface FearGreedEntry {
 export interface MarketData {
   QQQ: Record<string, DailyData>;
   TQQQ: Record<string, DailyData>;
-  fearGreed: Record<string, FearGreedEntry>;
+  fearGreed?: Record<string, FearGreedEntry>;
 }
 
 export interface ChartPoint {

@@ -21,7 +21,7 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
   let lastCashAdditionDate = simulation.simulationVariables.startDate;
 
   for (const date of marketDates) {
-    const signal = getYesterdaySignal(date, marketData, marketDates, simulation);
+    const signal = getTonightSignal(date, marketData, marketDates, simulation);
 
     const lastSnapshot =
       simulation.portfolioSnapshots.length === 0
@@ -36,7 +36,7 @@ export const runSingleSimulation = (oldSimulation: Simulation, marketData: Marke
       lastCashAdditionDate = date;
     }
 
-    updateStrategyToSnapshotYesterday(newSnapshot, marketData, signal, simulation);
+    updateStrategyToSnapshotTonight(newSnapshot, marketData, signal, simulation);
     updateMockToSnapshot(newSnapshot, marketData);
 
     newSnapshot.signal = signal;
@@ -147,7 +147,7 @@ const getInitialSignal = (date: string, marketData: MarketData, startDate: strin
   };
 };
 
-export const getYesterdaySignal = (
+export const getTonightSignal = (
   date: string,
   marketData: MarketData,
   marketDates: string[],
@@ -155,7 +155,7 @@ export const getYesterdaySignal = (
 ): Signal => {
   const todayIndex = marketDates.indexOf(date);
   const yesterdayIndex = todayIndex - 1;
-  const yesterdayDate = marketDates[yesterdayIndex];
+  // const yesterdayDate = marketDates[yesterdayIndex];
   const yesterdaySnapshot = simulation.portfolioSnapshots[yesterdayIndex];
 
   if (!yesterdaySnapshot || !yesterdaySnapshot.signal) {
@@ -204,34 +204,32 @@ export const getYesterdaySignal = (
   const mediumDrop = false;
 
   const belowSMAForAWhile = marketDates
-    .slice(Math.max(0, yesterdayIndex - 30), yesterdayIndex + 1)
+    .slice(Math.max(0, todayIndex - 30), todayIndex + 1)
     .every((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 1);
   const hadABigDrop = marketDates
-    .slice(Math.max(0, yesterdayIndex - 5), yesterdayIndex + 1)
+    .slice(Math.max(0, todayIndex - 5), todayIndex + 1)
     .every((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 0.9);
   const slowDrop = belowSMAForAWhile && hadABigDrop;
 
   // ------------------------------
 
-  const isAboveSMAForAWhile = (() => {
-    const windowDates = marketDates.slice(Math.max(0, yesterdayIndex - 30), yesterdayIndex + 1);
-    if (windowDates.length === 0) return false;
-    const aboveCount = windowDates.filter(
-      (d) => marketData.QQQ[d].sma && marketData.QQQ[d].close >= marketData.QQQ[d].sma! * 1.09
-    ).length;
-    return aboveCount / windowDates.length >= 0.75;
-  })();
-  // const hasDropRecently = marketDates
-  //   .slice(Math.max(0, yesterdayIndex - 180), yesterdayIndex + 1)
-  //   .some((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 0.9);
-  const daysSinceLastRecovery = lastRecoveryIndex !== -1 ? yesterdayIndex - lastRecoveryIndex : Infinity;
+  const windowLength = 30;
+  const aboveCount =
+    (() => {
+      const windowDates = marketDates.slice(Math.max(0, todayIndex - windowLength), todayIndex + 1);
+      if (windowDates.length === 0) return false;
+      return windowDates.filter(
+        (d) => marketData.QQQ[d].sma && marketData.QQQ[d].close >= marketData.QQQ[d].sma! * 1.09
+      ).length;
+    })() || 0;
+  const isAboveSMAForAWhile = aboveCount / windowLength >= 0.75;
+  const daysSinceLastRecovery = lastRecoveryIndex !== -1 ? todayIndex - lastRecoveryIndex : Infinity;
   const growTooFast = isAboveSMAForAWhile && daysSinceLastRecovery > 240;
 
   // ------------------------------
 
-  const isBelow90SMA200 =
-    marketData.QQQ[yesterdayDate].sma && marketData.QQQ[yesterdayDate].close < marketData.QQQ[yesterdayDate].sma! * 0.9;
-  const isAbove105SMA200 = marketData.QQQ[yesterdayDate].close >= marketData.QQQ[yesterdayDate].sma! * 1.05;
+  const isBelow90SMA200 = marketData.QQQ[date].sma && marketData.QQQ[date].close < marketData.QQQ[date].sma! * 0.9;
+  const isAbove105SMA200 = marketData.QQQ[date].close >= marketData.QQQ[date].sma! * 1.05;
 
   let firstBelowSMAAfterSell: string | undefined;
   let daysSinceFirstBelowSMAAfterSell: number | undefined;
@@ -239,7 +237,7 @@ export const getYesterdaySignal = (
     for (let i = lastSellIndex + 1; i < simulation.portfolioSnapshots.length; i++) {
       if (!simulation.portfolioSnapshots[i].signal.isAboveSMAForAWhile) {
         firstBelowSMAAfterSell = simulation.portfolioSnapshots[i].date;
-        daysSinceFirstBelowSMAAfterSell = daysBetween(firstBelowSMAAfterSell, yesterdayDate);
+        daysSinceFirstBelowSMAAfterSell = daysBetween(firstBelowSMAAfterSell, date);
         break;
       }
     }
@@ -254,6 +252,7 @@ export const getYesterdaySignal = (
   let hasXMarker = false;
 
   let signalType = SignalType.Hold;
+  let signalReason = "";
   switch (yesterdaySignal.signalType) {
     case SignalType.Buy:
       signalType = SignalType.Hold;
@@ -285,6 +284,7 @@ export const getYesterdaySignal = (
       } else if (waitingForSmallDropForTooLong && !growTooFast && !isBelow90SMA200) {
         signalType = SignalType.Buy;
       } else {
+        signalReason = `daysSinceFirstBelowSMAAfterSell : ${daysSinceFirstBelowSMAAfterSell}, growTooFast: ${growTooFast} (isAboveSMAForAWhile : ${aboveCount}/ ${windowLength} (${aboveCount / windowLength} > 75%?) && daysSinceLastRecovery : ${daysSinceLastRecovery} (>240?), isBelow90SMA200: ${isBelow90SMA200}, `;
         signalType = SignalType.WaitingForSmallDrop;
       }
       break;
@@ -322,18 +322,17 @@ export const getYesterdaySignal = (
     signalType,
     isAboveSMAForAWhile,
     growTooFast,
+    reason: signalReason,
   };
 };
 
-const updateStrategyToSnapshotYesterday = (
+const updateStrategyToSnapshotTonight = (
   newSnapshot: PortfolioSnapshot,
   marketData: MarketData,
   signal: Signal,
   simulation: Simulation
 ) => {
   const TQQQRate = marketData.TQQQ[newSnapshot.date].rate || 0;
-  const TQQQOvernightRate = marketData.TQQQ[newSnapshot.date].overnight_rate || 0;
-  const TQQQDayRate = marketData.TQQQ[newSnapshot.date].day_rate || 0;
 
   switch (signal.signalType) {
     case SignalType.Hold:
@@ -349,8 +348,8 @@ const updateStrategyToSnapshotYesterday = (
       newSnapshot.signal = signal;
       break;
     case SignalType.Sell:
-      // apply overnight rate first
-      newSnapshot.investments.TQQQ *= TQQQOvernightRate / 100 + 1;
+      // apply rate first
+      newSnapshot.investments.TQQQ *= TQQQRate / 100 + 1;
       newSnapshot.investments.cash *= 1;
       newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
       newSnapshot.signal = signal;
@@ -377,7 +376,7 @@ const updateStrategyToSnapshotYesterday = (
         currentTotal: newSnapshot.investments.total,
       });
       // apply day rate after all-in
-      newSnapshot.investments.TQQQ *= TQQQDayRate / 100 + 1;
+      newSnapshot.investments.TQQQ *= 1;
       newSnapshot.investments.cash *= 1;
       newSnapshot.investments.total = newSnapshot.investments.TQQQ + newSnapshot.investments.cash;
       newSnapshot.signal = signal;

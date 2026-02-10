@@ -184,7 +184,7 @@ function getCurrentDate(): string {
  * Get signal description for email
  */
 function getSignalDescription(signalType: SignalType): string {
-  const descriptions = {
+  const descriptions: Record<SignalType, string> = {
     [SignalType.Buy]:
       "<img src='https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXJwejRjOXYxYWttc2J5ZTV2eTNyZDY3MmR1OXRrMzZqdTEyOXM5ZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/h1QI7dgjZUJO60nu2X/giphy.gif' width='600' alt='Buy signal'>",
     [SignalType.Hold]:
@@ -197,6 +197,8 @@ function getSignalDescription(signalType: SignalType): string {
       "<img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='600' alt='Waiting for drop'>",
     [SignalType.WaitingForRecovery]:
       "<img src='https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWNmc2l4ejFqOWd3cjdjN3hpdXp0Mng4ZDZsZmwzMnB3d2x5OTdicSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohuPp7uWLgTdU83iU/giphy.gif' width='600' alt='Waiting for recovery'>",
+    [SignalType.Pause]:
+      "<img src='https://raw.githubusercontent.com/xishec/mmr-strategy/refs/heads/main/public/pepe-meditation.gif' width='600' alt='Pause signal'>",
   };
 
   return (
@@ -217,15 +219,17 @@ function createEmailContent(
   const latestSnapshot = result.portfolioSnapshots[result.portfolioSnapshots.length - 1];
   const signal = latestSnapshot?.signal;
   const signalDescription = signal ? getSignalDescription(signal.signalType) : "No signal available";
+  const signalReason = latestSnapshot?.signal.reason;
 
   // Signal emoji mapping
-  const signalEmoji = {
+  const signalEmoji: Record<SignalType, string> = {
     [SignalType.Buy]: "🟢 Buy - Time to enter the market",
     [SignalType.Hold]: "🔵 Hold - Maintain current position",
     [SignalType.Sell]: "🔴 Sell - Exit positions immediately",
     [SignalType.WaitingForSmallDrop]: "🟡 Waiting for small drop - Looking for entry opportunity",
     [SignalType.WaitingForDrop]: "🟠 Waiting for drop - Staying in cash",
     [SignalType.WaitingForRecovery]: "🟠 Waiting for recovery - Staying in cash until recovery",
+    [SignalType.Pause]: "⏸️ Pause - Strategy paused",
   };
 
   // Get recent orders (last 10)
@@ -237,7 +241,7 @@ function createEmailContent(
             const action = order.type === SignalType.Buy ? "🟢 Buy" : "🔴 Sell";
 
             // Calculate profit by comparing with previous order's total
-            let profitHtml = "";
+            let profitCell = `<td style="color: #6c757d;">-</td>`;
             if (index < recentOrders.length - 1) {
               const previousOrder = recentOrders[index + 1]; // Next in array (previous chronologically)
               const profit = order.currentTotal - previousOrder.currentTotal;
@@ -245,7 +249,7 @@ function createEmailContent(
               const profitColor = profit >= 0 ? "#28a745" : "#dc3545";
               const profitSign = profit >= 0 ? "+" : "";
               if (order.type === SignalType.Sell) {
-                profitHtml = `<td style="color: ${profitColor}; font-weight: 600;">
+                profitCell = `<td style="color: ${profitColor}; font-weight: 600;">
                 ${profitSign}${profitPercent.toFixed(2)}% in ${daysBetween(
                   previousOrder.date,
                   order.date
@@ -259,11 +263,11 @@ function createEmailContent(
                 }%)
               </td>`;
               }
-            } else {
-              profitHtml = `<td style="color: #6c757d;">-</td>`;
             }
 
-            return `<tr><td>${order.date}</td><td>${action}</td>${profitHtml}</tr>`;
+            const totalCell = `<td>${formatCurrency(order.currentTotal)}</td>`;
+
+            return `<tr><td>${order.date}</td><td>${action}</td>${profitCell}${totalCell}</tr>`;
           })
           .join("")
       : '<tr><td colspan="4">No recent orders</td></tr>';
@@ -280,7 +284,10 @@ function createEmailContent(
           .join("")
       : '<tr><td colspan="2">No recent signals</td></tr>';
 
-  const subject = `${signalEmoji[latestSnapshot.signal.signalType]} - MMR Strategy Daily Report`;
+  const subjectSignal = latestSnapshot?.signal
+    ? signalEmoji[latestSnapshot.signal.signalType] || "❓ Signal"
+    : "❓ Signal - No data";
+  const subject = `${subjectSignal} - MMR Strategy Daily Report`;
 
   const html = `
     <!DOCTYPE html>
@@ -432,12 +439,16 @@ function createEmailContent(
         <p style="text-align: center; color: #666; font-size: 16px;">${currentDate}</p>
         
         <div class="info-bar">
-          <span>Latest TQQQ rate:</span>
+          <span>Latest TQQQ rate (${latestTqqqDate}):</span>
           <span class="chip">${latestTqqqRate.toFixed(2)}%</span>
           <a href="https://www.tradingview.com/chart/?symbol=NASDAQ%3ATQQQ" target="_blank" rel="noopener noreferrer">View on TV</a>
         </div>
         
         <div class="signal-title">${signal ? signalEmoji[signal.signalType] || "❓" : "❓"}</div>
+
+        <div class="signal">
+          ${signalReason}
+        </div>
 
         <div class="signal">
           ${signalDescription}
