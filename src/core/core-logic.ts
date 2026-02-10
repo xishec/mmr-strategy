@@ -225,8 +225,7 @@ export const getYesterdaySignal = (
   //   .slice(Math.max(0, yesterdayIndex - 180), yesterdayIndex + 1)
   //   .some((date) => marketData.QQQ[date].close < marketData.QQQ[date].sma! * 0.9);
   const daysSinceLastRecovery = lastRecoveryIndex !== -1 ? yesterdayIndex - lastRecoveryIndex : Infinity;
-  const wasRecovering = daysSinceLastRecovery <= 240;
-  const growTooFast = isAboveSMAForAWhile && !wasRecovering;
+  const growTooFast = isAboveSMAForAWhile && daysSinceLastRecovery > 240;
 
   // ------------------------------
 
