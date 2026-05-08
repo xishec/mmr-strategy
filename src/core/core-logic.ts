@@ -255,7 +255,7 @@ export const getTonightSignal = (
     daysSinceFirstBelowSMAAfterSell >= 120;
 
   // const waitingForSmallDropForTooLong =
-  //   simulation.portfolioSnapshots.slice(-60).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
+  //   simulation.portfolioSnapshots.slice(-120).every((snapshot) => snapshot.signal.signalType !== SignalType.Sell) &&
   //   yesterdaySignal.signalType === SignalType.WaitingForSmallDrop;
 
   // let belowSMA = false;
@@ -327,7 +327,7 @@ export const getTonightSignal = (
     hasBlueMarker: growTooFast,
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
-    belowSMA: daysSinceFirstBelowSMAAfterSell === 0,
+    belowSMA: false,
     hasXMarker,
     signalType,
     isAboveSMAForAWhile,
