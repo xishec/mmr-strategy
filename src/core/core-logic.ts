@@ -327,7 +327,7 @@ export const getTonightSignal = (
     hasBlueMarker: growTooFast,
     hasGreenTriangle: signalType === SignalType.Buy,
     hasBlackTriangle: signalType === SignalType.Sell,
-    belowSMA: false,
+    belowSMA: daysSinceFirstBelowSMAAfterSell === 1,
     hasXMarker,
     signalType,
     isAboveSMAForAWhile,
