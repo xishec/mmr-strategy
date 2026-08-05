@@ -224,7 +224,8 @@ export const getTonightSignal = (
     })() || 0;
   const isAboveSMAForAWhile = aboveCount / windowLength >= 0.75;
   const daysSinceLastRecovery = lastRecoveryIndex !== -1 ? todayIndex - lastRecoveryIndex : Infinity;
-  const growTooFast = isAboveSMAForAWhile && daysSinceLastRecovery > 240;
+  const justBought = lastBuyIndex !== -1 && todayIndex - lastBuyIndex <= 20
+  const growTooFast = isAboveSMAForAWhile && daysSinceLastRecovery > 240 && !justBought;
 
   // const daysSinceLastRecovery = 0;
   // const wasRecovering = simulation.portfolioSnapshots
