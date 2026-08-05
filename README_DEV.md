@@ -24,7 +24,7 @@ This document provides comprehensive technical information for developers workin
 ```bash
 # Required versions
 Node.js >= 16.0.0
-npm >= 8.0.0 or yarn >= 1.22.0
+npm >= 8.0.0
 Python >= 3.8.0
 ```
 

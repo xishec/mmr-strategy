@@ -19,9 +19,9 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: yarn install
+        run: npm ci
 
       - name: Deploy to GitHub Pages
         env:
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        run: yarn deploy
+        run: npm run deploy

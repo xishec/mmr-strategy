@@ -31,7 +31,7 @@ The app automatically loads fresh market data from GitHub repository files, ensu
 ## 🛠️ Quick Start
 
 ### Prerequisites
-- Node.js 16+ and npm/yarn
+- Node.js 16+ and npm
 - Python 3.8+ (for data scripts)
 
 ### Installation

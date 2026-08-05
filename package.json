@@ -34,7 +34,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "predeploy": "yarn build",
+    "predeploy": "npm run build",
     "deploy": "gh-pages -d build -u \"GitHub Actions <xiiicheen@gmail.com>\" -r https://x-access-token:$PERSONAL_ACCESS_TOKEN@github.com/xishec/mmr-strategy.git"
   },
   "eslintConfig": {
