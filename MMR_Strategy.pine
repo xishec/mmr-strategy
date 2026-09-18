@@ -2,13 +2,19 @@
 indicator("200 SMA with Above Count and Delta", overlay=true)
 
 // Calculate 200 SMA
-sma200 = ta.sma(close, 200)
+sma200 = request.security(
+     syminfo.tickerid,
+     "D",
+     ta.sma(close, 200),
+     gaps=barmerge.gaps_off,
+     lookahead=barmerge.lookahead_off)
 
-// Plot the SMA lines
-plot(sma200, color=color.rgb(211, 211, 211), linewidth=2, title="200 SMA")
-// plot(sma200*1.05, color=color.green, linewidth=2, title="200 SMA × 1.05")
-plot(sma200*1.09, color=color.red, linewidth=2, title="200 SMA × 1.09")
-plot(sma200*0.95, color=color.red, linewidth=2, title="200 SMA × 0.95")
+// Show only on daily charts
+showSmaLines = timeframe.isdaily
+
+plot(showSmaLines ? sma200 : na, color=color.red, linewidth=1, title="200 SMA")
+plot(sma200 * 1.09, color=color.gray, linewidth=1, title="200 SMA × 1.09")
+plot(showSmaLines ? sma200 * 1.18 : na, color=color.red, linewidth=1, title="200 SMA × 1.18")
 
 // Calculate aboveCount for the last 31 days (including current day)
 // This matches your TypeScript logic: slice(Math.max(0, yesterdayIndex - 30), yesterdayIndex + 1)
@@ -46,21 +52,17 @@ isStable = deltaSum < 35
 var table infoTable = table.new(position.bottom_right, 2, 7, bgcolor=color.white, border_width=1)
 
 if barstate.islast
-    table.cell(infoTable, 0, 0, "Above 109% Count:", text_color=color.black, bgcolor=color.rgb(211, 211, 211))
-    table.cell(infoTable, 1, 0, str.tostring(aboveCount), text_color=color.black)
+    table.cell(infoTable, 0, 0, "Above 109% Count in 30 days:", text_color=color.black, bgcolor=color.rgb(211, 211, 211))
+    table.cell(infoTable, 1, 0, str.tostring(aboveCount, "# (>=22)"), text_color=color.black)
     
-    table.cell(infoTable, 0, 1, "Window Length:", text_color=color.black, bgcolor=color.rgb(211, 211, 211))
-    table.cell(infoTable, 1, 1, str.tostring(windowLength), text_color=color.black)
+    // table.cell(infoTable, 0, 1, "Window Length:", text_color=color.black, bgcolor=color.rgb(211, 211, 211))
+    // table.cell(infoTable, 1, 1, str.tostring(windowLength), text_color=color.black)
     
-    table.cell(infoTable, 0, 2, "Percentage:", text_color=color.black, bgcolor=color.rgb(211, 211, 211))
-    table.cell(infoTable, 1, 2, str.tostring(abovePercentage, "#.##") + "%", text_color=color.black)
+    // table.cell(infoTable, 0, 2, "Grow too fast:", text_color=color.black, bgcolor=color.rgb(211, 211, 211))
+    // table.cell(infoTable, 1, 2, str.tostring(abovePercentage, "#.##") + "% (> 75%?)", text_color=color.black)
     
-    table.cell(infoTable, 0, 3, "Above 75%:", text_color=color.black, bgcolor=color.rgb(211, 211, 211))
-    table.cell(infoTable, 1, 3, abovePercentage >= 75 ? "grow too fast" : "not too fast, safe", 
-              text_color= color.black)
-    
-    table.cell(infoTable, 0, 4, "Current Delta:", text_color=color.black, bgcolor=color.rgb(211, 211, 211))
-    table.cell(infoTable, 1, 4, str.tostring(deltaSum, "#.## (< 35?)"), text_color=color.black)
+    // table.cell(infoTable, 0, 4, "Current Delta:", text_color=color.black, bgcolor=color.rgb(211, 211, 211))
+    // table.cell(infoTable, 1, 4, str.tostring(deltaSum, "#.## (< 35?)"), text_color=color.black)
 
 // Optional: Plot the delta as a line in a separate pane
 // Uncomment the next line if you want to see the delta trend
@@ -69,3 +71,7 @@ if barstate.islast
 // === Vertical line at last 30 bars ===
 if barstate.islast and bar_index >= 30
     line.new(bar_index - 30, low, bar_index - 30, high, xloc = xloc.bar_index, extend = extend.both, color = color.orange, width = 2, style = line.style_dashed )
+    
+// === Vertical line at last 200 bars ===
+// if barstate.islast and bar_index >= 200
+//     line.new(bar_index - 200, low, bar_index - 200, high, xloc = xloc.bar_index, extend = extend.both, color = color.orange, width = 2, style = line.style_dashed )
